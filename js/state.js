@@ -182,18 +182,37 @@ function getNavHighlight(project) {
   return 'besluit';
 }
 
+// ── Confirm Dialog ────────────────────────────────────────────────────────────
+
+function showConfirm(message, onConfirm) {
+  let overlay = document.getElementById('pom-confirm-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'pom-confirm-overlay';
+    overlay.className = 'pom-confirm-overlay';
+    overlay.innerHTML = `
+      <div class="pom-confirm-dialog">
+        <div class="pom-confirm-title">Weet je het zeker?</div>
+        <p id="pom-confirm-body" class="pom-confirm-body"></p>
+        <div class="pom-confirm-actions">
+          <button id="pom-confirm-cancel" class="btn-ghost">Annuleren</button>
+          <button id="pom-confirm-ok" class="btn-danger">Verwijderen</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.style.display = 'none'; });
+  }
+  document.getElementById('pom-confirm-body').textContent = message;
+  overlay.style.display = 'flex';
+  document.getElementById('pom-confirm-cancel').onclick = () => { overlay.style.display = 'none'; };
+  document.getElementById('pom-confirm-ok').onclick    = () => { overlay.style.display = 'none'; onConfirm(); };
+}
+
 // ── UI Builders ───────────────────────────────────────────────────────────────
 
 function renderNavPanel(activePage, project) {
-  const highlight = getNavHighlight(project);
-
   const link = (key, label, href) => {
-    const isActive    = activePage === key;
-    const isHighlight = !isActive && highlight === key;
-    let cls = 'nav-btn ';
-    if (isActive)         cls += 'active';
-    else if (isHighlight) cls += 'next';
-    else                  cls += 'inactive';
+    const cls = 'nav-btn ' + (activePage === key ? 'active' : 'inactive');
     return `<a href="${href}" class="${cls}">${label}</a>`;
   };
 

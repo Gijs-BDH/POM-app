@@ -26,6 +26,7 @@
     }
     .dl-btn:hover { border-color: #7C3AED; color: #7C3AED; }
     .optie-card-besluit {
+      position: relative;
       border: 1.5px solid #E5E7EB; border-radius: 1rem;
       overflow: hidden; background: white; flex: 1; min-width: 0;
     }
@@ -45,6 +46,21 @@
       display: inline-block; font-size: 0.55rem; color: #7C3AED;
       transition: transform 0.15s; line-height: 1;
     }
+    #cmp-scroll {
+      overflow-x: auto;
+      padding-top: 0.625rem; /* space for scrollbar above content */
+      transform: scaleY(-1); /* flip container: scrollbar moves to top */
+      scrollbar-width: thin;
+      scrollbar-color: #DDD6FE #F3F4F6;
+    }
+    #cmp-scroll-inner {
+      transform: scaleY(-1); /* flip content back to normal */
+    }
+    #cmp-scroll::-webkit-scrollbar { height: 5px; }
+    #cmp-scroll::-webkit-scrollbar-track { background: #F3F4F6; border-radius: 99px; }
+    #cmp-scroll::-webkit-scrollbar-thumb { background: #DDD6FE; border-radius: 99px; }
+    #cmp-scroll::-webkit-scrollbar-thumb:hover { background: #7C3AED; }
+    #view-kwaliteit, #view-kosten { overflow: clip; min-width: max-content; }
   </style>
 </head>
 <body class="min-h-screen bg-gray-50 p-8">
@@ -58,9 +74,6 @@
 
       <div class="flex-1 min-w-0 flex flex-col gap-5">
 
-        <!-- Gebouw optie cards -->
-        <div id="optie-cards" class="flex gap-4"></div>
-
         <!-- Controls row: toggle left, download right -->
         <div class="flex items-center justify-between gap-4">
           <div class="flex gap-2">
@@ -73,14 +86,24 @@
           </div>
         </div>
 
-        <!-- Kwaliteit comparison table -->
-        <div id="view-kwaliteit" class="card p-0 overflow-hidden">
-          <div id="kwal-table"></div>
-        </div>
+        <!-- Scrollable area: cards + tables share the same horizontal scroll -->
+        <div id="cmp-scroll">
+          <div id="cmp-scroll-inner" class="flex flex-col gap-5">
 
-        <!-- Kosten comparison table -->
-        <div id="view-kosten" class="card p-0 overflow-hidden hidden">
-          <div id="kost-table"></div>
+            <!-- Gebouw optie cards -->
+            <div id="optie-cards"></div>
+
+            <!-- Kwaliteit comparison table -->
+            <div id="view-kwaliteit" class="card p-0">
+              <div id="kwal-table"></div>
+            </div>
+
+            <!-- Kosten comparison table -->
+            <div id="view-kosten" class="card p-0 hidden">
+              <div id="kost-table"></div>
+            </div>
+
+          </div>
         </div>
 
       </div>
@@ -96,6 +119,7 @@
     document.getElementById('nav-panel').innerHTML = renderNavPanel('besluit', project);
 
     const variants = project.gebouwVarianten || [];
+    const CARD_W = 220; // fixed column width (px) per option — drives cards + table alignment
 
     // Same catalog as gebouw-stap-2
     const OPTIES = [
@@ -144,8 +168,8 @@
         return;
       }
       const n = variants.length;
-      // Align with the comparison tables: 14rem label column + n equal data columns
-      el.style.cssText = `display:grid;grid-template-columns:14rem repeat(${n},1fr);padding:0 1rem;column-gap:0;`;
+      // Fixed-width columns so layout doesn't depend on viewport — enables horizontal scroll
+      el.style.cssText = `display:grid;grid-template-columns:14rem repeat(${n},${CARD_W}px);padding:0 1rem;column-gap:0;min-width:max-content;`;
       // Spacer matching the 14rem label column
       el.appendChild(document.createElement('div'));
       variants.forEach((v, i) => {
@@ -154,9 +178,11 @@
         card.className = 'optie-card-besluit';
         card.style.margin = '0 0.5rem';
         card.innerHTML = `
-          <div class="p-3 border-b border-gray-100">
-            <div class="text-xs text-gray-400">Gebouw Optie #${i + 1}</div>
-            <div class="text-sm font-semibold text-gray-700 truncate">${v.naam}</div>
+          <div class="p-3 border-b border-gray-100 flex items-start justify-between gap-1">
+            <div class="min-w-0">
+              <div class="text-xs text-gray-400">Gebouw Optie #${i + 1}</div>
+              <div class="text-sm font-semibold text-gray-700 truncate">${v.naam}</div>
+            </div>
           </div>
           <div class="p-3">
             <div class="rounded-lg overflow-hidden" style="height:80px;">
@@ -173,6 +199,19 @@
             <span class="metric-pill">${POM_CALC.formatM2(optie.bvo)}</span>
             <span class="metric-pill" style="color:#7C3AED;border-color:#DDD6FE;">${POM_CALC.formatEuro(optie.bouwkosten)}</span>
           </div>` : ''}`;
+        // Delete button (appended so it can reference the variant id via closure)
+        const delBtn = document.createElement('button');
+        delBtn.className = 'variant-delete-btn';
+        delBtn.textContent = '×';
+        delBtn.title = 'Verwijder variant';
+        delBtn.addEventListener('click', () => {
+          showConfirm('Deze variant wordt permanent verwijderd en kan niet worden hersteld.', () => {
+            const p = getCurrentProject();
+            updateCurrentProject({ gebouwVarianten: p.gebouwVarianten.filter(gv => gv.id !== v.id) });
+            window.location.reload();
+          });
+        });
+        card.querySelector('.p-3.border-b').appendChild(delBtn);
         el.appendChild(card);
       });
     }
@@ -207,7 +246,7 @@
 
     function renderKwalTable() {
       const n   = Math.max(variants.length, 1);
-      const grd = `grid-template-columns: 14rem repeat(${n}, 1fr);`;
+      const grd = `grid-template-columns: 14rem repeat(${n}, ${CARD_W}px);`;
       let html  = '';
 
       // Header
@@ -296,7 +335,7 @@
 
     function renderKostTable() {
       const n   = Math.max(variants.length, 1);
-      const grd = `grid-template-columns: 14rem repeat(${n}, 1fr);`;
+      const grd = `grid-template-columns: 14rem repeat(${n}, ${CARD_W}px);`;
       let html  = '';
 
       // Header
