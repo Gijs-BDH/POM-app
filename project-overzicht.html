@@ -30,7 +30,10 @@
     <div class="overview-grid">
 
       <!-- ── PVE row ── -->
-      <a id="nav-pve" href="pve-stap-1.html" class="nav-btn">PVE</a>
+      <a id="nav-pve" href="pve-stap-1.html" class="nav-btn">
+        <span>PVE</span>
+        <span id="pve-overzicht-sub" class="hidden" style="font-size:0.65rem;font-weight:400;opacity:0.85;margin-top:0.2rem">overzicht →</span>
+      </a>
 
       <div class="flex flex-col gap-4">
         <!-- PVE variant cards (shown when PVE exists) -->
@@ -144,7 +147,11 @@
     // PVE nav: link to instellingen for the active variant when one exists
     if (hasPve) {
       const activeId = project.activePveId || project.pveVarianten[0].id;
-      document.getElementById('nav-pve').href = 'pve-instellingen.html?id=' + activeId;
+      const navPve = document.getElementById('nav-pve');
+      navPve.href = 'pve-instellingen.html?id=' + activeId;
+      navPve.style.flexDirection = 'column';
+      navPve.style.alignItems = 'flex-start';
+      document.getElementById('pve-overzicht-sub').classList.remove('hidden');
     }
 
     // Gebied nav: link to instellingen for the first gebied when one exists
