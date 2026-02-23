@@ -23,7 +23,7 @@
 <body class="min-h-screen bg-gray-50 p-8">
 
   <div class="max-w-7xl mx-auto">
-    <a href="gebied.html" class="breadcrumb">← Stap 1</a>
+    <a href="project-overzicht.html" class="breadcrumb">← Project overzicht</a>
     <h1 id="project-titel" class="page-title"></h1>
     <div id="step-indicator" class="mb-6"></div>
 
@@ -90,6 +90,12 @@
       { key: 'parkeren',       label: 'Parkeren',          color: '#3B82F6' },
     ];
 
+    // Stap-1 reference kavel (read-only dashed boundary)
+    if (variant.geo && variant.geo.length >= 3) {
+      L.polygon(variant.geo, { color: '#7C3AED', fillColor: '#7C3AED',
+        fillOpacity: 0.06, weight: 2, dashArray: '6 4' }).addTo(map);
+    }
+
     // Layer group per tab
     const layers = {};
     TABS.forEach(t => {
@@ -100,12 +106,13 @@
       }
     });
 
-    // Fit map to existing data (only on first visit; subsequent steps restore saved view)
+    // Fit map to existing data (only on first visit; fall back to stap-1 kavel if tabs empty)
     if (!savedView) {
       const allGeo = TABS.flatMap(t => (variant[t.key] && variant[t.key].geo) || []);
-      if (allGeo.length >= 3) {
-        const poly = L.polygon(allGeo);
-        map.fitBounds(poly.getBounds(), { padding: [40, 40] });
+      const fitGeo = allGeo.length >= 3 ? allGeo
+                   : (variant.geo && variant.geo.length >= 3 ? variant.geo : null);
+      if (fitGeo) {
+        map.fitBounds(L.polygon(fitGeo).getBounds(), { padding: [40, 40] });
       }
     }
 

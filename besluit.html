@@ -5,36 +5,84 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>POM – Besluit</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="css/styles.css"/>
+  <style>
+    .metric-pill {
+      display: inline-flex; align-items: center;
+      font-size: 0.7rem; border-radius: 99px;
+      padding: 0.18rem 0.5rem; border: 1px solid #E5E7EB; color: #6B7280;
+    }
+    .view-pill {
+      padding: 0.45rem 1.4rem; border-radius: 99px;
+      border: 1.5px solid #E5E7EB; font-size: 0.85rem; font-weight: 500;
+      cursor: pointer; background: white; color: #9CA3AF; transition: all 0.15s;
+    }
+    .view-pill.active { background: #7C3AED; color: white; border-color: #7C3AED; }
+    .dl-btn {
+      padding: 0.45rem 1.1rem; border-radius: 99px;
+      border: 1.5px solid #E5E7EB; background: white;
+      font-size: 0.78rem; color: #374151; cursor: pointer;
+      transition: border-color 0.15s, color 0.15s; white-space: nowrap;
+    }
+    .dl-btn:hover { border-color: #7C3AED; color: #7C3AED; }
+    .optie-card-besluit {
+      border: 1.5px solid #E5E7EB; border-radius: 1rem;
+      overflow: hidden; background: white; flex: 1; min-width: 0;
+    }
+    .cmp-row {
+      display: grid; align-items: center;
+      border-bottom: 1px solid #F3F4F6; padding: 0.4rem 1rem;
+    }
+    .cmp-row:last-child { border-bottom: none; }
+    .cmp-row.header { background: #F9FAFB; padding: 0.55rem 1rem; }
+    .cmp-row.section-hdr {
+      background: #F5F3FF; padding: 0.5rem 1rem;
+      cursor: pointer; transition: background 0.12s;
+    }
+    .cmp-row.section-hdr:hover { background: #EDE9FE; }
+    .cmp-row.sub-row { background: #FAFAFA; padding: 0.3rem 1rem; }
+    .chev {
+      display: inline-block; font-size: 0.55rem; color: #7C3AED;
+      transition: transform 0.15s; line-height: 1;
+    }
+  </style>
 </head>
 <body class="min-h-screen bg-gray-50 p-8">
 
-  <div class="max-w-5xl mx-auto">
-    <a href="project-overzicht.html" class="text-xs text-gray-400 hover:text-violet-600">← Project overzicht</a>
-    <h1 id="project-titel" class="text-xl font-semibold text-gray-700 mt-1 mb-6"></h1>
+  <div class="max-w-6xl mx-auto">
+    <a href="project-overzicht.html" class="breadcrumb">← Project overzicht</a>
+    <h1 id="project-titel" class="page-title"></h1>
 
     <div class="flex gap-6">
       <div id="nav-panel" class="nav-panel"></div>
 
-      <div class="flex-1 flex flex-col gap-6">
-        <h2 class="text-xl font-semibold text-gray-700">Besluit – PVE Overzicht</h2>
+      <div class="flex-1 min-w-0 flex flex-col gap-5">
 
-        <!-- Summary grid -->
-        <div id="summary-grid" class="grid grid-cols-2 gap-4"></div>
+        <!-- Gebouw optie cards -->
+        <div id="optie-cards" class="flex gap-4"></div>
 
-        <!-- Radar summary -->
-        <div id="radar-section" class="hidden card max-w-md">
-          <h3 class="font-semibold text-gray-700 mb-3">Ambitiekaders</h3>
-          <canvas id="besluit-radar" style="max-height:280px;"></canvas>
+        <!-- Controls row: toggle left, download right -->
+        <div class="flex items-center justify-between gap-4">
+          <div class="flex gap-2">
+            <button class="view-pill active" id="pill-kwaliteit" onclick="setView('kwaliteit')">kwaliteit</button>
+            <button class="view-pill"        id="pill-kosten"    onclick="setView('kosten')">kosten</button>
+          </div>
+          <div class="flex flex-col gap-2 items-end">
+            <button class="dl-btn">Download besluit-document</button>
+            <button class="dl-btn">Download aanvraag documenten</button>
+          </div>
         </div>
 
-        <!-- Placeholder: full besluit -->
-        <div class="info-card max-w-lg">
-          <p class="font-semibold text-violet-700 mb-1">Besluit – Placeholder</p>
-          De volledige besluitvorming (vergelijking varianten, stemming, rapportage) wordt in een latere versie uitgewerkt.
-          Hieronder ziet u een samenvatting van de huidige projectstatus.
+        <!-- Kwaliteit comparison table -->
+        <div id="view-kwaliteit" class="card p-0 overflow-hidden">
+          <div id="kwal-table"></div>
         </div>
+
+        <!-- Kosten comparison table -->
+        <div id="view-kosten" class="card p-0 overflow-hidden hidden">
+          <div id="kost-table"></div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -47,86 +95,269 @@
     document.getElementById('project-titel').textContent = project.naam;
     document.getElementById('nav-panel').innerHTML = renderNavPanel('besluit', project);
 
-    const grid = document.getElementById('summary-grid');
+    const variants = project.gebouwVarianten || [];
 
-    function addCard(title, lines, highlight) {
-      const el = document.createElement('div');
-      el.className = 'card';
-      el.innerHTML = `
-        <h3 class="font-semibold text-gray-700 mb-3">${title}</h3>
-        <div class="flex flex-col gap-1 text-sm text-gray-600">
-          ${lines.map(l => `<div>${l}</div>`).join('')}
-        </div>`;
-      grid.appendChild(el);
+    // Same catalog as gebouw-stap-2
+    const OPTIES = [
+      { id: 'compact',  naam: 'Compact type',   bvo: 2500, bouwkosten: 6250000, tco: 13750000 },
+      { id: 'lineair',  naam: 'Lineair type',   bvo: 2800, bouwkosten: 7000000, tco: 15400000 },
+      { id: 'cluster',  naam: 'Cluster type',   bvo: 3100, bouwkosten: 7750000, tco: 17050000 },
+      { id: 'hof',      naam: 'Hof type',       bvo: 3400, bouwkosten: 8500000, tco: 18700000 },
+      { id: 'toren',    naam: 'Toren type',     bvo: 2200, bouwkosten: 5500000, tco: 12100000 },
+      { id: 'paviljon', naam: 'Paviljoen type', bvo: 3600, bouwkosten: 9000000, tco: 19800000 },
+    ];
+    const getOptie = id => OPTIES.find(o => o.id === id) || null;
+
+    // ── Score helpers ───────────────────────────────────────────────────────────
+    function scoreColor(s) {
+      if (s >= 3.5) return '#10B981';
+      if (s >= 2.5) return '#84CC16';
+      if (s >= 1.5) return '#F97316';
+      return '#EF4444';
+    }
+    function scoreLabel(s) {
+      if (s >= 3.5) return 'Excellent';
+      if (s >= 2.5) return 'Hoog';
+      if (s >= 1.5) return 'Gemiddeld';
+      return 'Laag';
+    }
+    function avg(obj, keys) {
+      if (!obj) return 2;
+      const vals = keys.map(k => obj[k] || 2);
+      return vals.reduce((a, b) => a + b, 0) / vals.length;
+    }
+    function bar(score, h) {
+      const c   = scoreColor(score);
+      const pct = Math.round((score / 4) * 100);
+      return `<div class="px-4">
+        <div class="w-full rounded-full bg-gray-100" style="height:${h}px;">
+          <div style="width:${pct}%;background:${c};height:${h}px;border-radius:99px;min-width:${h}px;"></div>
+        </div>
+      </div>`;
     }
 
-    // Project info
-    addCard('Project', [
-      `<span class="text-gray-400">Naam:</span> ${project.naam}`,
-      `<span class="text-gray-400">Rol:</span> ${project.rol || '—'}`,
-      `<span class="text-gray-400">Fase:</span> ${project.huidigeStap || '—'}`,
-      `<span class="text-gray-400">Gebruiksduur:</span> ${project.gebruiksduur || 40} jaar`,
-    ]);
+    // ── Render optie cards ──────────────────────────────────────────────────────
+    function renderCards() {
+      const el = document.getElementById('optie-cards');
+      if (!variants.length) {
+        el.innerHTML = '<p class="text-sm text-gray-400 py-2">Nog geen gebouw varianten. Ga naar <a href="gebouw.html" class="text-violet-600 hover:underline">Gebouw</a> om te beginnen.</p>';
+        return;
+      }
+      const n = variants.length;
+      // Align with the comparison tables: 14rem label column + n equal data columns
+      el.style.cssText = `display:grid;grid-template-columns:14rem repeat(${n},1fr);padding:0 1rem;column-gap:0;`;
+      // Spacer matching the 14rem label column
+      el.appendChild(document.createElement('div'));
+      variants.forEach((v, i) => {
+        const optie = getOptie(v.geselecteerdeOptie);
+        const card = document.createElement('div');
+        card.className = 'optie-card-besluit';
+        card.style.margin = '0 0.5rem';
+        card.innerHTML = `
+          <div class="p-3 border-b border-gray-100">
+            <div class="text-xs text-gray-400">Gebouw Optie #${i + 1}</div>
+            <div class="text-sm font-semibold text-gray-700 truncate">${v.naam}</div>
+          </div>
+          <div class="p-3">
+            <div class="rounded-lg overflow-hidden" style="height:80px;">
+              <img src="src/assets/img_massstudy.png" class="w-full h-full object-cover"/>
+            </div>
+          </div>
+          <div class="px-3 pb-3">
+            <a href="gebouw-stap-3.html?id=${v.id}"
+               class="btn-primary block w-full text-center"
+               style="font-size:0.72rem;padding:0.35rem 0.5rem;">[zie details]</a>
+          </div>
+          ${optie ? `
+          <div class="px-3 pb-3 pt-2 border-t border-gray-100 flex gap-1 flex-wrap">
+            <span class="metric-pill">${POM_CALC.formatM2(optie.bvo)}</span>
+            <span class="metric-pill" style="color:#7C3AED;border-color:#DDD6FE;">${POM_CALC.formatEuro(optie.bouwkosten)}</span>
+          </div>` : ''}`;
+        el.appendChild(card);
+      });
+    }
 
-    // Stakeholders
-    const sh = project.stakeholders || [];
-    addCard('Stakeholders', sh.length
-      ? sh.map(s => `${s.naam} <span class="text-gray-400">(${s.toegang})</span>`)
-      : ['<span class="text-gray-400">Geen stakeholders toegevoegd</span>']);
+    // ── Kwaliteit table ─────────────────────────────────────────────────────────
+    // Rows that expand show per-slider sub-rows; noExpand rows have only 1 value.
+    const KWAL_ROWS = [
+      { id: 'locatie',                  label: 'Kenmerken locatie',
+        sliders: ['verkeer','parkeren','fietsenstalling','buitenruimte'],
+        sub: { verkeer:'Verkeer', parkeren:'Parkeren', fietsenstalling:'Fietsenstalling', buitenruimte:'Buitenruimte' } },
+      { id: 'kenmerkenSchool',          label: 'Kenmerken school',
+        sliders: ['structuur','aanvullendeFuncties','combinatieFuncties'],
+        sub: { structuur:'Structuur', aanvullendeFuncties:'Aanvullende functies', combinatieFuncties:'Combinatiefuncties' } },
+      { id: 'huisvestingConcept',       label: 'Huisvesting concept',
+        sliders: ['algemeen','ruimtelijkeIndeling','logistiek','gemeenschappelijkeRuimtes','typologieLokalen'],
+        sub: { algemeen:'Algemeen', ruimtelijkeIndeling:'Ruimtelijke indeling', logistiek:'Logistiek', gemeenschappelijkeRuimtes:'Gem. ruimtes', typologieLokalen:'Lokalen' } },
+      { id: 'uitstraling',              label: 'Uitstraling exterieur',
+        sliders: ['exterieur'],
+        sub: { exterieur:'Exterieur' }, noExpand: true },
+      { id: 'uitstraling',              label: 'Uitstraling interieur',
+        sliders: ['interieur'],
+        sub: { interieur:'Interieur' }, noExpand: true },
+      { id: 'vandalismeBestendig',      label: 'Vandalisme bestendig',
+        sliders: ['overzichtEnControle'],
+        sub: { overzichtEnControle:'Overzicht en controle' }, noExpand: true },
+      { id: 'gebruiksvriendelijkheid',  label: 'Gebruiksvriendelijkheid',
+        sliders: ['hoogteverschillen','socialeVeiligheid'],
+        sub: { hoogteverschillen:'Hoogteverschillen', socialeVeiligheid:'Sociale veiligheid' } },
+    ];
 
-    // PVE
-    if (project.pve) {
-      const V = project.pve.voorzieningen;
-      const { totalBVO, bouwkosten, tco } = POM_CALC.calcDashboard(V);
-      const lines = [];
-      if (V.primairOnderwijs.actief) lines.push(`Primair onderwijs: ${V.primairOnderwijs.leerlingen} leerlingen`);
-      if (V.voorschoolseOpvang.actief) lines.push(`Voorschoolse opvang: ${V.voorschoolseOpvang.groepen} groepen`);
-      if (V.sport.actief) lines.push(`Sport: ${V.sport.type}`);
-      lines.push(`Totaal BVO: <strong class="text-violet-600">${POM_CALC.formatM2(totalBVO)}</strong>`);
-      lines.push(`Bouwkosten: <strong>${POM_CALC.formatEuro(bouwkosten)}</strong>`);
-      lines.push(`TCO (50j): <strong>${POM_CALC.formatEuro(tco)}</strong>`);
-      addCard('PVE', lines);
+    const openKwal = new Set();
 
-      // Radar
-      document.getElementById('radar-section').classList.remove('hidden');
-      const DIMS  = ['gezondSchool','duurzameSchool','adaptieveSchool','veiligSchool','digitaleSchool'];
-      const LABELS = ['Gezond','Duurzaam','Adaptief','Veilig','Digitaal'];
-      const scores = POM_CALC.calcAmbitieScores(project.pve.ambities);
-      new Chart(document.getElementById('besluit-radar').getContext('2d'), {
-        type: 'radar',
-        data: {
-          labels: LABELS,
-          datasets: [{
-            label: 'Ambities',
-            data: DIMS.map(d => scores[d]),
-            backgroundColor: 'rgba(96,165,250,0.3)',
-            borderColor: 'rgba(96,165,250,0.9)',
-            borderWidth: 2,
-            pointRadius: 4,
-          },{
-            label: 'Gemiddeld',
-            data: DIMS.map(d => POM_CALC.GEMIDDELDE_AMBITIES[d]),
-            backgroundColor: 'rgba(251,146,60,0.2)',
-            borderColor: 'rgba(251,146,60,0.8)',
-            borderWidth: 2,
-            borderDash: [5,3],
-            pointRadius: 3,
-          }]
-        },
-        options: {
-          scales:{ r:{ min:0,max:100,ticks:{stepSize:25,font:{size:9}},pointLabels:{font:{size:10}} }},
-          plugins:{ legend:{ position:'bottom', labels:{ font:{size:10} } }}
+    function renderKwalTable() {
+      const n   = Math.max(variants.length, 1);
+      const grd = `grid-template-columns: 14rem repeat(${n}, 1fr);`;
+      let html  = '';
+
+      // Header
+      html += `<div class="cmp-row header" style="${grd}">
+        <div class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Categorie</div>
+        ${variants.length
+          ? variants.map((v, i) => `<div class="text-xs font-semibold text-gray-600 text-center">Optie #${i + 1}</div>`).join('')
+          : '<div class="text-xs text-gray-300 text-center">—</div>'}
+      </div>`;
+
+      KWAL_ROWS.forEach(row => {
+        const rowKey    = row.id + '|' + row.label;
+        const isOpen    = openKwal.has(rowKey);
+        const canExpand = !row.noExpand;
+
+        // Main row
+        html += `<div class="cmp-row" style="${grd}${canExpand ? 'cursor:pointer;' : ''}"
+                      ${canExpand ? `onclick="toggleKwal('${row.id}','${row.label}')"` : ''}>
+          <div class="flex items-center gap-1.5">
+            ${canExpand
+              ? `<span class="chev" style="transform:rotate(${isOpen ? '0' : '-90'}deg)">▼</span>`
+              : `<span style="color:#D1D5DB;font-size:0.7rem;line-height:1;">–</span>`}
+            <span class="text-sm text-gray-700">${row.label}</span>
+          </div>
+          ${variants.length
+            ? variants.map(v => {
+                const cat   = (v.kwaliteitsBeoordeling || {})[row.id] || {};
+                return bar(avg(cat, row.sliders), 8);
+              }).join('')
+            : '<div></div>'}
+        </div>`;
+
+        // Sub-rows when expanded
+        if (canExpand && isOpen) {
+          row.sliders.forEach(k => {
+            html += `<div class="cmp-row sub-row" style="${grd}">
+              <div class="text-xs text-gray-400 pl-5">${row.sub[k] || k}</div>
+              ${variants.length
+                ? variants.map(v => {
+                    const cat = (v.kwaliteitsBeoordeling || {})[row.id] || {};
+                    return bar(cat[k] || 2, 6);
+                  }).join('')
+                : '<div></div>'}
+            </div>`;
+          });
         }
       });
-    } else {
-      addCard('PVE', ['<span class="text-gray-400">Nog niet aangemaakt</span>']);
+
+      document.getElementById('kwal-table').innerHTML = html;
     }
 
-    // Gebied
-    const gv = project.gebiedVarianten || [];
-    addCard('Gebieden', gv.length
-      ? gv.map(g => `${g.naam}: <strong>${g.opp.toLocaleString('nl-NL')} m²</strong>`)
-      : ['<span class="text-gray-400">Nog niet aangemaakt</span>']);
+    function toggleKwal(id, label) {
+      const key = id + '|' + label;
+      if (openKwal.has(key)) openKwal.delete(key); else openKwal.add(key);
+      renderKwalTable();
+    }
+
+    // ── Kosten table ────────────────────────────────────────────────────────────
+    const KOST_SECTIONS = [
+      {
+        label: 'Bouwkosten',
+        total: v => { const o = getOptie(v.geselecteerdeOptie); return o ? Math.round(o.bouwkosten * 1.15) : null; },
+        rows: [
+          { label: 'Type gebouw',       fn: v => { const o = getOptie(v.geselecteerdeOptie); return o ? o.naam : '—'; } },
+          { label: 'BVO',               fn: v => { const o = getOptie(v.geselecteerdeOptie); return o ? POM_CALC.formatM2(o.bvo) : '—'; } },
+          { label: 'Bouwkosten',        fn: v => { const o = getOptie(v.geselecteerdeOptie); return o ? POM_CALC.formatEuro(o.bouwkosten) : '—'; } },
+          { label: 'Bouwkosten per m²', fn: v => { const o = getOptie(v.geselecteerdeOptie); return o ? POM_CALC.formatEuro(Math.round(o.bouwkosten / o.bvo)) : '—'; } },
+          { label: 'Inrichtingskosten', fn: v => { const o = getOptie(v.geselecteerdeOptie); return o ? POM_CALC.formatEuro(Math.round(o.bouwkosten * 0.10)) : '—'; } },
+          { label: 'Onvoorzien (5%)',   fn: v => { const o = getOptie(v.geselecteerdeOptie); return o ? POM_CALC.formatEuro(Math.round(o.bouwkosten * 0.05)) : '—'; } },
+          { label: 'Stichtingskosten',  fn: v => { const o = getOptie(v.geselecteerdeOptie); return o ? POM_CALC.formatEuro(Math.round(o.bouwkosten * 1.15)) : '—'; }, bold: true },
+        ]
+      },
+      {
+        label: 'Onderhoudskosten',
+        total: v => { const o = getOptie(v.geselecteerdeOptie); return o ? o.tco : null; },
+        rows: [
+          { label: 'TCO (40 jaar)',          fn: v => { const o = getOptie(v.geselecteerdeOptie); return o ? POM_CALC.formatEuro(o.tco) : '—'; } },
+          { label: 'Exploitatiekosten/jr',   fn: v => { const o = getOptie(v.geselecteerdeOptie); return o ? POM_CALC.formatEuro(Math.round((o.tco - o.bouwkosten) / 40)) : '—'; } },
+          { label: 'Onderhoudskosten/jr',    fn: v => { const o = getOptie(v.geselecteerdeOptie); return o ? POM_CALC.formatEuro(Math.round(o.bouwkosten * 0.01)) : '—'; } },
+          { label: 'Energiekosten/jr',       fn: v => { const o = getOptie(v.geselecteerdeOptie); return o ? POM_CALC.formatEuro(Math.round(o.bvo * 25)) : '—'; } },
+        ]
+      }
+    ];
+
+    const openKost = new Set(['Bouwkosten', 'Onderhoudskosten']);
+
+    function renderKostTable() {
+      const n   = Math.max(variants.length, 1);
+      const grd = `grid-template-columns: 14rem repeat(${n}, 1fr);`;
+      let html  = '';
+
+      // Header
+      html += `<div class="cmp-row header" style="${grd}">
+        <div class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Kostenpost</div>
+        ${variants.length
+          ? variants.map((v, i) => `<div class="text-xs font-semibold text-gray-600 text-center">Optie #${i + 1}</div>`).join('')
+          : '<div class="text-xs text-gray-300 text-center">—</div>'}
+      </div>`;
+
+      KOST_SECTIONS.forEach(section => {
+        const isOpen = openKost.has(section.label);
+
+        html += `<div class="cmp-row section-hdr" style="${grd}" onclick="toggleKost('${section.label}')">
+          <div class="flex items-center gap-1.5">
+            <span class="chev" style="transform:rotate(${isOpen ? '0' : '-90'}deg)">▼</span>
+            <span class="text-sm font-semibold text-violet-700">${section.label}</span>
+          </div>
+          ${variants.length
+            ? variants.map(v => {
+                const tot = section.total(v);
+                return `<div class="text-xs font-semibold text-violet-700 text-center">${tot !== null ? POM_CALC.formatEuro(tot) : '—'}</div>`;
+              }).join('')
+            : '<div></div>'}
+        </div>`;
+
+        if (isOpen) {
+          section.rows.forEach(row => {
+            html += `<div class="cmp-row" style="${grd}">
+              <div class="flex items-center gap-1.5 pl-4">
+                <span style="color:#7C3AED;font-size:0.65rem;">✓</span>
+                <span class="text-xs text-gray-600">${row.label}</span>
+              </div>
+              ${variants.length
+                ? variants.map(v => `<div class="text-xs text-center ${row.bold ? 'font-semibold text-violet-700' : 'text-gray-700'}">${row.fn(v)}</div>`).join('')
+                : '<div></div>'}
+            </div>`;
+          });
+        }
+      });
+
+      document.getElementById('kost-table').innerHTML = html;
+    }
+
+    function toggleKost(label) {
+      if (openKost.has(label)) openKost.delete(label); else openKost.add(label);
+      renderKostTable();
+    }
+
+    // ── View toggle ─────────────────────────────────────────────────────────────
+    function setView(v) {
+      document.getElementById('view-kwaliteit').classList.toggle('hidden', v !== 'kwaliteit');
+      document.getElementById('view-kosten').classList.toggle('hidden',    v !== 'kosten');
+      document.getElementById('pill-kwaliteit').classList.toggle('active', v === 'kwaliteit');
+      document.getElementById('pill-kosten').classList.toggle('active',    v === 'kosten');
+    }
+
+    // ── Init ────────────────────────────────────────────────────────────────────
+    renderCards();
+    renderKwalTable();
+    renderKostTable();
   </script>
 </body>
 </html>

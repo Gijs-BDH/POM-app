@@ -74,11 +74,6 @@
       <a id="nav-gebouw" href="gebouw.html" class="nav-btn">Gebouw</a>
 
       <div class="flex flex-col gap-4">
-        <!-- Gebouw variant cards -->
-        <div id="gebouw-variants-section" class="hidden">
-          <div id="gebouw-variant-row" class="flex gap-4 items-stretch"></div>
-        </div>
-
         <div id="next-gebouw" class="card max-w-xl hidden">
           <div class="flex gap-4 items-start">
             <div id="next-gebouw-text" class="text-sm text-gray-500 flex-1"></div>
@@ -181,12 +176,6 @@
       renderGebiedVariants();
     }
 
-    // Gebouw variants (content column of Gebouw row)
-    if (hasGebouw) {
-      document.getElementById('gebouw-variants-section').classList.remove('hidden');
-      renderGebouwVariants();
-    }
-
     function makeDeleteBtn(onClick) {
       const btn = document.createElement('button');
       btn.className = 'variant-delete-btn';
@@ -235,38 +224,6 @@
       addBtn.href = 'gebied.html';
       addBtn.className = 'pve-new-btn';
       addBtn.title = 'Nieuw gebied';
-      addBtn.textContent = '+';
-      row.appendChild(addBtn);
-    }
-
-    function renderGebouwVariants() {
-      const row = document.getElementById('gebouw-variant-row');
-      row.innerHTML = '';
-      (project.gebouwVarianten || []).forEach(gv => {
-        const card = document.createElement('div');
-        card.className = 'pve-variant-card';
-        const pveNaam    = (project.pveVarianten || []).find(v => v.id === gv.pveId)?.naam || '—';
-        const gebiedNaam = (project.gebiedVarianten || []).find(g => g.id === gv.gebiedId)?.naam || '—';
-        card.innerHTML = `
-          <div class="pve-variant-card-header">${gv.naam}</div>
-          <div class="pve-variant-card-body">
-            <div class="text-xs text-gray-500">
-              <div>PVE: <span class="font-medium text-violet-600">${pveNaam}</span></div>
-              <div>Gebied: <span class="font-medium text-orange-500">${gebiedNaam}</span></div>
-            </div>
-          </div>`;
-        card.addEventListener('click', () => window.location.href = 'gebouw-stap-2.html?id=' + gv.id);
-        card.appendChild(makeDeleteBtn(() => {
-          const p = getCurrentProject();
-          updateCurrentProject({ gebouwVarianten: p.gebouwVarianten.filter(v => v.id !== gv.id) });
-          window.location.reload();
-        }));
-        row.appendChild(card);
-      });
-      const addBtn = document.createElement('a');
-      addBtn.href = 'gebouw.html';
-      addBtn.className = 'pve-new-btn';
-      addBtn.title = 'Nieuw gebouw';
       addBtn.textContent = '+';
       row.appendChild(addBtn);
     }
