@@ -74,6 +74,14 @@
       <a id="nav-gebouw" href="gebouw.html" class="nav-btn">Gebouw</a>
 
       <div class="flex flex-col gap-4">
+        <!-- Gebouw summary card + add button (shown when variants exist) -->
+        <div id="gebouw-summary-section" class="hidden">
+          <div class="flex gap-4 items-stretch">
+            <div id="gebouw-summary-card" class="pve-variant-card"></div>
+            <a href="gebouw.html" class="pve-new-btn" title="Nieuw gebouw">+</a>
+          </div>
+        </div>
+
         <div id="next-gebouw" class="card max-w-xl hidden">
           <div class="flex gap-4 items-start">
             <div id="next-gebouw-text" class="text-sm text-gray-500 flex-1"></div>
@@ -170,6 +178,21 @@
       renderPVEVariants();
     }
 
+    // Gebouw summary card
+    if (hasGebouw) {
+      document.getElementById('gebouw-summary-section').classList.remove('hidden');
+      const n = project.gebouwVarianten.length;
+      const card = document.getElementById('gebouw-summary-card');
+      card.innerHTML = `
+        <div class="pve-variant-card-header">${n} gebouw optie${n !== 1 ? 's' : ''}</div>
+        <div class="pve-variant-card-body">
+          <div class="text-xs text-gray-500">
+            ${project.gebouwVarianten.map(gv => `<div class="truncate">· ${gv.naam}</div>`).join('')}
+          </div>
+        </div>`;
+      card.addEventListener('click', () => window.location.href = 'besluit.html');
+    }
+
     // Gebied variants (content column of Gebied row)
     if (project.gebiedVarianten.length > 0) {
       document.getElementById('gebied-variants-section').classList.remove('hidden');
@@ -181,7 +204,10 @@
       btn.className = 'variant-delete-btn';
       btn.textContent = '×';
       btn.title = 'Verwijder';
-      btn.addEventListener('click', e => { e.stopPropagation(); onClick(); });
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        showConfirm('Deze variant wordt permanent verwijderd en kan niet worden hersteld.', onClick);
+      });
       return btn;
     }
 
