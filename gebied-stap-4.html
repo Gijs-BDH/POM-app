@@ -14,7 +14,7 @@
 <body class="min-h-screen bg-gray-50 p-8">
 
   <div class="max-w-7xl mx-auto">
-    <a href="gebied-stap-3.html" class="breadcrumb" id="back-link">← Stap 3</a>
+    <a href="project-overzicht.html" class="breadcrumb">← Project overzicht</a>
     <h1 id="project-titel" class="page-title"></h1>
     <div id="step-indicator" class="mb-6"></div>
 
@@ -62,7 +62,6 @@
     let variant = (project.gebiedVarianten || []).find(g => g.id === gebiedId);
     if (!variant) { window.location.href = 'project-overzicht.html'; }
 
-    document.getElementById('back-link').href = 'gebied-stap-3.html?id=' + gebiedId;
     document.getElementById('project-titel').textContent = project.naam;
     document.getElementById('step-indicator').innerHTML  = renderStepIndicator(4, 4, ['gebied.html', 'gebied-stap-2.html?id=' + gebiedId, 'gebied-stap-3.html?id=' + gebiedId]);
     document.getElementById('nav-panel').innerHTML       = renderNavPanel('gebied', project);
@@ -86,6 +85,12 @@
       localStorage.setItem(MAP_VIEW_KEY, JSON.stringify({ lat: c.lat, lng: c.lng, zoom: map.getZoom() }));
     });
 
+    // Stap-1 reference kavel (read-only dashed boundary)
+    if (variant.geo && variant.geo.length >= 3) {
+      L.polygon(variant.geo, { color: '#7C3AED', fillColor: '#7C3AED',
+        fillOpacity: 0.06, weight: 2, dashArray: '6 4' }).addTo(map);
+    }
+
     // Context layers from previous steps
     const CTX = [
       { key: 'bouwbaarGebied', color: '#F97316' },
@@ -103,6 +108,11 @@
         if (!hasBounds && !savedView) { map.fitBounds(poly.getBounds(), { padding: [40, 40] }); hasBounds = true; }
       }
     });
+    // Fall back to stap-1 kavel for fitBounds if no CTX layers present
+    if (!hasBounds && !savedView && variant.geo && variant.geo.length >= 3) {
+      map.fitBounds(L.polygon(variant.geo).getBounds(), { padding: [40, 40] });
+      hasBounds = true;
+    }
 
     // Tree markers
     const bomenLayer = L.layerGroup().addTo(map);

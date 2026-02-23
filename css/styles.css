@@ -58,20 +58,16 @@ body {
   min-width: 0;
 }
 
-/* ── Project Overzicht grid: columns [phases | content | dashboard] ─────────── */
+/* ── Project Overzicht grid: columns [phases | content] ─────────────────────── */
+/* dashboard column hidden for now – restore by adding `auto` to grid-template-columns */
 .overview-grid {
   display: grid;
-  grid-template-columns: 9rem 1fr auto;
+  grid-template-columns: 9rem 1fr;
   column-gap: 2.5rem;
   row-gap: 1.5rem;
   align-items: start;
 }
-.overview-grid .dashboard-widget {
-  grid-column: 3;
-  grid-row: 1 / span 4;
-  align-self: stretch;
-  justify-content: flex-end;
-}
+.overview-grid .dashboard-widget { display: none; }
 
 /* ── Page layout: no sidebar, full content ─────────────────────────────────── */
 .page-full {
