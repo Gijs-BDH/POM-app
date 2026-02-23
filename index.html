@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>POM – Welkom</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body class="flex items-center justify-center min-h-screen bg-gray-50">
+
+  <!-- Welkom scherm -->
+  <div id="welkom" class="flex flex-col items-center gap-10 text-center">
+    <h1 class="text-5xl font-light text-gray-700 tracking-wide">Welkom</h1>
+    <div class="flex gap-6">
+      <a href="nieuw-project-1.html">
+        <button class="btn-primary text-base px-8 py-3 rounded-xl">Nieuw Project</button>
+      </a>
+      <button onclick="showProjects()" class="btn-secondary text-base px-8 py-3 rounded-xl">Bestaand Project</button>
+    </div>
+  </div>
+
+  <!-- Bestaande projecten overlay -->
+  <div id="project-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div class="card w-full max-w-lg mx-4">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-semibold text-gray-800">Bestaande projecten</h2>
+        <button onclick="hideProjects()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+      </div>
+      <div id="project-list" class="flex flex-col gap-3 max-h-80 overflow-y-auto pr-1"></div>
+      <p id="no-projects" class="hidden text-gray-400 text-sm text-center py-6">Nog geen projecten aangemaakt.</p>
+    </div>
+  </div>
+
+  <script src="js/state.js"></script>
+  <script>
+    function showProjects() {
+      const projects = getAllProjects();
+      const list = document.getElementById('project-list');
+      const empty = document.getElementById('no-projects');
+      list.innerHTML = '';
+
+      if (projects.length === 0) {
+        empty.classList.remove('hidden');
+      } else {
+        empty.classList.add('hidden');
+        projects.sort((a, b) => b.createdAt - a.createdAt).forEach(p => {
+          const date = new Date(p.createdAt).toLocaleDateString('nl-NL');
+          const status = p.pve
+            ? (p.gebiedVarianten.length ? 'Gebied ✓' : 'PVE ✓')
+            : 'In voorbereiding';
+          const item = document.createElement('div');
+          item.className = 'project-list-item';
+          item.style.cursor = 'pointer';
+          item.innerHTML = `
+            <div>
+              <div class="font-semibold text-gray-800">${p.naam}</div>
+              <div class="text-xs text-gray-400 mt-0.5">${p.rol || '—'} &bull; ${date}</div>
+            </div>
+            <span class="text-xs bg-violet-100 text-violet-600 px-2 py-0.5 rounded-full font-medium">${status}</span>`;
+          item.addEventListener('click', () => {
+            setCurrentId(p.id);
+            window.location.href = 'project-overzicht.html';
+          });
+          list.appendChild(item);
+        });
+      }
+      document.getElementById('project-modal').classList.remove('hidden');
+    }
+
+    function hideProjects() {
+      document.getElementById('project-modal').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>

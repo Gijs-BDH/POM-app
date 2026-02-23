@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>POM – Gebied</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <style>
+    #map { height: 520px; border-radius: 0.75rem; }
+  </style>
+</head>
+<body class="min-h-screen bg-gray-50 p-8">
+
+  <div class="max-w-6xl mx-auto">
+    <a href="project-overzicht.html" class="breadcrumb">← Project overzicht</a>
+    <h1 id="project-titel" class="page-title"></h1>
+    <div id="step-indicator" class="mb-6"></div>
+
+    <div class="flex gap-6">
+      <div id="nav-panel" class="nav-panel"></div>
+
+      <div class="flex-1 relative">
+        <div id="map"></div>
+
+        <!-- Floating card centered on map -->
+        <div class="absolute inset-0 flex items-center justify-center" style="pointer-events:none;">
+          <div class="card shadow-2xl w-full max-w-md" style="pointer-events:auto;">
+            <div class="flex gap-5 items-start">
+
+              <!-- Avatar + description -->
+              <div class="flex flex-col items-center gap-3 w-36 flex-shrink-0">
+                <div class="w-24 h-24 rounded-full border-2 border-gray-300 flex flex-col items-center justify-center bg-gray-50">
+                  <span class="text-xs font-semibold text-gray-600 text-center leading-tight">stedenbouw<br>beleid</span>
+                  <svg class="w-7 h-7 text-gray-400 mt-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+                  </svg>
+                </div>
+                <p class="text-xs text-gray-500 text-center leading-relaxed">Beleidsmedewerker stedenbouw kan hier de stedenbouwkundige kaders opgeven</p>
+              </div>
+
+              <!-- Action buttons -->
+              <div class="flex flex-col gap-2.5 flex-1">
+                <button onclick="kiesAanpak('simpel')"           class="btn-primary w-full">Simpele invoer</button>
+                <button onclick="kiesAanpak('stedenbouwkundig')" class="btn-primary w-full">Vraag stedenbouwkundige</button>
+                <button onclick="kiesAanpak('kavelpaspoort')"    class="btn-primary w-full">Laad kavelpaspoort in</button>
+                <button onclick="kiesAanpak('plan')"             class="btn-primary w-full">Laad plan in</button>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/state.js"></script>
+  <script>
+    const project = getCurrentProject();
+    if (!project) { window.location.href = 'index.html'; }
+
+    document.getElementById('project-titel').textContent = project.naam;
+    document.getElementById('step-indicator').innerHTML  = renderStepIndicator(1, 4);
+    document.getElementById('nav-panel').innerHTML       = renderNavPanel('gebied', project);
+
+    const MAP_VIEW_KEY = 'pom_map_view_gebied_' + project.id;
+    const savedView = JSON.parse(localStorage.getItem(MAP_VIEW_KEY) || 'null');
+    const map = L.map('map').setView(
+      savedView ? [savedView.lat, savedView.lng] : [52.2, 5.3],
+      savedView ? savedView.zoom : 8
+    );
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19
+    }).addTo(map);
+    map.on('moveend', () => {
+      const c = map.getCenter();
+      localStorage.setItem(MAP_VIEW_KEY, JSON.stringify({ lat: c.lat, lng: c.lng, zoom: map.getZoom() }));
+    });
+
+    // Show existing polygons as context
+    (project.gebiedVarianten || []).forEach(g => {
+      const geo = (g.bouwbaarGebied && g.bouwbaarGebied.geo.length >= 3)
+                  ? g.bouwbaarGebied.geo
+                  : (g.geo && g.geo.length >= 3 ? g.geo : null);
+      if (geo) {
+        L.polygon(geo, { color: '#F97316', fillColor: '#F97316', fillOpacity: 0.25, weight: 2 }).addTo(map);
+      }
+    });
+
+    function kiesAanpak(mode) {
+      const variant = createNewGebiedVariant();
+      updateGebiedVariantById(variant.id, { stedenbouwbeleid: { mode, goedgekeurd: false } });
+      window.location.href = 'gebied-stap-2.html?id=' + variant.id;
+    }
+  </script>
+</body>
+</html>

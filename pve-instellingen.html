@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>POM – PVE Instellingen</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <style>
+    .dim-lbl {
+      font-size:0.7rem; padding:0.25rem 0.6rem; border-radius:99px;
+      border:1.5px solid #D1D5DB; background:white; color:#6B7280;
+      cursor:pointer; transition:all 0.15s;
+    }
+    .dim-lbl.active { background:#7C3AED; color:white; border-color:#7C3AED; }
+    .dim-lbl:hover:not(.active) { border-color:#7C3AED; color:#7C3AED; }
+    .cluster-wrap { display:inline-flex; flex-direction:column; align-items:center; gap:0.5rem; vertical-align:top; margin:0.5rem; }
+    .rooms-row { display:flex; flex-wrap:wrap; gap:0.5rem; justify-content:center; }
+  </style>
+</head>
+<body class="min-h-screen bg-gray-50 p-8">
+
+  <div class="max-w-4xl mx-auto flex flex-col gap-6">
+
+    <!-- Header -->
+    <div>
+      <a href="project-overzicht.html" class="breadcrumb">← Project overzicht</a>
+      <h1 class="page-title">PVE Instellingen</h1>
+    </div>
+
+    <!-- ── Section 1: Variant naam ─────────────────────────────────────────── -->
+    <div class="card flex flex-col gap-4">
+      <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Variant</h2>
+      <div class="form-row">
+        <label>Naam</label>
+        <input id="variant-naam" type="text" class="input-field" placeholder="PVE variant naam"/>
+      </div>
+    </div>
+
+    <!-- ── Section 2: Voorzieningen ────────────────────────────────────────── -->
+    <div class="card flex flex-col gap-4">
+      <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Voorzieningen</h2>
+
+      <div id="card-po" class="selcard" onclick="toggleCard('po')">
+        <div class="selcard-header">Primair onderwijs <span id="arrow-po" class="text-sm">▼</span></div>
+        <div id="body-po" class="selcard-body hidden">
+          <div class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+            <label class="form-label self-center">Aantal leerlingen</label>
+            <div class="flex items-center gap-2">
+              <input id="po-leerlingen" type="number" class="input-field w-24" value="400" oninput="updatePO()"/>
+            </div>
+            <label class="form-label self-center">BVO</label>
+            <div class="flex items-center gap-2">
+              <span id="po-bvo-calc" class="font-semibold text-violet-700 w-20">2 255 m²</span>
+              <input id="po-bvo-hand" type="number" placeholder="handmatig" class="input-field w-28 text-xs" oninput="updateTotaal()"/>
+            </div>
+            <label class="form-label self-center">Kleuterplein</label>
+            <div class="flex items-center gap-2">
+              <span id="po-kleuter-calc" class="font-semibold text-violet-700 w-20">900 m²</span>
+              <input id="po-kleuter-hand" type="number" placeholder="handmatig" class="input-field w-28 text-xs"/>
+            </div>
+            <label class="form-label self-center">Kinderplein</label>
+            <div class="flex items-center gap-2">
+              <span id="po-kinder-calc" class="font-semibold text-violet-700 w-20">1 400 m²</span>
+              <input id="po-kinder-hand" type="number" placeholder="handmatig" class="input-field w-28 text-xs"/>
+            </div>
+            <label class="form-label self-center">Fietsenstalling</label>
+            <div class="flex items-center gap-2">
+              <span id="po-fietsen-calc" class="font-semibold text-violet-700 w-20">300 fietsen</span>
+              <input id="po-fietsen-hand" type="number" placeholder="handmatig" class="input-field w-28 text-xs"/>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="card-vs" class="selcard" onclick="toggleCard('vs')">
+        <div class="selcard-header">Voorschoolse opvang <span id="arrow-vs" class="text-sm">▼</span></div>
+        <div id="body-vs" class="selcard-body hidden">
+          <div class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+            <label class="form-label self-center">Aantal groepen</label>
+            <div class="flex items-center gap-2">
+              <input id="vs-groepen" type="number" class="input-field w-24" value="2" oninput="updateVS()"/>
+            </div>
+            <label class="form-label self-center">BVO</label>
+            <div class="flex items-center gap-2">
+              <span id="vs-bvo-calc" class="font-semibold text-violet-700 w-20">230 m²</span>
+              <input id="vs-bvo-hand" type="number" placeholder="handmatig" class="input-field w-28 text-xs" oninput="updateTotaal()"/>
+            </div>
+            <label class="form-label self-center">Plein</label>
+            <div class="flex items-center gap-2">
+              <span id="vs-plein-calc" class="font-semibold text-violet-700 w-20">100 m²</span>
+              <input id="vs-plein-hand" type="number" placeholder="handmatig" class="input-field w-28 text-xs"/>
+            </div>
+            <label class="form-label self-center">Fietsenstalling</label>
+            <div class="flex items-center gap-2">
+              <span id="vs-fietsen-calc" class="font-semibold text-violet-700 w-20">20 fietsen</span>
+              <input id="vs-fietsen-hand" type="number" placeholder="handmatig" class="input-field w-28 text-xs"/>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="card-sp" class="selcard" onclick="toggleCard('sp')">
+        <div class="selcard-header">Sport <span id="arrow-sp" class="text-sm">▼</span></div>
+        <div id="body-sp" class="selcard-body hidden">
+          <div class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+            <label class="form-label self-center">Type</label>
+            <select id="sp-type" class="select-field w-44" onclick="event.stopPropagation()" onchange="updateSP()">
+              <option value="gymzaal">Gymzaal (600 m²)</option>
+              <option value="sportzaal">Sportzaal (1 200 m²)</option>
+              <option value="sporthal">Sporthal (2 400 m²)</option>
+            </select>
+            <label class="form-label self-center">BVO</label>
+            <div class="flex items-center gap-2">
+              <span id="sp-bvo-calc" class="font-semibold text-violet-700 w-20">600 m²</span>
+              <input id="sp-bvo-hand" type="number" placeholder="handmatig" class="input-field w-28 text-xs" oninput="updateTotaal()"/>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end items-center gap-3 pt-1 text-sm text-gray-600">
+        <span>Totaal BVO:</span>
+        <span id="totaal-bvo" class="font-bold text-violet-600 text-base">0 m²</span>
+      </div>
+    </div>
+
+    <!-- ── Section 3: Ambitiekaders ────────────────────────────────────────── -->
+    <div class="card flex flex-col gap-5">
+      <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Ambitiekaders</h2>
+
+      <div class="flex gap-6 items-start">
+        <!-- Radar chart + dimension buttons -->
+        <div class="flex-1 flex flex-col gap-4">
+          <canvas id="radar-chart" style="max-height:320px;"></canvas>
+          <div class="flex flex-wrap gap-2 justify-center">
+            <button onclick="selectDimensie('gezondSchool')"    id="dim-gezondSchool"    class="dim-lbl">Gezonde school</button>
+            <button onclick="selectDimensie('duurzameSchool')"  id="dim-duurzameSchool"  class="dim-lbl">Duurzame school</button>
+            <button onclick="selectDimensie('adaptieveSchool')" id="dim-adaptieveSchool" class="dim-lbl">Adaptieve school</button>
+            <button onclick="selectDimensie('veiligSchool')"    id="dim-veiligSchool"    class="dim-lbl">Veilige school</button>
+            <button onclick="selectDimensie('digitaleSchool')"  id="dim-digitaleSchool"  class="dim-lbl">Digitale school</button>
+          </div>
+        </div>
+
+        <!-- Ambitie settings panel -->
+        <div class="w-64 flex-shrink-0 flex flex-col gap-3">
+          <h3 id="ambitie-titel" class="text-sm font-semibold text-gray-700 capitalize"></h3>
+          <div id="ambitie-lijst" class="flex flex-col gap-3"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Section 4: Ruimtestaat / Vlekkenplan ─────────────────────────────── -->
+    <div class="card flex flex-col gap-4">
+      <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Ruimtestaat</h2>
+
+      <div id="canvas" class="flex flex-wrap items-start content-start gap-3 min-h-48 bg-gray-50 rounded-xl p-4">
+        <!-- clusters rendered here -->
+      </div>
+
+      <div class="flex items-center gap-3 pt-4 border-t border-gray-100">
+        <div class="add-btn" onclick="openNieuwCluster()" style="width:36px;height:36px;font-size:1.3rem;">+</div>
+        <span class="text-sm text-gray-400">Nieuw cluster toevoegen</span>
+      </div>
+    </div>
+
+    <!-- ── Section 5: Planning ──────────────────────────────────────────────── -->
+    <div class="card flex flex-col gap-5">
+      <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Planning</h2>
+
+      <div class="flex items-start justify-center gap-0">
+        <div class="planning-step">
+          <div class="planning-pill active">Definitie fase</div>
+          <div class="text-xs text-gray-400 mt-1 text-center">7 weken</div>
+        </div>
+        <div class="flex items-center pt-4 px-1"><span class="text-gray-300 text-lg">→</span></div>
+        <div class="planning-step">
+          <div class="planning-pill">Uitvraag</div>
+          <div class="text-xs text-gray-400 mt-1 text-center">2 maand</div>
+        </div>
+        <div class="flex items-center pt-4 px-1"><span class="text-gray-300 text-lg">→</span></div>
+        <div class="planning-step">
+          <div class="planning-pill">Uitwerking</div>
+          <div class="text-xs text-gray-400 mt-1 text-center">1 jaar</div>
+        </div>
+        <div class="flex items-center pt-4 px-1"><span class="text-gray-300 text-lg">→</span></div>
+        <div class="planning-step">
+          <div class="planning-pill">Oplevering</div>
+          <div class="text-xs text-gray-400 mt-1 text-center">2 jaar</div>
+        </div>
+        <div class="flex items-center pt-4 px-1"><span class="text-gray-300 text-lg">→</span></div>
+        <div class="planning-step">
+          <div class="planning-pill">Gebruik</div>
+          <div class="text-xs text-gray-400 mt-1 text-center">50 jaar</div>
+        </div>
+      </div>
+
+      <!-- <div class="flex items-center gap-3 pt-3 border-t border-gray-100">
+        <input type="checkbox" id="planning-afgerond" class="w-4 h-4 accent-violet-600"/>
+        <label for="planning-afgerond" class="text-sm text-gray-600 cursor-pointer">PVE afgerond</label>
+        <span id="planning-datum" class="text-xs text-gray-400 ml-2"></span>
+      </div> -->
+    </div>
+
+    <!-- ── Footer actions ────────────────────────────────────────────────── -->
+    <div class="flex justify-end gap-3 pb-4">
+      <a href="project-overzicht.html" class="btn-ghost px-6 py-2">Annuleren</a>
+      <button onclick="opslaanInstellingen()" class="btn-primary px-6 py-2">Opslaan</button>
+    </div>
+  </div>
+
+  <!-- Modal: Nieuw cluster -->
+  <div id="modal-cluster" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div class="card w-80">
+      <h3 class="text-base font-semibold text-gray-700 mb-4">nieuw cluster</h3>
+      <div class="flex gap-3">
+        <input id="cluster-naam" type="text" class="input-field flex-1" placeholder="voorbeeld"/>
+        <button onclick="maakCluster()" class="btn-primary px-4">Maak</button>
+      </div>
+      <button onclick="closeModal('modal-cluster')" class="mt-3 text-xs text-gray-400 hover:text-gray-600">Annuleer</button>
+    </div>
+  </div>
+
+  <!-- Modal: Nieuwe ruimte -->
+  <div id="modal-ruimte" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div class="card w-80">
+      <h3 class="text-base font-semibold text-gray-700 mb-4">nieuwe ruimte</h3>
+      <input type="hidden" id="ruimte-cluster-idx"/>
+      <div class="flex flex-col gap-3">
+        <div class="flex items-center gap-3">
+          <label class="text-sm text-gray-500 w-16 text-right">Naam</label>
+          <input id="ruimte-naam" type="text" class="input-field flex-1" value="lokaal"/>
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="text-sm text-gray-500 w-16 text-right">Aantal</label>
+          <input id="ruimte-aantal" type="number" class="input-field w-24" value="1" min="1"/>
+        </div>
+      </div>
+      <div class="flex gap-2 mt-4">
+        <button onclick="maakRuimte()" class="btn-primary flex-1">Maak</button>
+        <button onclick="closeModal('modal-ruimte')" class="btn-ghost">Annuleer</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/state.js"></script>
+  <script src="js/calculations.js"></script>
+  <script>
+    const params    = new URLSearchParams(window.location.search);
+    const variantId = params.get('id');
+    const project   = getCurrentProject();
+    if (!project) { window.location.href = 'index.html'; }
+
+    const variant = variantId
+      ? project.pveVarianten.find(v => v.id === variantId)
+      : getActivePveVariant();
+    if (!variant) { window.location.href = 'project-overzicht.html'; }
+
+    if (variantId && project.activePveId !== variantId) {
+      setActivePveId(variantId);
+    }
+
+    // Working copies
+    const V       = JSON.parse(JSON.stringify(variant.voorzieningen));
+    let ambities  = JSON.parse(JSON.stringify(variant.ambities));
+    let clusters  = (variant.ruimtestaat && variant.ruimtestaat.data && variant.ruimtestaat.data.clusters)
+                    ? JSON.parse(JSON.stringify(variant.ruimtestaat.data.clusters))
+                    : [];
+
+    // ── Variant naam ───────────────────────────────────────────────────────
+    document.getElementById('variant-naam').value = variant.naam || '';
+
+    // ── Planning init ──────────────────────────────────────────────────────
+    const planningAfgerond = variant.planning && variant.planning.afgerond;
+    const planningAfgerondEl = document.getElementById('planning-afgerond');
+    if (planningAfgerondEl) {
+      planningAfgerondEl.checked = !!planningAfgerond;
+      if (planningAfgerond && variant.planning.datum) {
+        document.getElementById('planning-datum').textContent =
+          'Afgerond op ' + new Date(variant.planning.datum).toLocaleDateString('nl-NL');
+      }
+    }
+
+    // ── Voorzieningen ──────────────────────────────────────────────────────
+    function toggleCard(key) {
+      const card  = document.getElementById('card-' + key);
+      const body  = document.getElementById('body-' + key);
+      const arrow = document.getElementById('arrow-' + key);
+      const isSelected = card.classList.contains('selected');
+      if (isSelected) {
+        card.classList.remove('selected'); body.classList.add('hidden'); arrow.textContent = '▼';
+        V[keyToField(key)].actief = false;
+      } else {
+        card.classList.add('selected'); body.classList.remove('hidden'); arrow.textContent = '▲';
+        V[keyToField(key)].actief = true;
+      }
+      updateTotaal();
+    }
+
+    function keyToField(k) {
+      return { po: 'primairOnderwijs', vs: 'voorschoolseOpvang', sp: 'sport' }[k];
+    }
+
+    function updatePO() {
+      const ll = parseInt(document.getElementById('po-leerlingen').value) || 0;
+      document.getElementById('po-bvo-calc').textContent     = POM_CALC.formatM2(POM_CALC.calcPrimairBVO(ll));
+      document.getElementById('po-kleuter-calc').textContent = POM_CALC.formatM2(POM_CALC.calcKleuterplein(ll));
+      document.getElementById('po-kinder-calc').textContent  = POM_CALC.formatM2(POM_CALC.calcKinderplein(ll));
+      document.getElementById('po-fietsen-calc').textContent = POM_CALC.calcFietsenstalling(ll) + ' fietsen';
+      updateTotaal();
+    }
+
+    function updateVS() {
+      const gr = parseInt(document.getElementById('vs-groepen').value) || 0;
+      document.getElementById('vs-bvo-calc').textContent     = POM_CALC.formatM2(POM_CALC.calcVoorschoolseBVO(gr));
+      document.getElementById('vs-plein-calc').textContent   = POM_CALC.formatM2(POM_CALC.calcVoorschoolsePlein(gr));
+      document.getElementById('vs-fietsen-calc').textContent = POM_CALC.calcVoorschoolseFietsen(gr) + ' fietsen';
+      updateTotaal();
+    }
+
+    function updateSP() {
+      document.getElementById('sp-bvo-calc').textContent =
+        POM_CALC.formatM2(POM_CALC.calcSportBVO(document.getElementById('sp-type').value));
+      updateTotaal();
+    }
+
+    function parseManual(id) {
+      const v = document.getElementById(id).value;
+      return v ? parseInt(v) : null;
+    }
+
+    function buildVoorzeningenFromInputs() {
+      const po = V.primairOnderwijs;
+      po.leerlingen               = parseInt(document.getElementById('po-leerlingen').value) || 400;
+      po.bvoHandmatig             = parseManual('po-bvo-hand');
+      po.kleuterpleinHandmatig    = parseManual('po-kleuter-hand');
+      po.kinderpleinHandmatig     = parseManual('po-kinder-hand');
+      po.fietsenstallingHandmatig = parseManual('po-fietsen-hand');
+      const vs = V.voorschoolseOpvang;
+      vs.groepen              = parseInt(document.getElementById('vs-groepen').value) || 2;
+      vs.bvoHandmatig         = parseManual('vs-bvo-hand');
+      vs.pleinHandmatig       = parseManual('vs-plein-hand');
+      vs.fietsenstallingHandmatig = parseManual('vs-fietsen-hand');
+      const sp = V.sport;
+      sp.type         = document.getElementById('sp-type').value;
+      sp.bvoHandmatig = parseManual('sp-bvo-hand');
+    }
+
+    function updateTotaal() {
+      buildVoorzeningenFromInputs();
+      document.getElementById('totaal-bvo').textContent = POM_CALC.formatM2(POM_CALC.calcTotalBVO(V));
+    }
+
+    (function initVoorzieningen() {
+      const po = V.primairOnderwijs;
+      const vs = V.voorschoolseOpvang;
+      const sp = V.sport;
+      document.getElementById('po-leerlingen').value = po.leerlingen;
+      if (po.bvoHandmatig)             document.getElementById('po-bvo-hand').value      = po.bvoHandmatig;
+      if (po.kleuterpleinHandmatig)    document.getElementById('po-kleuter-hand').value  = po.kleuterpleinHandmatig;
+      if (po.kinderpleinHandmatig)     document.getElementById('po-kinder-hand').value   = po.kinderpleinHandmatig;
+      if (po.fietsenstallingHandmatig) document.getElementById('po-fietsen-hand').value  = po.fietsenstallingHandmatig;
+      document.getElementById('vs-groepen').value = vs.groepen;
+      if (vs.bvoHandmatig)             document.getElementById('vs-bvo-hand').value   = vs.bvoHandmatig;
+      if (vs.pleinHandmatig)           document.getElementById('vs-plein-hand').value = vs.pleinHandmatig;
+      if (vs.fietsenstallingHandmatig) document.getElementById('vs-fietsen-hand').value = vs.fietsenstallingHandmatig;
+      document.getElementById('sp-type').value = sp.type || 'gymzaal';
+      [['po', po], ['vs', vs], ['sp', sp]].forEach(([k, d]) => {
+        if (d.actief) {
+          document.getElementById('card-' + k).classList.add('selected');
+          document.getElementById('body-' + k).classList.remove('hidden');
+          document.getElementById('arrow-' + k).textContent = '▲';
+        }
+      });
+      updatePO(); updateVS(); updateSP();
+    })();
+
+    // ── Ambitiekaders ──────────────────────────────────────────────────────
+    const DIMS = ['gezondSchool','duurzameSchool','adaptieveSchool','veiligSchool','digitaleSchool'];
+    const DIM_LABELS = {
+      gezondSchool:    'Gezonde school',
+      duurzameSchool:  'Duurzame school',
+      adaptieveSchool: 'Adaptieve school',
+      veiligSchool:    'Veilige school',
+      digitaleSchool:  'Digitale school',
+    };
+    const DIM_ITEMS = {
+      gezondSchool: [
+        { key:'geluid',               label:'Geluid',                        opts:['C','B','A'] },
+        { key:'temperatuur',          label:'Temperatuur',                   opts:['C','B','A'] },
+        { key:'licht',                label:'Licht',                         opts:['C','B','A'] },
+        { key:'lucht',                label:'Lucht',                         opts:['C','B','A'] },
+        { key:'kwaliteitsborging',    label:'Kwaliteitsborging',             opts:['C','B','A'] },
+        { key:'comfortNietOnderwijs', label:'Comfort niet-onderwijsruimten', opts:['C','B','A'] },
+      ],
+      duurzameSchool: [
+        { key:'energiegebruik',       label:'Energiegebruik',       opts:['Goed','Beter','Beste'] },
+        { key:'materiaalgebruik',     label:'Materiaalgebruik',     opts:['Goed','Beter','Beste'] },
+        { key:'watergebruik',         label:'Watergebruik',         opts:['Goed','Beter','Beste'] },
+        { key:'natuurInclusiviteit',  label:'Natuur inclusiviteit', opts:['Goed','Beter','Beste'] },
+        { key:'klimaatAdaptie',       label:'Klimaat adaptie',      opts:['Goed','Beter','Beste'] },
+      ],
+      adaptieveSchool: [
+        { key:'adaptievePlattegrond', label:'Adaptieve plattegrond', opts:['Goed','Beter','Beste'] },
+        { key:'adaptieveTechniek',    label:'Adaptieve techniek',    opts:['Goed','Beter','Beste'] },
+      ],
+      veiligSchool: [
+        { key:'bouwkundigInbraak',    label:'Bouwk. inbraakbestendigheid',    opts:['Goed','Beter','Beste'] },
+        { key:'technischInbraak',     label:'Techn. inbraakbestendigheid',    opts:['Goed','Beter','Beste'] },
+        { key:'bouwkundigVandalisme', label:'Bouwk. vandalismebestendigheid', opts:['Goed','Beter','Beste'] },
+        { key:'technischVandalisme',  label:'Techn. vandalismebestendigheid', opts:['Goed','Beter','Beste'] },
+      ],
+      digitaleSchool: [
+        { key:'technischeIntegratie', label:'Technische integratie', opts:['Goed','Beter','Beste'] },
+      ],
+    };
+
+    let selectedDim = 'gezondSchool';
+    let radarChart;
+
+    function getScores() {
+      return DIMS.map(d => {
+        const items = DIM_ITEMS[d];
+        const vals  = items.map(it => POM_CALC.selectionScore(ambities[d][it.key]));
+        return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+      });
+    }
+
+    function buildChart() {
+      const ctx = document.getElementById('radar-chart').getContext('2d');
+      radarChart = new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: DIMS.map(d => DIM_LABELS[d]),
+          datasets: [
+            {
+              label: 'Gestelde ambities',
+              data: getScores(),
+              backgroundColor: 'rgba(96,165,250,0.3)',
+              borderColor: 'rgba(96,165,250,0.9)',
+              borderWidth: 2,
+              pointBackgroundColor: 'rgba(96,165,250,0.9)',
+              pointRadius: 4,
+            },
+            {
+              label: 'Gemiddelde ambities',
+              data: DIMS.map(d => POM_CALC.GEMIDDELDE_AMBITIES[d]),
+              backgroundColor: 'rgba(251,146,60,0.25)',
+              borderColor: 'rgba(251,146,60,0.8)',
+              borderWidth: 2,
+              borderDash: [5, 3],
+              pointBackgroundColor: 'rgba(251,146,60,0.8)',
+              pointRadius: 3,
+            }
+          ]
+        },
+        options: {
+          scales: { r: { min:0, max:100, ticks:{ stepSize:25, font:{size:9} }, pointLabels:{ font:{size:11} } } },
+          plugins: { legend:{ display:false } },
+          animation: { duration: 200 }
+        }
+      });
+    }
+
+    function updateChart() {
+      radarChart.data.datasets[0].data = getScores();
+      radarChart.update();
+    }
+
+    function selectDimensie(dim) {
+      selectedDim = dim;
+      document.querySelectorAll('.dim-lbl').forEach(el => el.classList.remove('active'));
+      document.getElementById('dim-' + dim).classList.add('active');
+      renderAmbitiePanel();
+    }
+
+    function renderAmbitiePanel() {
+      document.getElementById('ambitie-titel').textContent = DIM_LABELS[selectedDim];
+      const lijst = document.getElementById('ambitie-lijst');
+      lijst.innerHTML = '';
+      DIM_ITEMS[selectedDim].forEach(item => {
+        const current = ambities[selectedDim][item.key];
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between text-sm';
+        row.innerHTML = `
+          <span class="text-gray-600 flex-1 text-sm">${item.label}</span>
+          <div class="flex gap-1">
+            ${item.opts.map(o => `
+              <button class="sel-btn ${current === o ? 'active' : ''}"
+                      onclick="setAmbitie('${selectedDim}','${item.key}','${o}',this)">
+                ${o}
+              </button>`).join('')}
+          </div>`;
+        lijst.appendChild(row);
+      });
+    }
+
+    function setAmbitie(dim, key, val, btn) {
+      ambities[dim][key] = val;
+      btn.closest('.flex.gap-1').querySelectorAll('.sel-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updateChart();
+    }
+
+    buildChart();
+    selectDimensie('gezondSchool');
+
+    // ── Vlekkenplan ────────────────────────────────────────────────────────
+    function renderCanvas() {
+      const canvas = document.getElementById('canvas');
+      canvas.innerHTML = '';
+      clusters.forEach((cluster, ci) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'cluster-wrap';
+        const circle = document.createElement('div');
+        circle.className = 'cluster-circle';
+        circle.style.cssText = 'width:160px;height:160px;padding:12px;';
+        const label = document.createElement('div');
+        label.className = 'text-xs font-semibold text-gray-600 mb-2 text-center';
+        label.textContent = cluster.naam;
+        circle.appendChild(label);
+        const roomsRow = document.createElement('div');
+        roomsRow.className = 'rooms-row';
+        cluster.ruimtes.forEach(r => {
+          for (let n = 0; n < r.aantal; n++) {
+            const rc = document.createElement('div');
+            rc.className = 'room-circle';
+            rc.style.cssText = 'width:44px;height:44px;';
+            rc.textContent = r.naam;
+            rc.title = r.naam;
+            roomsRow.appendChild(rc);
+          }
+        });
+        circle.appendChild(roomsRow);
+        const addRoom = document.createElement('div');
+        addRoom.className = 'add-btn mt-1';
+        addRoom.style.cssText = 'width:28px;height:28px;font-size:1rem;';
+        addRoom.innerHTML = '+';
+        addRoom.onclick = (e) => { e.stopPropagation(); openNieuweRuimte(ci); };
+        circle.appendChild(addRoom);
+        wrap.appendChild(circle);
+        const cname = document.createElement('div');
+        cname.className = 'text-xs text-gray-500 font-medium';
+        cname.textContent = cluster.naam;
+        wrap.appendChild(cname);
+        canvas.appendChild(wrap);
+      });
+    }
+
+    function openNieuwCluster() {
+      document.getElementById('cluster-naam').value = '';
+      document.getElementById('modal-cluster').classList.remove('hidden');
+      setTimeout(() => document.getElementById('cluster-naam').focus(), 50);
+    }
+
+    function maakCluster() {
+      const naam = document.getElementById('cluster-naam').value.trim() || 'Cluster';
+      clusters.push({ naam, ruimtes: [] });
+      renderCanvas();
+      closeModal('modal-cluster');
+    }
+
+    function openNieuweRuimte(ci) {
+      document.getElementById('ruimte-cluster-idx').value  = ci;
+      document.getElementById('ruimte-naam').value   = 'lokaal';
+      document.getElementById('ruimte-aantal').value = 1;
+      document.getElementById('modal-ruimte').classList.remove('hidden');
+      setTimeout(() => document.getElementById('ruimte-naam').focus(), 50);
+    }
+
+    function maakRuimte() {
+      const ci     = parseInt(document.getElementById('ruimte-cluster-idx').value);
+      const naam   = document.getElementById('ruimte-naam').value.trim() || 'ruimte';
+      const aantal = parseInt(document.getElementById('ruimte-aantal').value) || 1;
+      clusters[ci].ruimtes.push({ naam, aantal });
+      renderCanvas();
+      closeModal('modal-ruimte');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { closeModal('modal-cluster'); closeModal('modal-ruimte'); }
+      if (e.key === 'Enter') {
+        if (!document.getElementById('modal-cluster').classList.contains('hidden')) maakCluster();
+        if (!document.getElementById('modal-ruimte').classList.contains('hidden'))  maakRuimte();
+      }
+    });
+
+    renderCanvas();
+
+    // ── Save ───────────────────────────────────────────────────────────────
+    function opslaanInstellingen() {
+      buildVoorzeningenFromInputs();
+      const naam     = document.getElementById('variant-naam').value.trim() || variant.naam;
+      const afgerondEl = document.getElementById('planning-afgerond');
+      const afgerond = afgerondEl ? afgerondEl.checked : false;
+      const planning = afgerond
+        ? { afgerond: true, datum: (variant.planning && variant.planning.datum) || new Date().toISOString() }
+        : { afgerond: false };
+      const existingRS  = variant.ruimtestaat || { type: 'handmatig', vragen: {} };
+      const ruimtestaat = { ...existingRS, data: { clusters } };
+      updatePveVariantById(variant.id, { naam, voorzieningen: V, ambities, ruimtestaat, planning });
+      window.location.href = 'project-overzicht.html';
+    }
+  </script>
+</body>
+</html>

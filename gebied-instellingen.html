@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>POM – Gebiedsinstellingen</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <style>
+    #map { height: 300px; border-radius: 0.75rem; }
+  </style>
+</head>
+<body class="min-h-screen bg-gray-50 p-8">
+
+  <div class="max-w-2xl mx-auto flex flex-col gap-6">
+
+    <!-- Header -->
+    <div>
+      <a href="project-overzicht.html" class="breadcrumb">← Project overzicht</a>
+      <h1 class="page-title">Gebiedsinstellingen</h1>
+    </div>
+
+    <!-- ── Section 1: Variant details ──────────────────────────────────────── -->
+    <div class="card flex flex-col gap-5">
+      <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Variant</h2>
+
+      <div class="form-row">
+        <label>Naam</label>
+        <input id="g-naam" type="text" class="input-field" placeholder="Locatie naam"/>
+      </div>
+
+      <div class="form-row">
+        <label>Oppervlak (m²)</label>
+        <input id="g-opp" type="number" class="input-field" placeholder="0" min="0"/>
+      </div>
+    </div>
+
+    <!-- ── Section 2: Kaart ────────────────────────────────────────────────── -->
+    <div class="card flex flex-col gap-4">
+      <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Locatie</h2>
+      <div id="map"></div>
+      <div class="info-card text-xs">
+        De kaart toont het getekende perceel. Om de grens opnieuw in te tekenen, ga terug naar
+        <a href="gebied.html" class="text-violet-600 hover:underline">Gebied aanmaken</a>.
+      </div>
+    </div>
+
+    <!-- ── Footer actions ────────────────────────────────────────────────── -->
+    <div class="flex justify-end gap-3 pb-4">
+      <a href="project-overzicht.html" class="btn-ghost px-6 py-2">Annuleren</a>
+      <button onclick="opslaanInstellingen()" class="btn-primary px-6 py-2">Opslaan</button>
+    </div>
+
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/state.js"></script>
+  <script>
+    const params    = new URLSearchParams(window.location.search);
+    const gebiedId  = params.get('id');
+    const project   = getCurrentProject();
+    if (!project) { window.location.href = 'index.html'; }
+
+    const gebiedVarianten = project.gebiedVarianten || [];
+    const variant = gebiedId
+      ? gebiedVarianten.find(g => g.id === gebiedId)
+      : gebiedVarianten[0];
+    if (!variant) { window.location.href = 'project-overzicht.html'; }
+
+    // Pre-fill form
+    document.getElementById('g-naam').value = variant.naam || '';
+    document.getElementById('g-opp').value  = variant.opp  || 0;
+
+    // ── Leaflet map (read-only preview) ────────────────────────────────────
+    const map = L.map('map').setView([52.2, 5.3], 8);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19
+    }).addTo(map);
+
+    if (variant.geo && variant.geo.length >= 3) {
+      const poly = L.polygon(variant.geo, {
+        color: '#7C3AED', fillColor: '#7C3AED', fillOpacity: 0.3, weight: 2
+      }).addTo(map);
+      map.fitBounds(poly.getBounds(), { padding: [30, 30] });
+    }
+
+    // ── Save ───────────────────────────────────────────────────────────────
+    function opslaanInstellingen() {
+      const naam = document.getElementById('g-naam').value.trim() || variant.naam;
+      const opp  = parseInt(document.getElementById('g-opp').value) || variant.opp || 0;
+      const updated = gebiedVarianten.map(g =>
+        g.id === variant.id ? { ...g, naam, opp } : g
+      );
+      updateCurrentProject({ gebiedVarianten: updated });
+      window.location.href = 'project-overzicht.html';
+    }
+  </script>
+</body>
+</html>

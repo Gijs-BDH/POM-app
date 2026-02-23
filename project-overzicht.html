@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>POM – Project Overzicht</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body class="min-h-screen bg-gray-50 p-8">
+
+  <div class="max-w-5xl mx-auto">
+
+    <!-- Project title bar -->
+    <div class="mb-8">
+      <a href="index.html" class="breadcrumb">← Welkom</a>
+      <div class="flex items-center gap-2">
+        <h1 id="project-naam" class="page-title">Project</h1>
+        <a href="project-instellingen.html" class="gear-btn" title="Projectinstellingen">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </a>
+      </div>
+      <p id="project-meta" class="page-meta"></p>
+    </div>
+
+    <!-- Overview grid: columns [phases | content | dashboard], rows [PVE | Gebied | Gebouw | Besluit] -->
+    <div class="overview-grid">
+
+      <!-- ── PVE row ── -->
+      <a id="nav-pve" href="pve-stap-1.html" class="nav-btn">PVE</a>
+
+      <div class="flex flex-col gap-4">
+        <!-- PVE variant cards (shown when PVE exists) -->
+        <div id="pve-variants-section" class="hidden">
+          <div id="pve-variant-row" class="flex gap-4 items-stretch"></div>
+        </div>
+
+        <!-- Next step card for PVE row -->
+        <div id="next-pve" class="card max-w-xl hidden">
+          <div class="flex gap-4 items-start">
+            <div id="next-pve-text" class="text-sm text-gray-500 flex-1"></div>
+            <button onclick="gaNaarVolgendeStap('pve-stap-1.html')"
+                    class="btn-primary px-6 py-4 text-base rounded-xl min-w-[120px]">Volgende<br>Stap</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dashboard column – PVE row -->
+      <div id="dashboard-widget" class="dashboard-widget"></div>
+
+      <!-- ── Gebied row ── -->
+      <a id="nav-gebied" href="gebied.html" class="nav-btn">Gebied</a>
+
+      <div class="flex flex-col gap-4">
+        <!-- Gebied variant cards (shown when gebieden exist) -->
+        <div id="gebied-variants-section" class="hidden">
+          <div id="gebied-variant-row" class="flex gap-4 items-stretch"></div>
+        </div>
+
+        <!-- Next step card for Gebied row -->
+        <div id="next-gebied" class="card max-w-xl hidden">
+          <div class="flex gap-4 items-start">
+            <div id="next-gebied-text" class="text-sm text-gray-500 flex-1"></div>
+            <button onclick="gaNaarVolgendeStap('gebied.html')"
+                    class="btn-primary px-6 py-4 text-base rounded-xl min-w-[120px]">Volgende<br>Stap</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Gebouw row ── -->
+      <a id="nav-gebouw" href="gebouw.html" class="nav-btn">Gebouw</a>
+
+      <div class="flex flex-col gap-4">
+        <!-- Gebouw variant cards -->
+        <div id="gebouw-variants-section" class="hidden">
+          <div id="gebouw-variant-row" class="flex gap-4 items-stretch"></div>
+        </div>
+
+        <div id="next-gebouw" class="card max-w-xl hidden">
+          <div class="flex gap-4 items-start">
+            <div id="next-gebouw-text" class="text-sm text-gray-500 flex-1"></div>
+            <button onclick="gaNaarVolgendeStap('gebouw.html')"
+                    class="btn-primary px-6 py-4 text-base rounded-xl min-w-[120px]">Volgende<br>Stap</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Besluit row ── -->
+      <a id="nav-besluit" href="besluit.html" class="nav-btn">Besluit</a>
+
+      <div>
+        <div id="next-besluit" class="card max-w-xl hidden">
+          <div class="flex gap-4 items-start">
+            <div id="next-besluit-text" class="text-sm text-gray-500 flex-1"></div>
+            <button onclick="gaNaarVolgendeStap('besluit.html')"
+                    class="btn-primary px-6 py-4 text-base rounded-xl min-w-[120px]">Volgende<br>Stap</button>
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+  </div>
+
+  <script src="js/state.js"></script>
+  <script src="js/calculations.js"></script>
+  <script>
+    const project = getCurrentProject();
+    if (!project) { window.location.href = 'index.html'; }
+
+    // Header
+    document.getElementById('project-naam').textContent = project.naam;
+    document.getElementById('project-meta').textContent =
+      [project.rol, project.huidigeStap, project.ervaring].filter(Boolean).join(' · ');
+
+    const hasPve = project.pveVarianten && project.pveVarianten.length > 0;
+
+    // Dashboard (PVE row, third column)
+    if (hasPve) {
+      document.getElementById('dashboard-widget').innerHTML = renderDashboard(project);
+    }
+
+    // Nav buttons: set next / done / inactive classes per row
+    const highlight = getNavHighlight(project);
+    const hasGebouw = (project.gebouwVarianten || []).length > 0;
+    const isDone = {
+      pve:     hasPve,
+      gebied:  project.gebiedVarianten.length > 0,
+      gebouw:  hasGebouw,
+      besluit: false,
+    };
+    ['pve', 'gebied', 'gebouw', 'besluit'].forEach(key => {
+      const el = document.getElementById('nav-' + key);
+      const cls = highlight === key ? 'next' : isDone[key] ? 'done' : 'inactive';
+      el.className = 'nav-btn ' + cls;
+    });
+
+    // PVE nav: link to instellingen for the active variant when one exists
+    if (hasPve) {
+      const activeId = project.activePveId || project.pveVarianten[0].id;
+      document.getElementById('nav-pve').href = 'pve-instellingen.html?id=' + activeId;
+    }
+
+    // Gebied nav: link to instellingen for the first gebied when one exists
+    if (project.gebiedVarianten.length > 0) {
+      document.getElementById('nav-gebied').href = 'gebied-instellingen.html?id=' + project.gebiedVarianten[0].id;
+    }
+
+    // Next-step text per phase
+    const nextMap = {
+      pve:     'Begin met de PVE fase om de programma van eisen op te stellen. Selecteer voorzieningen, stel ambities in, en definieer ruimtes.',
+      gebied:  'Voeg een gebiedvariant toe. Teken een locatie op de kaart en sla de gegevens op.',
+      gebouw:  'Configureer de gebouwvariant op basis van het PVE en het geselecteerde gebied.',
+      besluit: 'Bekijk het volledige overzicht en neem een besluit op basis van de samengestelde informatie.',
+    };
+
+    // Show the next-step card only in the highlighted row
+    const nextCard = document.getElementById('next-' + highlight);
+    const nextText = document.getElementById('next-' + highlight + '-text');
+    if (nextCard) {
+      nextCard.classList.remove('hidden');
+      nextText.textContent = nextMap[highlight];
+    }
+
+    function gaNaarVolgendeStap(href) {
+      window.location.href = href;
+    }
+
+    // PVE variants (content column of PVE row)
+    if (hasPve) {
+      document.getElementById('pve-variants-section').classList.remove('hidden');
+      renderPVEVariants();
+    }
+
+    // Gebied variants (content column of Gebied row)
+    if (project.gebiedVarianten.length > 0) {
+      document.getElementById('gebied-variants-section').classList.remove('hidden');
+      renderGebiedVariants();
+    }
+
+    // Gebouw variants (content column of Gebouw row)
+    if (hasGebouw) {
+      document.getElementById('gebouw-variants-section').classList.remove('hidden');
+      renderGebouwVariants();
+    }
+
+    function makeDeleteBtn(onClick) {
+      const btn = document.createElement('button');
+      btn.className = 'variant-delete-btn';
+      btn.textContent = '×';
+      btn.title = 'Verwijder';
+      btn.addEventListener('click', e => { e.stopPropagation(); onClick(); });
+      return btn;
+    }
+
+    function makeCopyBtn(onClick) {
+      const btn = document.createElement('button');
+      btn.className = 'variant-copy-btn';
+      btn.innerHTML = '&#x29C9;';
+      btn.title = 'Kopieer variant';
+      btn.addEventListener('click', e => { e.stopPropagation(); onClick(); });
+      return btn;
+    }
+
+    function renderGebiedVariants() {
+      const row = document.getElementById('gebied-variant-row');
+      row.innerHTML = '';
+      project.gebiedVarianten.forEach(g => {
+        const card = document.createElement('div');
+        card.className = 'pve-variant-card';
+        card.innerHTML = `
+          <div class="pve-variant-card-header">${g.naam}</div>
+          <div class="pve-variant-card-body">
+            <div class="text-xs text-gray-500">
+              <div>Oppervlak: <span class="font-medium text-violet-600">${g.opp.toLocaleString('nl-NL')} m²</span></div>
+            </div>
+          </div>`;
+        card.addEventListener('click', () => window.location.href = 'gebied-instellingen.html?id=' + g.id);
+        card.appendChild(makeCopyBtn(() => {
+          const copy = { ...JSON.parse(JSON.stringify(g)), id: crypto.randomUUID(), naam: g.naam + ' (kopie)' };
+          const gebiedVarianten = [...project.gebiedVarianten, copy];
+          updateCurrentProject({ gebiedVarianten });
+          window.location.href = 'gebied-instellingen.html?id=' + copy.id;
+        }));
+        card.appendChild(makeDeleteBtn(() => {
+          updateCurrentProject({ gebiedVarianten: project.gebiedVarianten.filter(v => v.id !== g.id) });
+          window.location.reload();
+        }));
+        row.appendChild(card);
+      });
+      const addBtn = document.createElement('a');
+      addBtn.href = 'gebied.html';
+      addBtn.className = 'pve-new-btn';
+      addBtn.title = 'Nieuw gebied';
+      addBtn.textContent = '+';
+      row.appendChild(addBtn);
+    }
+
+    function renderGebouwVariants() {
+      const row = document.getElementById('gebouw-variant-row');
+      row.innerHTML = '';
+      (project.gebouwVarianten || []).forEach(gv => {
+        const card = document.createElement('div');
+        card.className = 'pve-variant-card';
+        const pveNaam    = (project.pveVarianten || []).find(v => v.id === gv.pveId)?.naam || '—';
+        const gebiedNaam = (project.gebiedVarianten || []).find(g => g.id === gv.gebiedId)?.naam || '—';
+        card.innerHTML = `
+          <div class="pve-variant-card-header">${gv.naam}</div>
+          <div class="pve-variant-card-body">
+            <div class="text-xs text-gray-500">
+              <div>PVE: <span class="font-medium text-violet-600">${pveNaam}</span></div>
+              <div>Gebied: <span class="font-medium text-orange-500">${gebiedNaam}</span></div>
+            </div>
+          </div>`;
+        card.addEventListener('click', () => window.location.href = 'gebouw-stap-2.html?id=' + gv.id);
+        card.appendChild(makeDeleteBtn(() => {
+          const p = getCurrentProject();
+          updateCurrentProject({ gebouwVarianten: p.gebouwVarianten.filter(v => v.id !== gv.id) });
+          window.location.reload();
+        }));
+        row.appendChild(card);
+      });
+      const addBtn = document.createElement('a');
+      addBtn.href = 'gebouw.html';
+      addBtn.className = 'pve-new-btn';
+      addBtn.title = 'Nieuw gebouw';
+      addBtn.textContent = '+';
+      row.appendChild(addBtn);
+    }
+
+    function renderPVEVariants() {
+      const row = document.getElementById('pve-variant-row');
+      row.innerHTML = '';
+      project.pveVarianten.forEach(variant => {
+        const card = document.createElement('div');
+        card.className = 'pve-variant-card' + (variant.id === project.activePveId ? ' selected' : '');
+        const { bouwkosten, tco } = POM_CALC.calcDashboard(variant.voorzieningen);
+        card.innerHTML = `
+          <div class="pve-variant-card-header">${variant.naam}</div>
+          <div class="pve-variant-card-body">
+            <div class="text-xs text-gray-500 mb-2">
+              <div>Bouwkosten: <span class="font-medium text-violet-600">${POM_CALC.formatEuro(bouwkosten)}</span></div>
+              <div>TCO: <span class="font-medium text-green-600">${POM_CALC.formatEuro(tco)}</span></div>
+            </div>
+          </div>`;
+        card.addEventListener('click', () => window.location.href = 'pve-instellingen.html?id=' + variant.id);
+        card.appendChild(makeCopyBtn(() => {
+          const copy = { ...JSON.parse(JSON.stringify(variant)), id: crypto.randomUUID(), naam: variant.naam + ' (kopie)' };
+          const p = getCurrentProject();
+          saveProject({ ...p, pveVarianten: [...p.pveVarianten, copy], activePveId: copy.id });
+          window.location.href = 'pve-instellingen.html?id=' + copy.id;
+        }));
+        card.appendChild(makeDeleteBtn(() => {
+          const p = getCurrentProject();
+          const pveVarianten = p.pveVarianten.filter(v => v.id !== variant.id);
+          const activePveId  = p.activePveId === variant.id ? (pveVarianten[0]?.id || null) : p.activePveId;
+          saveProject({ ...p, pveVarianten, activePveId });
+          window.location.reload();
+        }));
+        row.appendChild(card);
+      });
+      const addBtn = document.createElement('a');
+      addBtn.href = 'pve-stap-1.html';
+      addBtn.className = 'pve-new-btn';
+      addBtn.title = 'Nieuwe PVE variant';
+      addBtn.textContent = '+';
+      row.appendChild(addBtn);
+    }
+
+  </script>
+</body>
+</html>

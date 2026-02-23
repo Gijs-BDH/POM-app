@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>POM – Ruimte Definities</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body class="min-h-screen bg-gray-50 p-8">
+
+  <div class="max-w-5xl mx-auto">
+    <a href="project-overzicht.html" class="text-xs text-gray-400 hover:text-violet-600">← Project overzicht</a>
+    <h1 id="project-titel" class="text-xl font-semibold text-gray-700 mt-1 mb-2"></h1>
+    <div id="step-indicator" class="mb-6"></div>
+
+    <div class="flex gap-6">
+      <div id="nav-panel" class="nav-panel"></div>
+
+      <div class="flex-1 flex flex-col items-center justify-center min-h-64">
+        <h2 class="text-2xl font-semibold text-gray-700 mb-8">Ruimte Definities</h2>
+
+        <div class="flex gap-6">
+          <button onclick="kiesBegeleid()"
+                  class="btn-primary px-8 py-3 text-base rounded-xl">
+            Begeleid opstellen
+          </button>
+          <button onclick="kiesHandmatig()"
+                  class="btn-secondary px-8 py-3 text-base rounded-xl">
+            Handmatig opstellen
+          </button>
+        </div>
+
+        <div class="info-card max-w-sm mt-8 text-center">
+          <strong class="text-violet-700">Begeleid opstellen</strong> begeleidt u stap voor stap door het invullen van de ruimtestaat.<br><br>
+          <strong class="text-violet-700">Handmatig opstellen</strong> geeft u direct toegang tot het vlekkenplan.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/state.js"></script>
+  <script>
+    const project = getCurrentProject();
+    if (!project) { window.location.href = 'index.html'; }
+    document.getElementById('project-titel').textContent = project.naam;
+    document.getElementById('step-indicator').innerHTML = renderStepIndicator(3, 5, ['pve-stap-2.html', 'pve-stap-3.html']);
+    document.getElementById('nav-panel').innerHTML = renderNavPanel('pve', project);
+
+    function kiesBegeleid()  { window.location.href = 'pve-stap-4-begeleid.html'; }
+    function kiesHandmatig() { window.location.href = 'pve-stap-4-vlekkenplan.html'; }
+  </script>
+</body>
+</html>

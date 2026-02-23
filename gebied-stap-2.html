@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>POM – Gebied Stap 2</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <style>
+    #map { height: 480px; border-radius: 0.75rem; }
+    .tab-pill {
+      width: 100%; padding: 0.55rem 1rem; border-radius: 99px;
+      border: 1.5px solid #E5E7EB; background: white;
+      color: #9CA3AF; font-size: 0.8rem; font-weight: 500;
+      text-align: center; cursor: pointer; transition: all 0.15s;
+    }
+    .tab-pill.active  { border-color: #7C3AED; color: #7C3AED; box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
+    .tab-pill.done    { border-color: #D1FAE5; background: #ECFDF5; color: #059669; cursor: default; }
+    .tab-pill.pending { color: #D1D5DB; border-color: #F3F4F6; cursor: default; }
+  </style>
+</head>
+<body class="min-h-screen bg-gray-50 p-8">
+
+  <div class="max-w-7xl mx-auto">
+    <a href="gebied.html" class="breadcrumb">← Stap 1</a>
+    <h1 id="project-titel" class="page-title"></h1>
+    <div id="step-indicator" class="mb-6"></div>
+
+    <div class="flex gap-5">
+      <div id="nav-panel" class="nav-panel"></div>
+
+      <!-- Kavelpaspoort -->
+      <div class="w-56 flex-shrink-0 card p-4 flex flex-col gap-3" style="min-height:480px;">
+        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Kavelpaspoort</h3>
+        <div class="flex-1 rounded-lg overflow-hidden">
+          <img src="src/assets/img_kavelpaspoort.png" class="w-full h-full object-cover"/>
+        </div>
+      </div>
+
+      <!-- Map -->
+      <div class="flex-1">
+        <div id="map"></div>
+        <p id="map-hint" class="text-xs text-gray-400 mt-2 text-center hidden">
+          Klik op de kaart om punten te plaatsen &nbsp;·&nbsp; dubbelklik om te beëindigen
+        </p>
+      </div>
+
+      <!-- Right: tab list -->
+      <div class="w-52 flex-shrink-0 flex flex-col gap-3">
+        <div id="tabs-container" class="flex flex-col gap-2"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/state.js"></script>
+  <script>
+    const params    = new URLSearchParams(window.location.search);
+    const gebiedId  = params.get('id');
+    const project   = getCurrentProject();
+    if (!project) { window.location.href = 'index.html'; }
+
+    let variant = (project.gebiedVarianten || []).find(g => g.id === gebiedId);
+    if (!variant) { window.location.href = 'project-overzicht.html'; }
+
+    document.getElementById('project-titel').textContent = project.naam;
+    document.getElementById('step-indicator').innerHTML  = renderStepIndicator(2, 4, ['gebied.html']);
+    document.getElementById('nav-panel').innerHTML       = renderNavPanel('gebied', project);
+
+    // ── Map ───────────────────────────────────────────────────────────────────
+    const MAP_VIEW_KEY = 'pom_map_view_gebied_' + project.id;
+    const savedView = JSON.parse(localStorage.getItem(MAP_VIEW_KEY) || 'null');
+    const map = L.map('map').setView(
+      savedView ? [savedView.lat, savedView.lng] : [52.2, 5.3],
+      savedView ? savedView.zoom : 8
+    );
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19
+    }).addTo(map);
+    map.on('moveend', () => {
+      const c = map.getCenter();
+      localStorage.setItem(MAP_VIEW_KEY, JSON.stringify({ lat: c.lat, lng: c.lng, zoom: map.getZoom() }));
+    });
+
+    const TABS = [
+      { key: 'bouwbaarGebied', label: 'Bouwbaar gebied', color: '#F97316' },
+      { key: 'uitsluiting',    label: 'Uitsluiting gebied', color: '#EF4444' },
+      { key: 'parkeren',       label: 'Parkeren',          color: '#3B82F6' },
+    ];
+
+    // Layer group per tab
+    const layers = {};
+    TABS.forEach(t => {
+      layers[t.key] = L.layerGroup().addTo(map);
+      const geo = variant[t.key] && variant[t.key].geo;
+      if (geo && geo.length >= 3) {
+        L.polygon(geo, { color: t.color, fillColor: t.color, fillOpacity: 0.3, weight: 2 }).addTo(layers[t.key]);
+      }
+    });
+
+    // Fit map to existing data (only on first visit; subsequent steps restore saved view)
+    if (!savedView) {
+      const allGeo = TABS.flatMap(t => (variant[t.key] && variant[t.key].geo) || []);
+      if (allGeo.length >= 3) {
+        const poly = L.polygon(allGeo);
+        map.fitBounds(poly.getBounds(), { padding: [40, 40] });
+      }
+    }
+
+    // ── Drawing state ─────────────────────────────────────────────────────────
+    let activeTab     = null;
+    let drawingMode   = false;
+    let drawPoints    = [];
+    let currentPoly   = null;
+
+    function calcAreaM2(latlngs) {
+      if (!latlngs || latlngs.length < 3) return 0;
+      let area = 0;
+      const n = latlngs.length;
+      for (let i = 0; i < n; i++) {
+        const j = (i + 1) % n;
+        area += latlngs[i].lat * latlngs[j].lng;
+        area -= latlngs[j].lat * latlngs[i].lng;
+      }
+      const DEG_TO_M = 111320;
+      return Math.round(Math.abs(area / 2) * DEG_TO_M * DEG_TO_M * Math.cos(52 * Math.PI / 180));
+    }
+
+    map.on('click', e => {
+      if (!drawingMode) return;
+      drawPoints.push([e.latlng.lat, e.latlng.lng]);
+      if (drawPoints.length >= 3) {
+        layers[activeTab.key].clearLayers();
+        currentPoly = L.polygon(drawPoints, { color: activeTab.color, fillColor: activeTab.color, fillOpacity: 0.3, weight: 2 }).addTo(layers[activeTab.key]);
+        const opp = calcAreaM2(currentPoly.getLatLngs()[0]);
+        document.getElementById('opp-display-' + activeTab.key).textContent = opp.toLocaleString('nl-NL') + ' m²';
+        variant[activeTab.key].opp = opp;
+      }
+    });
+
+    map.on('dblclick', e => {
+      if (!drawingMode) return;
+      drawingMode = false;
+      map.getContainer().style.cursor = '';
+      document.getElementById('map-hint').classList.add('hidden');
+      if (currentPoly) {
+        const geo = currentPoly.getLatLngs()[0].map(p => [p.lat, p.lng]);
+        variant[activeTab.key].geo = geo;
+        saveTab(activeTab.key, variant[activeTab.key].opp, geo);
+      }
+    });
+
+    function saveTab(key, opp, geo) {
+      const updates = {};
+      updates[key] = { geo, opp };
+      updateGebiedVariantById(gebiedId, updates);
+    }
+
+    function startDrawing(tab) {
+      activeTab = tab;
+      drawingMode = true;
+      drawPoints = [];
+      currentPoly = null;
+      layers[tab.key].clearLayers();
+      map.getContainer().style.cursor = 'crosshair';
+      document.getElementById('map-hint').classList.remove('hidden');
+    }
+
+    // ── Tabs render ───────────────────────────────────────────────────────────
+    function renderTabs() {
+      const container = document.getElementById('tabs-container');
+      container.innerHTML = '';
+
+      TABS.forEach((tab, idx) => {
+        const data = variant[tab.key] || { geo: [], opp: 0 };
+        const isDone = data.geo && data.geo.length >= 3;
+        const isActive = activeTab && activeTab.key === tab.key;
+
+        if (isActive) {
+          // Expanded active card
+          const card = document.createElement('div');
+          card.className = 'card p-4 flex flex-col gap-3';
+          card.style.border = '2px solid #7C3AED';
+          card.innerHTML = `
+            <h3 class="font-semibold text-sm text-gray-700">${tab.label}</h3>
+            <div class="flex items-center gap-2 text-sm text-gray-600">
+              <span>Teken plot:</span>
+              <button onclick="startDrawing(TABS[${idx}])" class="flex items-center gap-1 text-violet-600 hover:text-violet-800 font-medium text-xs">
+                ✏ Tekenen
+              </button>
+            </div>
+            <div class="flex items-center gap-2 text-sm text-gray-600">
+              <span>Oppervlak:</span>
+              <span id="opp-display-${tab.key}" class="font-semibold text-violet-700 text-xs">${data.opp ? data.opp.toLocaleString('nl-NL') + ' m²' : '— m²'}</span>
+            </div>
+            <button onclick="volgendeTab(${idx})" class="btn-primary w-full text-sm py-2">volgende</button>`;
+          container.appendChild(card);
+        } else {
+          // Pill
+          const pill = document.createElement('button');
+          pill.className = 'tab-pill ' + (isDone ? 'done' : idx > (TABS.findIndex(t => activeTab && t.key === activeTab.key)) ? 'pending' : '');
+          pill.textContent = (isDone ? '✓ ' : '') + tab.label;
+          if (!isDone) pill.onclick = () => { activeTab = tab; renderTabs(); };
+          container.appendChild(pill);
+        }
+      });
+    }
+
+    function volgendeTab(currentIdx) {
+      // Save current polygon even if user didn't explicitly double-click to close it
+      if (currentPoly) {
+        const geo = currentPoly.getLatLngs()[0].map(p => [p.lat, p.lng]);
+        variant[activeTab.key].geo = geo;
+        saveTab(activeTab.key, variant[activeTab.key].opp, geo);
+      }
+      drawingMode = false;
+      map.getContainer().style.cursor = '';
+      currentPoly = null;
+      drawPoints  = [];
+      if (currentIdx + 1 < TABS.length) {
+        activeTab = TABS[currentIdx + 1];
+        renderTabs();
+      } else {
+        window.location.href = 'gebied-stap-3.html?id=' + gebiedId;
+      }
+    }
+
+    // Start with first tab active
+    activeTab = TABS[0];
+    renderTabs();
+  </script>
+</body>
+</html>

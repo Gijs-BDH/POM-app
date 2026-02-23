@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>POM – Projectinstellingen</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body class="min-h-screen bg-gray-50 p-8">
+
+  <div class="max-w-2xl mx-auto flex flex-col gap-6">
+
+    <!-- Header -->
+    <div>
+      <a href="project-overzicht.html" class="breadcrumb">← Project overzicht</a>
+      <h1 class="page-title">Projectinstellingen</h1>
+    </div>
+
+    <!-- ── Section 1: Projectdetails ───────────────────────────────────────── -->
+    <div class="card flex flex-col gap-5">
+      <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Projectdetails</h2>
+
+      <div class="form-row">
+        <label>Projectnaam</label>
+        <input id="naam" type="text" class="input-field" placeholder="Naam van het project"/>
+      </div>
+
+      <div class="form-row">
+        <label>Huidige stap</label>
+        <select id="huidigeStap" class="select-field">
+          <option value="">Selecteer…</option>
+          <option>IHP opstellen</option>
+          <option>PVE opstellen</option>
+          <option>Marktuitvraag opstellen</option>
+        </select>
+      </div>
+
+      <div class="form-row" style="align-items: start">
+        <label style="padding-top: 0.35rem">Rol</label>
+        <div id="rol-btns" class="flex flex-wrap gap-2">
+          <button type="button" class="sel-btn" data-rol="Schoolbestuur">Schoolbestuur</button>
+          <button type="button" class="sel-btn" data-rol="Bouwheer">Bouwheer</button>
+          <button type="button" class="sel-btn" data-rol="Architect">Architect</button>
+          <button type="button" class="sel-btn" data-rol="Onderwijshuisvesting">Onderwijshuisvesting</button>
+          <button type="button" class="sel-btn" data-rol="Stedenbouw beleid">Stedenbouw beleid</button>
+          <button type="button" class="sel-btn" data-rol="Sport beleid">Sport beleid</button>
+          <button type="button" class="sel-btn" data-rol="Sociaal beleid">Sociaal beleid</button>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>Ervaring</label>
+        <select id="ervaring" class="select-field">
+          <option value="">Selecteer…</option>
+          <option>Weinig ervaring</option>
+          <option>Enige ervaring</option>
+          <option>Veel ervaring</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- ── Section 2: Stakeholders & rollen ───────────────────────────────── -->
+    <div class="card flex flex-col gap-5">
+      <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Stakeholders & rollen</h2>
+
+      <!-- Add person mini-form -->
+      <div class="flex flex-col gap-3 p-4 rounded-xl" style="background:#F9FAFB; border: 1.5px solid #F3F4F6">
+        <p class="text-xs font-medium text-gray-500">Persoon toevoegen</p>
+        <div class="form-row">
+          <label>Naam</label>
+          <input id="p-naam" type="text" class="input-field" placeholder="Naam"/>
+        </div>
+        <div class="form-row">
+          <label>Email</label>
+          <input id="p-email" type="email" class="input-field" placeholder="email@domein.nl"/>
+        </div>
+        <div class="form-row">
+          <label>Toegang</label>
+          <select id="p-toegang" class="select-field">
+            <option value="">Selecteer…</option>
+            <option>Beheerder</option>
+            <option>Redacteur</option>
+            <option>Lezer</option>
+          </select>
+        </div>
+        <div class="flex justify-end">
+          <button onclick="voegPersonToe()" class="btn-secondary" style="padding:0.4rem 1rem;font-size:0.8rem">Toevoegen</button>
+        </div>
+      </div>
+
+      <!-- People list -->
+      <div id="personen-lijst" class="flex flex-col gap-2"></div>
+
+      <hr class="divider"/>
+
+      <!-- Role assignments -->
+      <div class="flex flex-col gap-3">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Roltoewijzingen</p>
+        <div id="rol-toewijzingen" class="flex flex-col gap-2"></div>
+      </div>
+    </div>
+
+    <!-- ── Section 3: Beoordelingskader ───────────────────────────────────── -->
+    <div class="card flex flex-col gap-5">
+      <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Beoordelingskader</h2>
+      <p class="text-xs text-gray-400 -mt-3">Verdeel de 27 punten over de 9 dimensies.</p>
+
+      <div class="form-row">
+        <label>Gebruiksduur (jaar)</label>
+        <input id="gebruiksduur" type="number" class="input-field" min="1" max="100"/>
+      </div>
+
+      <hr class="divider"/>
+
+      <div id="sliders" class="flex flex-col gap-5"></div>
+
+      <div class="flex items-center gap-2 pt-3 border-t border-gray-100 text-sm text-gray-500">
+        Totaal: <span id="sum-display" class="font-bold text-violet-600">27</span> / 27
+        <span id="sum-hint" class="ml-1 text-xs text-gray-400">✓</span>
+      </div>
+    </div>
+
+    <!-- ── Footer actions ────────────────────────────────────────────────── -->
+    <div class="flex justify-end gap-3 pb-4">
+      <a href="project-overzicht.html" class="btn-ghost px-6 py-2">Annuleren</a>
+      <button id="opslaan-btn" onclick="opslaanInstellingen()" class="btn-primary px-6 py-2">Opslaan</button>
+    </div>
+
+  </div>
+
+  <script src="js/state.js"></script>
+  <script>
+    const project = getCurrentProject();
+    if (!project) { window.location.href = 'index.html'; }
+
+    const DIMENSIES = [
+      { key: 'betereSchool',                label: 'Betere school',                 info: 'Weging voor algemene onderwijskwaliteit en pedagogische omgeving.' },
+      { key: 'functioneleSchool',           label: 'Functionele school',            info: 'Hoe goed ruimtes aansluiten bij de onderwijspraktijk en dagelijkse activiteiten.' },
+      { key: 'aantrekkelijkeSchool',        label: 'Aantrekkelijke school',         info: 'Esthetische kwaliteit en architectonische uitstraling van het gebouw.' },
+      { key: 'inclusieveSchool',            label: 'Inclusieve school',             info: 'Toegankelijkheid voor iedereen, inclusief leerlingen met een beperking.' },
+      { key: 'gezondSchool',                label: 'Gezonde school',                info: 'Binnenluchtkwaliteit, daglicht, thermisch comfort en akoestiek.' },
+      { key: 'duurzameSchool',              label: 'Duurzame school',               info: 'Energieprestatie, materiaalgebruik en klimaatbestendigheid van het gebouw.' },
+      { key: 'veiligSchool',                label: 'Veilige school',                info: 'Inbraakpreventie, brandveiligheid en sociale veiligheid voor leerlingen en personeel.' },
+      { key: 'digitaleSchool',              label: 'Digitale school',               info: 'ICT-infrastructuur en digitale integratie in de leeromgeving.' },
+      { key: 'onderhoudsvriendelijkeSchool', label: 'Onderhoudsvriendelijke school', info: 'Laag onderhoud, eenvoudig beheer en lange technische levensduur.' },
+    ];
+
+    const ROL_LABELS = [
+      'School bestuur', 'Stedenbouw beleid', 'Sport beleid',
+      'Sociaal beleid', 'Onderwijshuisvesting', 'Bouwheer',
+    ];
+
+    let personen      = [...(project.stakeholders    || [])];
+    let toewijzingen  = { ...(project.rolToewijzingen || {}) };
+
+    // ── Section 1: pre-fill ────────────────────────────────────────────────
+    document.getElementById('naam').value       = project.naam       || '';
+    document.getElementById('huidigeStap').value = project.huidigeStap || '';
+    document.getElementById('ervaring').value   = project.ervaring   || '';
+
+    document.querySelectorAll('#rol-btns .sel-btn').forEach(btn => {
+      btn.addEventListener('click', () => btn.classList.toggle('active'));
+    });
+    if (project.rol) {
+      const selected = project.rol.split(', ');
+      document.querySelectorAll('#rol-btns .sel-btn').forEach(btn => {
+        if (selected.includes(btn.dataset.rol)) btn.classList.add('active');
+      });
+    }
+
+    // ── Section 2: stakeholders ────────────────────────────────────────────
+    function renderPersonen() {
+      const lijst = document.getElementById('personen-lijst');
+      lijst.innerHTML = '';
+      if (!personen.length) {
+        lijst.innerHTML = '<p class="text-xs text-gray-400 text-center py-1">Nog geen personen toegevoegd.</p>';
+      }
+      personen.forEach((p, i) => {
+        const el = document.createElement('div');
+        el.className = 'flex items-center justify-between text-xs bg-gray-50 rounded-lg px-3 py-2';
+        el.innerHTML = `
+          <div>
+            <div class="font-medium text-gray-700">${p.naam}</div>
+            <div class="text-gray-400">${[p.toegang, p.email].filter(Boolean).join(' · ')}</div>
+          </div>
+          <button onclick="verwijderPersoon(${i})" class="text-gray-300 hover:text-red-400 text-base ml-2">&times;</button>`;
+        lijst.appendChild(el);
+      });
+      renderRolToewijzingen();
+    }
+
+    function voegPersonToe() {
+      const naam    = document.getElementById('p-naam').value.trim();
+      const email   = document.getElementById('p-email').value.trim();
+      const toegang = document.getElementById('p-toegang').value;
+      if (!naam) { alert('Vul een naam in.'); return; }
+      personen.push({ id: crypto.randomUUID(), naam, email, toegang });
+      document.getElementById('p-naam').value  = '';
+      document.getElementById('p-email').value = '';
+      renderPersonen();
+    }
+
+    function verwijderPersoon(i) {
+      personen.splice(i, 1);
+      renderPersonen();
+    }
+
+    function renderRolToewijzingen() {
+      const container = document.getElementById('rol-toewijzingen');
+      container.innerHTML = '';
+      ROL_LABELS.forEach((rol, idx) => {
+        const row = document.createElement('div');
+        row.className = 'form-row';
+        const label = document.createElement('label');
+        label.textContent = rol;
+        const sel = document.createElement('select');
+        sel.className = 'select-field';
+        sel.id = 'rt-' + idx;
+        sel.innerHTML = '<option value="">—</option>';
+        personen.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.naam; opt.textContent = p.naam;
+          if ((toewijzingen[idx] || '') === p.naam) opt.selected = true;
+          sel.appendChild(opt);
+        });
+        sel.addEventListener('change', () => { toewijzingen[idx] = sel.value; });
+        row.appendChild(label);
+        row.appendChild(sel);
+        container.appendChild(row);
+      });
+    }
+
+    renderPersonen();
+
+    // ── Section 3: sliders ─────────────────────────────────────────────────
+    document.getElementById('gebruiksduur').value = project.gebruiksduur || 40;
+
+    const savedSliders = project.sliders || {};
+    const sliderContainer = document.getElementById('sliders');
+    DIMENSIES.forEach(d => {
+      const val = savedSliders[d.key] ?? 3;
+      const row = document.createElement('div');
+      row.className = 'flex items-center gap-4';
+      row.innerHTML = `
+        <label class="text-sm text-gray-600 w-52 text-right flex-shrink-0">${d.label}</label>
+        <div class="flex-1 flex items-center gap-3">
+          <input type="range" min="1" max="5" value="${val}" id="sl-${d.key}"
+                 oninput="onSlider()" class="flex-1"/>
+          <span id="val-${d.key}" class="text-sm font-semibold text-violet-600 w-4 text-center">${val}</span>
+        </div>
+        <span class="info-wrap">
+          <button class="info-btn" type="button">i</button>
+          <span class="info-popover">${d.info}</span>
+        </span>`;
+      sliderContainer.appendChild(row);
+    });
+
+    function getSliderValues() {
+      return Object.fromEntries(DIMENSIES.map(d => [d.key, parseInt(document.getElementById('sl-' + d.key).value)]));
+    }
+
+    function onSlider() {
+      const vals = getSliderValues();
+      const sum  = Object.values(vals).reduce((a, b) => a + b, 0);
+      DIMENSIES.forEach(d => {
+        document.getElementById('val-' + d.key).textContent = vals[d.key];
+      });
+      const display = document.getElementById('sum-display');
+      display.textContent = sum;
+      display.className = sum === 27 ? 'font-bold text-violet-600' : 'font-bold text-red-500';
+      document.getElementById('sum-hint').textContent =
+        sum === 27 ? '✓' : (27 - sum > 0 ? `(${27 - sum} over)` : `(${Math.abs(27 - sum)} te veel)`);
+      document.getElementById('opslaan-btn').disabled = sum !== 27;
+    }
+
+    onSlider();
+
+    // ── Info popovers ──────────────────────────────────────────────────────
+    document.addEventListener('click', e => {
+      const btn = e.target.closest('.info-btn');
+      const allPopovers = document.querySelectorAll('.info-popover.open');
+      const allBtns     = document.querySelectorAll('.info-btn.open');
+      if (btn) {
+        const popover = btn.nextElementSibling;
+        const isOpen  = popover.classList.contains('open');
+        allPopovers.forEach(p => p.classList.remove('open'));
+        allBtns.forEach(b => b.classList.remove('open'));
+        if (!isOpen) { popover.classList.add('open'); btn.classList.add('open'); }
+      } else if (!e.target.closest('.info-wrap')) {
+        allPopovers.forEach(p => p.classList.remove('open'));
+        allBtns.forEach(b => b.classList.remove('open'));
+      }
+    });
+
+    // ── Save ───────────────────────────────────────────────────────────────
+    function opslaanInstellingen() {
+      const naam        = document.getElementById('naam').value.trim();
+      const huidigeStap = document.getElementById('huidigeStap').value;
+      const rollen      = [...document.querySelectorAll('#rol-btns .sel-btn.active')].map(b => b.dataset.rol);
+      const ervaring    = document.getElementById('ervaring').value;
+      const gebruiksduur = parseInt(document.getElementById('gebruiksduur').value) || 40;
+      const sliders     = getSliderValues();
+
+      if (!naam) { alert('Vul een projectnaam in.'); return; }
+
+      // Collect current toewijzingen from selects
+      ROL_LABELS.forEach((_, idx) => {
+        const sel = document.getElementById('rt-' + idx);
+        if (sel) toewijzingen[idx] = sel.value;
+      });
+
+      updateCurrentProject({
+        naam,
+        huidigeStap,
+        rol: rollen.join(', '),
+        ervaring,
+        gebruiksduur,
+        sliders,
+        stakeholders:    personen,
+        rolToewijzingen: toewijzingen,
+      });
+
+      window.location.href = 'project-overzicht.html';
+    }
+  </script>
+</body>
+</html>

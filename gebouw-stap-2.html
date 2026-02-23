@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>POM – Gebouw Stap 2</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <style>
+    .optie-card {
+      border: 1.5px solid #E5E7EB; border-radius: 1rem;
+      overflow: hidden; cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      background: white;
+    }
+    .optie-card:hover   { border-color: #7C3AED; }
+    .optie-card.selected { border-color: #7C3AED; box-shadow: 0 0 0 3px rgba(124,58,237,0.15); }
+    .optie-thumb {
+      height: 120px; display: flex; align-items: center;
+      justify-content: center; font-size: 2.5rem;
+    }
+    .metric-pill {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      font-size: 0.72rem; border-radius: 99px;
+      padding: 0.2rem 0.55rem; border: 1px solid #E5E7EB; color: #6B7280;
+    }
+    .detail-view { display: none; }
+    .detail-view.open { display: block; }
+  </style>
+</head>
+<body class="min-h-screen bg-gray-50 p-8">
+
+  <div class="max-w-5xl mx-auto">
+    <a href="gebouw.html" class="breadcrumb">← Uitganspunten</a>
+    <h1 id="project-titel" class="page-title"></h1>
+    <div id="step-indicator" class="mb-6"></div>
+
+    <div class="flex gap-6">
+      <div id="nav-panel" class="nav-panel"></div>
+
+      <div class="flex-1">
+
+        <!-- Grid view -->
+        <div id="grid-view">
+          <h2 class="text-xl font-semibold text-gray-700 mb-6 text-center">Selecteer opties</h2>
+          <div id="optie-grid" class="grid grid-cols-3 gap-4"></div>
+
+        </div>
+
+        <!-- Detail view -->
+        <div id="detail-view" class="detail-view">
+          <button onclick="sluitDetail()" class="breadcrumb mb-4">← Terug naar opties</button>
+          <div class="flex gap-6">
+            <!-- Floor plans / media area -->
+            <div class="flex-1 card p-4 flex flex-col gap-4">
+              <div id="view-plattegrond" class="rounded-xl overflow-hidden" style="height:220px;">
+                <img src="src/assets/img_floorplans_Wide.png" class="w-full h-full object-cover"/>
+              </div>
+              <div id="view-impressie" class="hidden rounded-xl overflow-hidden" style="height:220px;">
+                <img src="src/assets/img_impression.png" class="w-full h-full object-cover"/>
+              </div>
+              <div id="view-walkthrough" class="hidden rounded-xl overflow-hidden" style="height:220px;">
+                <img src="src/assets/img_walkthrough.png" class="w-full h-full object-cover"/>
+              </div>
+              <!-- View toggle pills -->
+              <div class="flex gap-2">
+                <button onclick="setView('plattegrond')"  id="pill-plattegrond"  class="metric-pill" style="border-color:#7C3AED;color:#7C3AED;">Plattegrond</button>
+                <button onclick="setView('impressie')"    id="pill-impressie"    class="metric-pill">Impressie</button>
+                <button onclick="setView('walkthrough')"  id="pill-walkthrough"  class="metric-pill">Walkthrough</button>
+              </div>
+            </div>
+            <!-- Detail info -->
+            <div class="w-64 flex-shrink-0 card p-5 flex flex-col gap-3">
+              <h3 id="detail-naam" class="font-semibold text-gray-700"></h3>
+              <div class="text-xs text-gray-500 leading-relaxed" id="detail-beschrijving"></div>
+              <div id="detail-metrics" class="flex flex-col gap-1"></div>
+              <button onclick="selecteerOptie()" class="btn-primary w-full mt-2">+ Selecteer</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="js/state.js"></script>
+  <script src="js/calculations.js"></script>
+  <script>
+    const params    = new URLSearchParams(window.location.search);
+    const gebouwId  = params.get('id');
+    const project   = getCurrentProject();
+    if (!project) { window.location.href = 'index.html'; }
+
+    let variant = (project.gebouwVarianten || []).find(g => g.id === gebouwId);
+    if (!variant) { window.location.href = 'gebouw.html'; }
+
+    document.getElementById('project-titel').textContent = project.naam;
+    document.getElementById('step-indicator').innerHTML  = renderStepIndicator(2, 5, ['gebouw.html']);
+    document.getElementById('nav-panel').innerHTML       = renderNavPanel('gebouw', project);
+
+    // ── Building options catalog ──────────────────────────────────────────────
+    const OPTIES = [
+      { id: 'compact',   naam: 'Compact type',   icon: '🏫', bvo: 2500, bouwkosten: 6250000, tco: 13750000,
+        beschrijving: 'Compacte schoolvorm met efficiënte ruimtebenutting. Geschikt voor kleinere kavels.' },
+      { id: 'lineair',   naam: 'Lineair type',   icon: '🏗️', bvo: 2800, bouwkosten: 7000000, tco: 15400000,
+        beschrijving: 'Langgerekte plattegrond langs de straat. Optimale daglichttoetreding.' },
+      { id: 'cluster',   naam: 'Cluster type',   icon: '🏘️', bvo: 3100, bouwkosten: 7750000, tco: 17050000,
+        beschrijving: 'Groepering van functies rondom een centraal hart. Stimuleert ontmoeting.' },
+      { id: 'hof',       naam: 'Hof type',       icon: '🏛️', bvo: 3400, bouwkosten: 8500000, tco: 18700000,
+        beschrijving: 'Gesloten bouwvorm rondom een binnenhof. Beschutte buitenruimte voor kinderen.' },
+      { id: 'toren',     naam: 'Toren type',     icon: '🗼', bvo: 2200, bouwkosten: 5500000, tco: 12100000,
+        beschrijving: 'Meerdere bouwlagen op kleine footprint. Ideaal bij beperkt kavelbegrip.' },
+      { id: 'paviljon',  naam: 'Paviljoen type', icon: '⛺', bvo: 3600, bouwkosten: 9000000, tco: 19800000,
+        beschrijving: 'Losse paviljoens verbonden door overdekte passages. Flexibel en uitbreidbaar.' },
+    ];
+
+    let geselecteerdOptieId = variant.geselecteerdeOptie || null;
+    let detailOptie = null;
+
+    // ── Render grid ───────────────────────────────────────────────────────────
+    function renderGrid() {
+      const grid = document.getElementById('optie-grid');
+      grid.innerHTML = '';
+      OPTIES.forEach(opt => {
+        const card = document.createElement('div');
+        card.className = 'optie-card' + (geselecteerdOptieId === opt.id ? ' selected' : '');
+        card.innerHTML = `
+          <div class="optie-thumb" style="padding:0;overflow:hidden;">
+            <img src="src/assets/img_massstudy.png" style="width:100%;height:100%;object-fit:cover;"/>
+          </div>
+          <div class="p-3 flex flex-col gap-2">
+            <div class="text-sm font-semibold text-gray-700">${opt.naam}</div>
+            <div class="flex gap-1 flex-wrap">
+              <span class="metric-pill">BVO: ${opt.bvo.toLocaleString('nl-NL')} m²</span>
+              <span class="metric-pill" style="color:#7C3AED;">${POM_CALC.formatEuro(opt.bouwkosten)}</span>
+            </div>
+            <button onclick="event.stopPropagation(); selecteerEnNaarStap3('${opt.id}')" class="btn-primary w-full text-xs py-1.5">Selecteren</button>
+          </div>`;
+        card.onclick = () => openDetail(opt.id);
+        grid.appendChild(card);
+      });
+    }
+
+    // ── Detail view ───────────────────────────────────────────────────────────
+    function openDetail(id) {
+      detailOptie = OPTIES.find(o => o.id === id);
+      document.getElementById('grid-view').style.display   = 'none';
+      document.getElementById('detail-view').classList.add('open');
+      document.getElementById('detail-naam').textContent = detailOptie.naam;
+      document.getElementById('detail-beschrijving').textContent = detailOptie.beschrijving;
+      const metrics = document.getElementById('detail-metrics');
+      metrics.innerHTML = `
+        <div class="metric-pill">BVO: ${detailOptie.bvo.toLocaleString('nl-NL')} m²</div>
+        <div class="metric-pill" style="color:#7C3AED;border-color:#7C3AED;">Bouwkosten: ${POM_CALC.formatEuro(detailOptie.bouwkosten)}</div>
+        <div class="metric-pill" style="color:#059669;border-color:#D1FAE5;">TCO: ${POM_CALC.formatEuro(detailOptie.tco)}</div>`;
+    }
+
+    function sluitDetail() {
+      document.getElementById('grid-view').style.display = '';
+      document.getElementById('detail-view').classList.remove('open');
+    }
+
+    function selecteerOptie() {
+      geselecteerdOptieId = detailOptie.id;
+      updateGebouwVariantById(gebouwId, { geselecteerdeOptie: geselecteerdOptieId });
+      window.location.href = 'gebouw-stap-3.html?id=' + gebouwId;
+    }
+
+    function setView(type) {
+      ['plattegrond', 'impressie', 'walkthrough'].forEach(v => {
+        document.getElementById('view-' + v).classList.toggle('hidden', v !== type);
+        const pill = document.getElementById('pill-' + v);
+        if (pill) { pill.style.borderColor = v === type ? '#7C3AED' : ''; pill.style.color = v === type ? '#7C3AED' : ''; }
+      });
+    }
+
+    function selecteerEnNaarStap3(id) {
+      geselecteerdOptieId = id;
+      updateGebouwVariantById(gebouwId, { geselecteerdeOptie: id });
+      window.location.href = 'gebouw-stap-3.html?id=' + gebouwId;
+    }
+
+    renderGrid();
+  </script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>POM – PVE Uploaden</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body class="min-h-screen bg-gray-50 p-8">
+
+  <div class="max-w-5xl mx-auto">
+    <!-- Breadcrumb -->
+    <a href="project-overzicht.html" class="text-xs text-gray-400 hover:text-violet-600">← Project overzicht</a>
+    <h1 id="project-titel" class="text-xl font-semibold text-gray-700 mt-1 mb-6"></h1>
+
+    <div class="flex gap-6">
+      <!-- Nav panel -->
+      <div id="nav-panel" class="nav-panel"></div>
+
+      <!-- Content -->
+      <div class="flex-1 flex flex-col gap-6">
+
+        <!-- Upload card -->
+        <div class="card max-w-2xl">
+          <h2 class="text-2xl font-bold text-gray-800 mb-1">Upload PVE</h2>
+          <p class="text-sm text-gray-500 mb-6">
+            Upload hier het Programma van Eisen (PVE) document met de gewenste specificaties voor de school.
+          </p>
+
+          <!-- Drop zone -->
+          <div class="upload-zone mb-4" onclick="document.getElementById('file-input').click()">
+            <div class="flex flex-col items-center gap-3">
+              <div class="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center">
+                <svg class="w-7 h-7 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                </svg>
+              </div>
+              <p class="font-semibold text-gray-700">Klik om bestanden te uploaden</p>
+              <p class="text-xs text-gray-400">PDF, DOC, DOCX of TXT (meerdere bestanden mogelijk)</p>
+            </div>
+          </div>
+          <input id="file-input" type="file" class="hidden" multiple accept=".pdf,.doc,.docx,.txt"
+                 onchange="onFileSelect(this)"/>
+          <div id="file-list" class="text-xs text-gray-500 mb-4"></div>
+
+          <!-- Divider -->
+          <div class="flex items-center gap-4 mb-4">
+            <div class="flex-1 border-t border-gray-200"></div>
+            <span class="text-sm text-gray-400">of</span>
+            <div class="flex-1 border-t border-gray-200"></div>
+          </div>
+
+          <!-- PVE tool button -->
+          <button onclick="gebruikPveTool()" class="btn-secondary w-full py-3 text-base">
+            Gebruik PVE tool
+          </button>
+
+          <!-- Note -->
+          <div class="mt-4 bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700">
+            <strong>Let op:</strong> Het PVE document bevat belangrijke specificaties zoals ruimtelijke eisen,
+            kwaliteitsnormen en technische vereisten. Deze informatie helpt ons bij het maken van passende ontwerpkeuzes.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="js/state.js"></script>
+  <script src="js/calculations.js"></script>
+  <script>
+    const project = getCurrentProject();
+    if (!project) { window.location.href = 'index.html'; }
+
+    document.getElementById('project-titel').textContent = project.naam;
+    document.getElementById('nav-panel').innerHTML = renderNavPanel('pve', project);
+
+    function onFileSelect(input) {
+      const names = Array.from(input.files).map(f => f.name).join(', ');
+      document.getElementById('file-list').textContent = names
+        ? '📎 ' + names + ' (upload simulatie – niet functioneel)'
+        : '';
+    }
+
+    function gebruikPveTool() {
+      createNewPveVariant();
+      window.location.href = 'pve-stap-2.html';
+    }
+  </script>
+</body>
+</html>

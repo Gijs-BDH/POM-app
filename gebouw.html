@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>POM – Gebouw</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <style>
+    .variant-sel-card {
+      position: relative;
+      border: 2px solid #E5E7EB; border-radius: 1rem;
+      padding: 0.9rem 1rem; cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      min-width: 160px; background: white;
+    }
+    .variant-sel-card:hover  { border-color: #7C3AED; }
+    .variant-sel-card.selected { border-color: #7C3AED; box-shadow: 0 0 0 3px rgba(124,58,237,0.15); background: #F5F3FF; }
+    .variant-sel-card .thumb {
+      width: 100%; height: 72px; border-radius: 0.5rem;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 0.5rem;
+    }
+    .sel-check {
+      position: absolute; top: 0.4rem; right: 0.4rem;
+      width: 1.1rem; height: 1.1rem; border-radius: 50%;
+      background: #7C3AED; color: white;
+      font-size: 0.6rem; display: none;
+      align-items: center; justify-content: center;
+    }
+    .variant-sel-card.selected .sel-check { display: flex; }
+  </style>
+</head>
+<body class="min-h-screen bg-gray-50 p-8">
+
+  <div class="max-w-5xl mx-auto">
+    <a href="project-overzicht.html" class="breadcrumb">← Project overzicht</a>
+    <h1 id="project-titel" class="page-title"></h1>
+    <div id="step-indicator" class="mb-6"></div>
+
+    <div class="flex gap-6">
+      <div id="nav-panel" class="nav-panel"></div>
+
+      <div class="flex-1 flex flex-col gap-6">
+        <h2 class="text-xl font-semibold text-gray-700">Uitganspunten</h2>
+
+        <!-- PVE variants -->
+        <div class="card flex flex-col gap-4">
+          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">PVE Variant</h3>
+          <div id="pve-row" class="flex gap-3 flex-wrap"></div>
+          <p id="pve-empty" class="text-sm text-gray-400 hidden">
+            Nog geen PVE aangemaakt.
+            <a href="pve-stap-1.html" class="text-violet-600 hover:underline">Maak een PVE →</a>
+          </p>
+        </div>
+
+        <!-- Gebied variants -->
+        <div class="card flex flex-col gap-4">
+          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Gebied Variant</h3>
+          <div id="gebied-row" class="flex gap-3 flex-wrap"></div>
+          <p id="gebied-empty" class="text-sm text-gray-400 hidden">
+            Nog geen gebied aangemaakt.
+            <a href="gebied.html" class="text-violet-600 hover:underline">Maak een gebied →</a>
+          </p>
+        </div>
+      </div>
+
+      <!-- Right panel -->
+      <div class="w-64 flex-shrink-0 flex flex-col gap-4">
+        <div class="card-outlined p-5 flex flex-col gap-4">
+          <p class="text-sm text-gray-500 leading-relaxed">
+            Selecteer zowel een <strong>PVE variant</strong> als ook een
+            <strong>Gebied variant</strong> om gebouwopties te kunnen bekijken.
+          </p>
+          <button id="bekijk-btn" onclick="maakGebouwVariant()" class="btn-primary w-full" disabled>
+            Bekijk gebouw opties
+          </button>
+        </div>
+
+        <!-- Existing gebouw variants -->
+        <div id="gebouw-variants-section" class="hidden flex-col gap-3">
+          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">Bestaande varianten</h3>
+          <div id="gebouw-variant-list" class="flex flex-col gap-2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/state.js"></script>
+  <script src="js/calculations.js"></script>
+  <script>
+    const project = getCurrentProject();
+    if (!project) { window.location.href = 'index.html'; }
+
+    document.getElementById('project-titel').textContent = project.naam;
+    document.getElementById('step-indicator').innerHTML  = renderStepIndicator(1, 5);
+    document.getElementById('nav-panel').innerHTML       = renderNavPanel('gebouw', project);
+
+    let selectedPveId    = null;
+    let selectedGebiedId = null;
+
+    // ── PVE variants ──────────────────────────────────────────────────────────
+    const pveVarianten = project.pveVarianten || [];
+    if (pveVarianten.length === 0) {
+      document.getElementById('pve-empty').classList.remove('hidden');
+    } else {
+      const row = document.getElementById('pve-row');
+      pveVarianten.forEach(v => {
+        const { bouwkosten, tco } = POM_CALC.calcDashboard(v.voorzieningen);
+        const card = document.createElement('div');
+        card.className = 'variant-sel-card';
+        card.dataset.id = v.id;
+        card.innerHTML = `
+          <div class="sel-check">✓</div>
+          <div class="thumb" style="background:#F5F3FF;">
+            <svg viewBox="0 0 80 55" class="w-20" fill="none">
+              <polygon points="40,5 75,52 5,52" stroke="#7C3AED" stroke-width="2.5" fill="#EDE9FE"/>
+            </svg>
+          </div>
+          <div class="text-sm font-semibold text-gray-700 truncate">${v.naam}</div>
+          <div class="text-xs text-gray-400 mt-0.5">${POM_CALC.formatEuro(bouwkosten)}</div>
+          <div class="text-xs text-green-600">${POM_CALC.formatEuro(tco)}</div>`;
+        card.onclick = () => selectPve(v.id);
+        row.appendChild(card);
+      });
+    }
+
+    // ── Gebied variants ───────────────────────────────────────────────────────
+    const gebiedVarianten = project.gebiedVarianten || [];
+    if (gebiedVarianten.length === 0) {
+      document.getElementById('gebied-empty').classList.remove('hidden');
+    } else {
+      const row = document.getElementById('gebied-row');
+      gebiedVarianten.forEach(g => {
+        const card = document.createElement('div');
+        card.className = 'variant-sel-card';
+        card.dataset.id = g.id;
+        card.innerHTML = `
+          <div class="sel-check">✓</div>
+          <div class="thumb" style="background:#FFF7ED;">
+            <svg viewBox="0 0 80 55" class="w-20" fill="none">
+              <rect x="10" y="10" width="60" height="35" rx="3" stroke="#F97316" stroke-width="2.5" fill="#FFEDD5"/>
+              <rect x="25" y="22" width="30" height="18" fill="#FED7AA" rx="2"/>
+            </svg>
+          </div>
+          <div class="text-sm font-semibold text-gray-700 truncate">${g.naam}</div>
+          <div class="text-xs text-gray-400 mt-0.5">${(g.opp || 0).toLocaleString('nl-NL')} m²</div>`;
+        card.onclick = () => selectGebied(g.id);
+        row.appendChild(card);
+      });
+    }
+
+    // ── Existing gebouw variants ──────────────────────────────────────────────
+    const gebouwVarianten = project.gebouwVarianten || [];
+    if (gebouwVarianten.length > 0) {
+      const sec = document.getElementById('gebouw-variants-section');
+      sec.classList.remove('hidden');
+      sec.classList.add('flex');
+      const list = document.getElementById('gebouw-variant-list');
+      gebouwVarianten.forEach(gv => {
+        const item = document.createElement('a');
+        item.href = 'gebouw-stap-2.html?id=' + gv.id;
+        item.className = 'project-list-item text-sm';
+        item.innerHTML = `
+          <div><div class="font-semibold text-gray-700">${gv.naam}</div></div>
+          <span class="text-violet-500 text-xs">→</span>`;
+        list.appendChild(item);
+      });
+    }
+
+    // ── Selection + button ────────────────────────────────────────────────────
+    function selectPve(id) {
+      selectedPveId = id;
+      document.querySelectorAll('#pve-row .variant-sel-card').forEach(c => {
+        c.classList.toggle('selected', c.dataset.id === id);
+      });
+      updateBtn();
+    }
+
+    function selectGebied(id) {
+      selectedGebiedId = id;
+      document.querySelectorAll('#gebied-row .variant-sel-card').forEach(c => {
+        c.classList.toggle('selected', c.dataset.id === id);
+      });
+      updateBtn();
+    }
+
+    function updateBtn() {
+      document.getElementById('bekijk-btn').disabled = !(selectedPveId && selectedGebiedId);
+    }
+
+    function maakGebouwVariant() {
+      const variant = createNewGebouwVariant(null, selectedPveId, selectedGebiedId);
+      window.location.href = 'gebouw-stap-2.html?id=' + variant.id;
+    }
+  </script>
+</body>
+</html>

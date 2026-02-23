@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>POM – Besluit</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body class="min-h-screen bg-gray-50 p-8">
+
+  <div class="max-w-5xl mx-auto">
+    <a href="project-overzicht.html" class="text-xs text-gray-400 hover:text-violet-600">← Project overzicht</a>
+    <h1 id="project-titel" class="text-xl font-semibold text-gray-700 mt-1 mb-6"></h1>
+
+    <div class="flex gap-6">
+      <div id="nav-panel" class="nav-panel"></div>
+
+      <div class="flex-1 flex flex-col gap-6">
+        <h2 class="text-xl font-semibold text-gray-700">Besluit – PVE Overzicht</h2>
+
+        <!-- Summary grid -->
+        <div id="summary-grid" class="grid grid-cols-2 gap-4"></div>
+
+        <!-- Radar summary -->
+        <div id="radar-section" class="hidden card max-w-md">
+          <h3 class="font-semibold text-gray-700 mb-3">Ambitiekaders</h3>
+          <canvas id="besluit-radar" style="max-height:280px;"></canvas>
+        </div>
+
+        <!-- Placeholder: full besluit -->
+        <div class="info-card max-w-lg">
+          <p class="font-semibold text-violet-700 mb-1">Besluit – Placeholder</p>
+          De volledige besluitvorming (vergelijking varianten, stemming, rapportage) wordt in een latere versie uitgewerkt.
+          Hieronder ziet u een samenvatting van de huidige projectstatus.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/state.js"></script>
+  <script src="js/calculations.js"></script>
+  <script>
+    const project = getCurrentProject();
+    if (!project) { window.location.href = 'index.html'; }
+    document.getElementById('project-titel').textContent = project.naam;
+    document.getElementById('nav-panel').innerHTML = renderNavPanel('besluit', project);
+
+    const grid = document.getElementById('summary-grid');
+
+    function addCard(title, lines, highlight) {
+      const el = document.createElement('div');
+      el.className = 'card';
+      el.innerHTML = `
+        <h3 class="font-semibold text-gray-700 mb-3">${title}</h3>
+        <div class="flex flex-col gap-1 text-sm text-gray-600">
+          ${lines.map(l => `<div>${l}</div>`).join('')}
+        </div>`;
+      grid.appendChild(el);
+    }
+
+    // Project info
+    addCard('Project', [
+      `<span class="text-gray-400">Naam:</span> ${project.naam}`,
+      `<span class="text-gray-400">Rol:</span> ${project.rol || '—'}`,
+      `<span class="text-gray-400">Fase:</span> ${project.huidigeStap || '—'}`,
+      `<span class="text-gray-400">Gebruiksduur:</span> ${project.gebruiksduur || 40} jaar`,
+    ]);
+
+    // Stakeholders
+    const sh = project.stakeholders || [];
+    addCard('Stakeholders', sh.length
+      ? sh.map(s => `${s.naam} <span class="text-gray-400">(${s.toegang})</span>`)
+      : ['<span class="text-gray-400">Geen stakeholders toegevoegd</span>']);
+
+    // PVE
+    if (project.pve) {
+      const V = project.pve.voorzieningen;
+      const { totalBVO, bouwkosten, tco } = POM_CALC.calcDashboard(V);
+      const lines = [];
+      if (V.primairOnderwijs.actief) lines.push(`Primair onderwijs: ${V.primairOnderwijs.leerlingen} leerlingen`);
+      if (V.voorschoolseOpvang.actief) lines.push(`Voorschoolse opvang: ${V.voorschoolseOpvang.groepen} groepen`);
+      if (V.sport.actief) lines.push(`Sport: ${V.sport.type}`);
+      lines.push(`Totaal BVO: <strong class="text-violet-600">${POM_CALC.formatM2(totalBVO)}</strong>`);
+      lines.push(`Bouwkosten: <strong>${POM_CALC.formatEuro(bouwkosten)}</strong>`);
+      lines.push(`TCO (50j): <strong>${POM_CALC.formatEuro(tco)}</strong>`);
+      addCard('PVE', lines);
+
+      // Radar
+      document.getElementById('radar-section').classList.remove('hidden');
+      const DIMS  = ['gezondSchool','duurzameSchool','adaptieveSchool','veiligSchool','digitaleSchool'];
+      const LABELS = ['Gezond','Duurzaam','Adaptief','Veilig','Digitaal'];
+      const scores = POM_CALC.calcAmbitieScores(project.pve.ambities);
+      new Chart(document.getElementById('besluit-radar').getContext('2d'), {
+        type: 'radar',
+        data: {
+          labels: LABELS,
+          datasets: [{
+            label: 'Ambities',
+            data: DIMS.map(d => scores[d]),
+            backgroundColor: 'rgba(96,165,250,0.3)',
+            borderColor: 'rgba(96,165,250,0.9)',
+            borderWidth: 2,
+            pointRadius: 4,
+          },{
+            label: 'Gemiddeld',
+            data: DIMS.map(d => POM_CALC.GEMIDDELDE_AMBITIES[d]),
+            backgroundColor: 'rgba(251,146,60,0.2)',
+            borderColor: 'rgba(251,146,60,0.8)',
+            borderWidth: 2,
+            borderDash: [5,3],
+            pointRadius: 3,
+          }]
+        },
+        options: {
+          scales:{ r:{ min:0,max:100,ticks:{stepSize:25,font:{size:9}},pointLabels:{font:{size:10}} }},
+          plugins:{ legend:{ position:'bottom', labels:{ font:{size:10} } }}
+        }
+      });
+    } else {
+      addCard('PVE', ['<span class="text-gray-400">Nog niet aangemaakt</span>']);
+    }
+
+    // Gebied
+    const gv = project.gebiedVarianten || [];
+    addCard('Gebieden', gv.length
+      ? gv.map(g => `${g.naam}: <strong>${g.opp.toLocaleString('nl-NL')} m²</strong>`)
+      : ['<span class="text-gray-400">Nog niet aangemaakt</span>']);
+  </script>
+</body>
+</html>

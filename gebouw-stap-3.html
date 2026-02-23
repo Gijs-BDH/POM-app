@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>POM – Gebouw Stap 3</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <style>
+    .cat-pill {
+      width: 100%; padding: 0.5rem 1rem; border-radius: 99px;
+      border: 1.5px solid #E5E7EB; background: white;
+      color: #9CA3AF; font-size: 0.8rem; font-weight: 500;
+      text-align: center; cursor: pointer; transition: all 0.15s;
+    }
+    .cat-pill.active { border-color: #7C3AED; color: #7C3AED; box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
+    .cat-pill.done   { border-color: #D1FAE5; background: #ECFDF5; color: #059669; cursor: default; }
+  </style>
+</head>
+<body class="min-h-screen bg-gray-50 p-8">
+
+  <div class="max-w-5xl mx-auto">
+    <a href="gebouw-stap-2.html" class="breadcrumb" id="back-link">← Selecteer opties</a>
+    <h1 id="project-titel" class="page-title"></h1>
+    <div id="step-indicator" class="mb-6"></div>
+
+    <div class="flex gap-6">
+      <div id="nav-panel" class="nav-panel"></div>
+
+      <div class="flex-1 flex gap-5">
+
+        <!-- Left: visual placeholder -->
+        <div class="flex-1 flex flex-col gap-3">
+          <h2 class="text-xl font-semibold text-gray-700">Kwaliteit beoordeling</h2>
+          <div id="visual-area" class="card p-4 flex flex-col gap-3" style="min-height:380px;">
+            <!-- Alternates between 3D view and floor plan based on category -->
+            <div id="visual-3d" class="flex-1 rounded-xl overflow-hidden" style="min-height:200px;">
+              <img src="src/assets/img_walkthrough.png" class="w-full h-full object-cover"/>
+            </div>
+            <div id="visual-plat" class="flex-1 hidden rounded-xl overflow-hidden" style="min-height:200px;">
+              <img src="src/assets/img_floorplans_narrow.png" class="w-full h-full object-cover"/>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="setVisual('3d')"   id="vis-3d"   class="metric-pill active-vis" style="border-color:#7C3AED;color:#7C3AED;font-size:0.7rem;padding:0.2rem 0.5rem;border-radius:99px;border:1px solid #E5E7EB;cursor:pointer;">Walkthrough</button>
+              <button onclick="setVisual('plat')" id="vis-plat" class="metric-pill"            style="font-size:0.7rem;padding:0.2rem 0.5rem;border-radius:99px;border:1px solid #E5E7EB;cursor:pointer;color:#6B7280;">Plattegrond</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: category list + active panel -->
+        <div class="w-72 flex-shrink-0 flex flex-col gap-3">
+          <div id="cat-list" class="flex flex-col gap-2"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="js/state.js"></script>
+  <script>
+    const params   = new URLSearchParams(window.location.search);
+    const gebouwId = params.get('id');
+    const project  = getCurrentProject();
+    if (!project) { window.location.href = 'index.html'; }
+
+    let variant = (project.gebouwVarianten || []).find(g => g.id === gebouwId);
+    if (!variant) { window.location.href = 'gebouw.html'; }
+
+    document.getElementById('back-link').href = 'gebouw-stap-2.html?id=' + gebouwId;
+    document.getElementById('project-titel').textContent = project.naam;
+    document.getElementById('step-indicator').innerHTML  = renderStepIndicator(3, 5, ['gebouw.html', 'gebouw-stap-2.html?id=' + gebouwId]);
+    document.getElementById('nav-panel').innerHTML       = renderNavPanel('gebouw', project);
+
+    // ── Categories ────────────────────────────────────────────────────────────
+    const CATEGORIEEN = [
+      { id: 'locatie', label: 'Locatie', visual: '3d',
+        sliders: [
+          { key: 'verkeer',        label: 'Verkeer' },
+          { key: 'parkeren',       label: 'Parkeren' },
+          { key: 'fietsenstalling',label: 'Fietsenstalling' },
+          { key: 'buitenruimte',   label: 'Buitenruimte' },
+        ]},
+      { id: 'kenmerkenSchool', label: 'Kenmerken school', visual: 'plat',
+        sliders: [
+          { key: 'structuur',           label: 'Structuur' },
+          { key: 'aanvullendeFuncties', label: 'Aanvullende functies' },
+          { key: 'combinatieFuncties',  label: 'Combinatiefuncties' },
+        ]},
+      { id: 'uitstraling', label: 'Uitstraling', visual: '3d',
+        sliders: [
+          { key: 'interieur', label: 'Interieur' },
+          { key: 'exterieur', label: 'Exterieur' },
+        ]},
+      { id: 'huisvestingConcept', label: 'Huisvesting concept', visual: 'plat',
+        sliders: [
+          { key: 'algemeen',               label: 'Algemeen' },
+          { key: 'ruimtelijkeIndeling',    label: 'Ruimtelijke indeling' },
+          { key: 'logistiek',              label: 'Logistiek' },
+          { key: 'gemeenschappelijkeRuimtes', label: 'Gemeenschappelijke ruimtes' },
+          { key: 'typologieLokalen',       label: 'Typologie lokalen' },
+        ]},
+      { id: 'vandalismeBestendig', label: 'Vandalisme bestendig', visual: '3d',
+        sliders: [
+          { key: 'overzichtEnControle', label: 'Overzicht en controle' },
+        ]},
+      { id: 'gebruiksvriendelijkheid', label: 'Gebruiksvriendelijkheid', visual: '3d',
+        sliders: [
+          { key: 'hoogteverschillen', label: 'Hoogteverschillen' },
+          { key: 'socialeVeiligheid', label: 'Sociale veiligheid' },
+        ]},
+    ];
+
+    // Working copy of beoordeling
+    let beoordeling = JSON.parse(JSON.stringify(
+      variant.kwaliteitsBeoordeling || {}
+    ));
+    // Ensure all categories exist
+    CATEGORIEEN.forEach(cat => {
+      if (!beoordeling[cat.id]) {
+        beoordeling[cat.id] = { beschrijving: '' };
+        cat.sliders.forEach(s => { beoordeling[cat.id][s.key] = 2; });
+      }
+    });
+
+    let activeIdx = 0;
+    const doneSet = new Set();
+
+    function setVisual(type) {
+      document.getElementById('visual-3d').classList.toggle('hidden', type !== '3d');
+      document.getElementById('visual-plat').classList.toggle('hidden', type !== 'plat');
+      document.getElementById('visual-3d').classList.toggle('flex', type === '3d');
+      document.getElementById('visual-plat').classList.toggle('flex', type === 'plat');
+      document.getElementById('vis-3d').style.borderColor  = type === '3d'   ? '#7C3AED' : '#E5E7EB';
+      document.getElementById('vis-3d').style.color        = type === '3d'   ? '#7C3AED' : '#6B7280';
+      document.getElementById('vis-plat').style.borderColor = type === 'plat' ? '#7C3AED' : '#E5E7EB';
+      document.getElementById('vis-plat').style.color       = type === 'plat' ? '#7C3AED' : '#6B7280';
+    }
+
+    function renderCategorieen() {
+      const list = document.getElementById('cat-list');
+      list.innerHTML = '';
+
+      CATEGORIEEN.forEach((cat, idx) => {
+        const isDone = doneSet.has(cat.id);
+        const isActive = idx === activeIdx;
+
+        if (isActive) {
+          // Expanded card
+          const card = document.createElement('div');
+          card.className = 'card p-4 flex flex-col gap-3';
+          card.style.border = '2px solid #7C3AED';
+
+          const catData = beoordeling[cat.id];
+
+          let html = `<h3 class="font-semibold text-sm text-gray-700">${cat.label}</h3>`;
+
+          cat.sliders.forEach(sl => {
+            const val = catData[sl.key] !== undefined ? catData[sl.key] : 2;
+            html += `
+              <div>
+                <div class="flex justify-between text-xs text-gray-500 mb-1">
+                  <span>${sl.label}</span>
+                  <span id="lbl-${cat.id}-${sl.key}">${['Laag','Gemiddeld','Hoog','Excellent'][val-1] || val}</span>
+                </div>
+                <input type="range" min="1" max="4" value="${val}"
+                       oninput="updateSlider('${cat.id}','${sl.key}',this.value)"
+                       class="w-full"/>
+              </div>`;
+          });
+
+          html += `
+            <div>
+              <label class="text-xs text-gray-500">Beschrijving bij de beoordeling:</label>
+              <textarea rows="3" class="input-field text-xs mt-1" placeholder="Toelichting..."
+                        oninput="updateBeschrijving('${cat.id}',this.value)">${catData.beschrijving || ''}</textarea>
+            </div>
+            <button onclick="volgendeCategorie(${idx})" class="btn-primary w-full text-sm py-2">volgende stap</button>`;
+
+          card.innerHTML = html;
+          list.appendChild(card);
+        } else {
+          // Pill
+          const pill = document.createElement('button');
+          pill.className = 'cat-pill ' + (isDone ? 'done' : '');
+          pill.textContent = (isDone ? '✓ ' : '') + cat.label;
+          pill.onclick = () => { activeIdx = idx; renderCategorieen(); };
+          list.appendChild(pill);
+        }
+      });
+    }
+
+    function updateSlider(catId, key, val) {
+      val = parseInt(val);
+      beoordeling[catId][key] = val;
+      const labels = ['Laag', 'Gemiddeld', 'Hoog', 'Excellent'];
+      const el = document.getElementById('lbl-' + catId + '-' + key);
+      if (el) el.textContent = labels[val - 1] || val;
+    }
+
+    function updateBeschrijving(catId, val) {
+      beoordeling[catId].beschrijving = val;
+    }
+
+    function saveBeoordeling() {
+      updateGebouwVariantById(gebouwId, { kwaliteitsBeoordeling: beoordeling });
+    }
+
+    function volgendeCategorie(idx) {
+      doneSet.add(CATEGORIEEN[idx].id);
+      saveBeoordeling();
+      if (idx + 1 < CATEGORIEEN.length) {
+        activeIdx = idx + 1;
+        renderCategorieen();
+      } else {
+        // All done – back to project overview
+        window.location.href = 'project-overzicht.html';
+      }
+    }
+
+    renderCategorieen();
+  </script>
+</body>
+</html>

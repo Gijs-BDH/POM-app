@@ -1,0 +1,572 @@
+/* ── POM Custom Styles ──────────────────────────────────────────────────────── */
+
+:root {
+  --primary: #7C3AED;
+  --primary-light: #EDE9FE;
+  --primary-hover: #6D28D9;
+}
+
+/* ── Base ──────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: #F9FAFB;
+  min-height: 100vh;
+  margin: 0;
+}
+
+/* ── Page layout: single centered card ─────────────────────────────────────── */
+/* Use on <body> for pages with one main card (welcome, form pages) */
+.page-center {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+}
+
+/* ── Page layout: sidebar + content ────────────────────────────────────────── */
+/* Use on <body> for pages with nav sidebar */
+.page-sidebar {
+  min-height: 100vh;
+  display: grid;
+}
+.page-sidebar .page-inner {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem 3rem 2.5rem;
+}
+.page-sidebar .page-header {
+  margin-bottom: 0.5rem;
+}
+.page-sidebar .page-step {
+  margin-bottom: 1.5rem;
+}
+.page-sidebar .page-body {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  gap: 2.5rem;
+  min-height: 0;
+}
+.page-sidebar .page-nav {
+  padding-top: 0.25rem;
+}
+.page-sidebar .page-content {
+  min-width: 0;
+}
+
+/* ── Project Overzicht grid: columns [phases | content | dashboard] ─────────── */
+.overview-grid {
+  display: grid;
+  grid-template-columns: 9rem 1fr auto;
+  column-gap: 2.5rem;
+  row-gap: 1.5rem;
+  align-items: start;
+}
+.overview-grid .dashboard-widget {
+  grid-column: 3;
+  grid-row: 1 / span 4;
+  align-self: stretch;
+  justify-content: flex-end;
+}
+
+/* ── Page layout: no sidebar, full content ─────────────────────────────────── */
+.page-full {
+  min-height: 100vh;
+  display: grid;
+}
+.page-full .page-inner {
+  display: grid;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2.5rem 3rem;
+}
+
+/* ── Cards ─────────────────────────────────────────────────────────────────── */
+.card {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+  padding: 2rem;
+}
+
+.card-outlined {
+  background: white;
+  border-radius: 1rem;
+  border: 1.5px solid #D1D5DB;
+  padding: 2rem;
+}
+
+/* ── Consistent form rows (label + input aligned in two columns) ────────────── */
+.form-row {
+  display: grid;
+  grid-template-columns: 10rem 1fr;
+  align-items: center;
+  gap: 1rem;
+}
+.form-row label, .form-label {
+  text-align: right;
+  font-size: 0.875rem;
+  color: #6B7280;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────────────── */
+.btn-primary {
+  background: var(--primary);
+  color: white;
+  border-radius: 0.625rem;
+  padding: 0.6rem 1.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.btn-primary:hover   { background: var(--primary-hover); }
+.btn-primary:disabled { background: #C4B5FD; cursor: not-allowed; }
+
+.btn-secondary {
+  background: white;
+  color: var(--primary);
+  border-radius: 0.625rem;
+  padding: 0.6rem 1.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: 2px solid var(--primary);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.btn-secondary:hover { background: var(--primary); color: white; }
+
+.btn-ghost {
+  background: #F3F4F6;
+  color: #6B7280;
+  border-radius: 0.625rem;
+  padding: 0.6rem 1.5rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-ghost:hover { background: #E5E7EB; }
+
+/* ── Form inputs ───────────────────────────────────────────────────────────── */
+.input-field {
+  border: 1.5px solid #E5E7EB;
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.875rem;
+  color: #374151;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.15s;
+  background: white;
+}
+.input-field:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(124,58,237,0.08); }
+
+.select-field {
+  border: 1.5px solid #E5E7EB;
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.875rem;
+  color: #374151;
+  width: 100%;
+  outline: none;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  padding-right: 2.25rem;
+}
+.select-field:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(124,58,237,0.08); }
+
+/* ── Sliders ───────────────────────────────────────────────────────────────── */
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: #E5E7EB;
+  outline: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(124,58,237,0.35);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+  border: none;
+}
+
+/* ── Selection buttons (C / B / A, Goed / Beter / Beste) ───────────────────── */
+.sel-btn {
+  padding: 0.3rem 0.8rem;
+  border-radius: 99px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  border: 1.5px solid #E5E7EB;
+  cursor: pointer;
+  background: white;
+  color: #6B7280;
+  transition: all 0.15s;
+}
+.sel-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+.sel-btn:hover:not(.active) { border-color: var(--primary); color: var(--primary); }
+
+/* ── SelectieCard (voorzieningen) ─────────────────────────────────────────── */
+.selcard {
+  border: 1.5px solid #D1D5DB;
+  border-radius: 1rem;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.selcard.selected { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
+
+.selcard-header {
+  padding: 1.1rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+.selcard.selected .selcard-header {
+  background: var(--primary);
+  color: white;
+}
+
+.selcard-body {
+  padding: 1.25rem 1.5rem;
+  background: #FAFAFA;
+  border-top: 1px solid #E5E7EB;
+}
+.selcard.selected .selcard-body {
+  background: #F5F3FF;
+  border-top-color: #DDD6FE;
+}
+
+/* Labels inside selected selcard body → stay readable */
+.selcard.selected .selcard-body .form-row label,
+.selcard.selected .selcard-body .form-label {
+  color: #5B21B6;
+}
+
+/* ── NavPanel ──────────────────────────────────────────────────────────────── */
+.nav-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 9rem;
+  flex-shrink: 0;
+}
+.nav-btn {
+  display: block;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+  text-decoration: none;
+}
+.nav-btn.active   { background: var(--primary); color: white; }
+.nav-btn.next     { background: var(--primary); color: white; }
+.nav-btn.inactive { background: #F3F4F6; color: #9CA3AF; }
+.nav-btn.inactive:hover { background: #E5E7EB; color: #6B7280; }
+.nav-btn.done     { background: #ECFDF5; color: #059669; }
+.nav-btn.done:hover { background: #D1FAE5; }
+
+/* In the overview grid, only completed phase buttons stretch to full row height */
+.overview-grid .nav-btn {
+  display: flex;
+  align-items: center;
+}
+.overview-grid .nav-btn.done {
+  align-self: stretch;
+}
+
+/* ── Step indicator (PVE stap 1–5) ────────────────────────────────────────── */
+.step-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+}
+.step-indicator .step-item { color: #D1D5DB; font-weight: 500; }
+.step-indicator .step-item.done { color: #9CA3AF; }
+.step-indicator a.step-item.done { cursor: pointer; text-decoration: none; }
+.step-indicator a.step-item.done:hover { color: var(--primary); }
+.step-indicator .step-item.active { color: var(--primary); font-weight: 700; }
+.step-indicator .step-arrow { color: #D1D5DB; margin: 0 0.2rem; }
+
+/* ── Dashboard widget (bouwkosten + TCO pills) ─────────────────────────────── */
+.dashboard-widget { display: flex; flex-direction: column; gap: 0.4rem; }
+.dashboard-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: white;
+  border: 1.5px solid #E5E7EB;
+  border-radius: 99px;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+/* ── Info card ─────────────────────────────────────────────────────────────── */
+.info-card {
+  background: #F5F3FF;
+  border-radius: 0.75rem;
+  padding: 1.1rem 1.3rem;
+  font-size: 0.85rem;
+  color: #4B5563;
+  border-left: 4px solid var(--primary);
+  line-height: 1.6;
+}
+
+/* ── Upload zone ───────────────────────────────────────────────────────────── */
+.upload-zone {
+  border: 2px dashed #D1D5DB;
+  border-radius: 1rem;
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.upload-zone:hover { border-color: var(--primary); background: #F5F3FF; }
+
+/* ── Breadcrumb ────────────────────────────────────────────────────────────── */
+.breadcrumb {
+  font-size: 0.8rem;
+  color: #9CA3AF;
+  text-decoration: none;
+  transition: color 0.15s;
+  display: inline-block;
+  margin-bottom: 0.25rem;
+}
+.breadcrumb:hover { color: var(--primary); }
+
+/* ── Page title ─────────────────────────────────────────────────────────────── */
+.page-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #1F2937;
+  margin: 0 0 0.2rem;
+}
+.page-meta {
+  font-size: 0.82rem;
+  color: #9CA3AF;
+  margin: 0;
+}
+
+/* ── Info button & popover ──────────────────────────────────────────────────── */
+.info-wrap { position: relative; display: inline-flex; flex-shrink: 0; }
+.info-btn {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  border: 1.5px solid #9CA3AF;
+  background: transparent;
+  color: #9CA3AF;
+  font-size: 0.65rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  transition: border-color 0.15s, color 0.15s;
+}
+.info-btn:hover, .info-btn.open { border-color: var(--primary); color: var(--primary); }
+.info-popover {
+  display: none;
+  position: absolute;
+  left: 1.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #1F2937;
+  color: white;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  width: 13rem;
+  z-index: 20;
+  white-space: normal;
+}
+.info-popover::before {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-right-color: #1F2937;
+}
+.info-popover.open { display: block; }
+
+/* ── Section divider ────────────────────────────────────────────────────────── */
+.divider { border: none; border-top: 1px solid #F3F4F6; margin: 1.25rem 0; }
+
+/* ── Gear / settings icon button ───────────────────────────────────────────── */
+.gear-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  color: #9CA3AF;
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+}
+.gear-btn:hover { color: var(--primary); background: var(--primary-light); }
+
+/* ── Planning timeline ─────────────────────────────────────────────────────── */
+.planning-step { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; flex: 1; }
+.planning-pill {
+  padding: 0.65rem 1rem;
+  border-radius: 99px;
+  border: 2px solid var(--primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--primary);
+  text-align: center;
+  width: 100%;
+  cursor: default;
+}
+.planning-pill.active { background: var(--primary); color: white; }
+
+/* ── Leaflet override ──────────────────────────────────────────────────────── */
+.leaflet-container { border-radius: 0.75rem; }
+
+/* ── PVE new-variant button (inline with cards, stretches to card height) ───── */
+.pve-new-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #DDD6FE;
+  border-radius: 1rem;
+  color: var(--primary);
+  font-size: 1.5rem;
+  min-width: 3.5rem;
+  text-decoration: none;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.pve-new-btn:hover { background: #F5F3FF; border-color: var(--primary); }
+
+/* ── Variant action buttons (copy + delete) ────────────────────────────────── */
+.variant-delete-btn,
+.variant-copy-btn {
+  position: absolute;
+  top: 0.3rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #9CA3AF;
+  font-size: 0.75rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+.variant-delete-btn { right: 0.4rem; font-size: 0.85rem; }
+.variant-copy-btn   { right: 1.85rem; }
+.variant-delete-btn:hover { background: #FEE2E2; color: #DC2626; }
+.variant-copy-btn:hover   { background: #EDE9FE; color: var(--primary); }
+
+/* ── PVE variant card ──────────────────────────────────────────────────────── */
+.pve-variant-card {
+  position: relative;
+  border: 1.5px solid #E5E7EB;
+  border-radius: 1rem;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  min-width: 180px;
+}
+.pve-variant-card:hover, .pve-variant-card.selected {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(124,58,237,0.1);
+}
+.pve-variant-card-header { padding: 0.6rem 1rem; font-weight: 600; font-size: 0.875rem; }
+.pve-variant-card-body { padding: 0.6rem 1rem; background: #F9FAFB; }
+
+/* ── Project list item ─────────────────────────────────────────────────────── */
+.project-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.1rem;
+  border-radius: 0.75rem;
+  border: 1.5px solid #E5E7EB;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.project-list-item:hover { border-color: var(--primary); }
+
+/* ── Modal overlay ─────────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.35);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100;
+}
+
+/* ── Vlekkenplan ───────────────────────────────────────────────────────────── */
+.cluster-circle {
+  border: 2.5px solid #374151; border-radius: 50%;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; position: relative; background: white;
+}
+.room-circle {
+  border: 2px solid #374151; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: white; font-size: 0.65rem; text-align: center;
+  font-weight: 500; color: #374151; cursor: default;
+}
+.add-btn {
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; border: 2.5px solid var(--primary);
+  color: var(--primary); font-size: 1.3rem; cursor: pointer;
+  background: white; transition: all 0.15s;
+}
+.add-btn:hover { background: var(--primary); color: white; }
