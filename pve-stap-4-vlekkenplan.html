@@ -122,7 +122,7 @@
     if (!pveV) { window.location.href = 'pve-stap-1.html'; }
 
     document.getElementById('project-titel').textContent = project.naam;
-    document.getElementById('step-indicator').innerHTML = renderStepIndicator(3, 5, ['pve-stap-2.html', 'pve-stap-3.html']);
+    document.getElementById('step-indicator').innerHTML = renderStepIndicator(2, 5, ['pve-stap-2.html']);
     document.getElementById('nav-panel').innerHTML = renderNavPanel('pve', project);
     document.getElementById('dashboard-widget').innerHTML = renderDashboard(project);
 
@@ -230,7 +230,7 @@
 
     function volgendeStap() {
       saveAndRender();
-      window.location.href = 'pve-stap-5.html';
+      window.location.href = 'pve-stap-3.html';
     }
 
     // Keyboard dismiss modals
