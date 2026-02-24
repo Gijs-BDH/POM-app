@@ -109,6 +109,24 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    if (req.method === "DELETE" && path.startsWith("/")) {
+      const id = path.substring(1);
+
+      const { error } = await supabase
+        .from("feedback")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
+      });
+    }
+
     return new Response(JSON.stringify({ error: "Not found" }), {
       status: 404,
       headers: {

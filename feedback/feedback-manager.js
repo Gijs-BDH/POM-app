@@ -52,8 +52,8 @@ export class FeedbackManager {
         this.closeErrorModal();
       } else if (e.target.closest('.feedback-item')) {
         const item = e.target.closest('.feedback-item');
-        if (e.target.classList.contains('mark-done-btn')) {
-          this.updateFeedbackState(item.dataset.id, 'done');
+        if (e.target.classList.contains('delete-btn')) {
+          this.deleteFeedback(item.dataset.id);
         } else {
           this.toggleFeedbackItem(item);
         }
@@ -263,19 +263,11 @@ export class FeedbackManager {
             <h4 class="font-medium text-gray-700 mb-2">Description</h4>
             <p class="text-gray-600">${this.escapeHtml(item.description)}</p>
           </div>
-          ${item.image ? `
-            <div class="mb-4">
-              <h4 class="font-medium text-gray-700 mb-2">Screenshot</h4>
-              <img src="${item.image}" alt="Screenshot" class="max-w-full rounded border border-gray-300">
-            </div>
-          ` : ''}
-          ${item.state !== 'done' ? `
           <div>
-            <button class="mark-done-btn px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md font-medium transition-colors" onclick="event.stopPropagation()">
-              Mark as Done
+            <button class="delete-btn px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md font-medium transition-colors" onclick="event.stopPropagation()">
+              Delete
             </button>
           </div>
-          ` : ''}
         </div>
       </div>
     `;
@@ -312,37 +304,28 @@ export class FeedbackManager {
     this.renderFeedbackList();
   }
 
-  async updateFeedbackState(id, newState) {
-    try {
-      console.log('Updating feedback state:', id, newState);
-      const url = `${this.apiUrl}/${id}`;
-      console.log('PATCH URL:', url);
+  async deleteFeedback(id) {
+    if (!confirm('Delete this feedback item?')) {
+      return;
+    }
 
-      const response = await fetch(url, {
-        method: 'PATCH',
+    try {
+      const response = await fetch(`${this.apiUrl}/${id}`, {
+        method: 'DELETE',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${this.apiKey}`,
           'apikey': this.apiKey
-        },
-        body: JSON.stringify({ state: newState })
+        }
       });
 
-      console.log('Response status:', response.status);
-
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
-        throw new Error('Failed to update state');
+        throw new Error('Failed to delete feedback');
       }
-
-      const result = await response.json();
-      console.log('Update result:', result);
 
       await this.loadFeedbackList();
     } catch (error) {
-      console.error('Update failed:', error);
-      this.showError('Failed to update feedback state.');
+      console.error('Delete failed:', error);
+      this.showError('Failed to delete feedback.');
     }
   }
 
