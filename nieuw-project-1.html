@@ -21,31 +21,27 @@
 
       <!-- Huidige stap -->
       <div class="flex items-center gap-4">
-        <label class="text-sm text-gray-500 w-32 text-right flex-shrink-0">Huidige stap</label>
-        <select id="huidigeStap" class="select-field">
-          <option value="">Selecteer…</option>
-          <option>IHP opstellen</option>
-          <option>PVE opstellen</option>
-          <option>Marktuitvraag opstellen</option>
-        </select>
+        <label class="text-sm text-gray-500 w-32 text-right flex-shrink-0">Waar sta je momenteel</label>
+        <textarea id="naam" type="text" class="input-field" placeholder="Waarvoor wil je POM gaan gebruiken"></textarea>
       </div>
 
       <!-- Rol -->
       <div class="flex items-start gap-4">
-        <label class="text-sm text-gray-500 w-32 text-right flex-shrink-0 pt-1">Rol</label>
+        <label class="text-sm text-gray-500 w-32 text-right flex-shrink-0 pt-1">Wat is jouw rol</label>
         <div id="rol-btns" class="flex flex-wrap gap-2">
-          <button type="button" class="sel-btn" data-rol="Schoolbestuur">Schoolbestuur</button>
-          <button type="button" class="sel-btn" data-rol="Bouwheer">Bouwheer</button>
+          <button type="button" class="sel-btn" data-rol="Schoolbestuur">Schoolbestuurder</button>
           <button type="button" class="sel-btn" data-rol="Architect">Architect</button>
-          <button type="button" class="sel-btn" data-rol="Onderwijshuisvesting">Onderwijshuisvesting</button>
-          <button type="button" class="sel-btn" data-rol="Stedenbouw beleid">Stedenbouw beleid</button>
-          <button type="button" class="sel-btn" data-rol="Sport beleid">Sport beleid</button>
-          <button type="button" class="sel-btn" data-rol="Sociaal beleid">Sociaal beleid</button>
+          <button type="button" class="sel-btn" data-rol="Onderwijshuisvesting">Beleidsadviseur Onderwijshuisvesting</button>
+          <button type="button" class="sel-btn" data-rol="Stedenbouw beleid">Stedenbouwkundige</button>
+          <button type="button" class="sel-btn" data-rol="Sport beleid">Beleidsadviseur Sport</button>
+          <button type="button" class="sel-btn" data-rol="Sport beleid">Beleidsadviseur mobiliteit</button>
+          <button type="button" class="sel-btn" data-rol="Sociaal beleid">Beleidsadviseur Sociaal domein</button>
+          <button type="button" class="sel-btn" data-rol="Sociaal beleid">Anders</button>
         </div>
       </div>
 
       <!-- Ervaring -->
-      <div class="flex items-center gap-4">
+      <!-- <div class="flex items-center gap-4">
         <label class="text-sm text-gray-500 w-32 text-right flex-shrink-0">Ervaring</label>
         <select id="ervaring" class="select-field">
           <option value="">Selecteer…</option>
@@ -54,7 +50,7 @@
           <option>Veel ervaring</option>
         </select>
       </div>
-    </div>
+    </div> -->
 
     <div class="flex justify-end mt-8">
       <button id="next-btn" onclick="volgendeStap()" class="btn-primary px-6 py-2">volgende stap</button>
@@ -82,17 +78,18 @@
 
     function volgendeStap() {
       const naam = document.getElementById('naam').value.trim();
-      const huidigeStap = document.getElementById('huidigeStap').value;
+      // const huidigeStap = document.getElementById('huidigeStap').value;
       const rollen = [...document.querySelectorAll('#rol-btns .sel-btn.active')]
                        .map(b => b.dataset.rol);
-      const ervaring = document.getElementById('ervaring').value;
+      // const ervaring = document.getElementById('ervaring').value;
 
       if (!naam) { alert('Vul een projectnaam in.'); return; }
-      if (!huidigeStap) { alert('Selecteer de huidige stap.'); return; }
+      // if (!huidigeStap) { alert('Selecteer de huidige stap.'); return; }
       if (!rollen.length) { alert('Selecteer minimaal één rol.'); return; }
-      if (!ervaring) { alert('Selecteer uw ervaringsniveau.'); return; }
+      // if (!ervaring) { alert('Selecteer uw ervaringsniveau.'); return; }
 
-      setDraft({ naam, huidigeStap, rol: rollen.join(', '), ervaring });
+      // setDraft({ naam, huidigeStap, rol: rollen.join(', '), ervaring });
+      setDraft({ naam, rol: rollen.join(', ') });
       window.location.href = 'nieuw-project-2.html';
     }
   </script>

@@ -73,6 +73,7 @@
               <h3 id="detail-naam" class="font-semibold text-gray-700"></h3>
               <div class="text-xs text-gray-500 leading-relaxed" id="detail-beschrijving"></div>
               <div id="detail-metrics" class="flex flex-col gap-1"></div>
+              <div id="detail-ambities"></div>
               <button onclick="selecteerOptie()" class="btn-primary w-full mt-2">+ Selecteer</button>
             </div>
           </div>
@@ -100,20 +101,37 @@
     // ── Building options catalog ──────────────────────────────────────────────
     const OPTIES = [
       { id: 'compact',   naam: 'Compact type',   icon: '🏫', bvo: 2500, bouwkosten: 6250000, tco: 13750000, duurzaamheid: 'Middel', maakbaarheid: 'Hoog',
-        beschrijving: 'Compacte schoolvorm met efficiënte ruimtebenutting. Geschikt voor kleinere kavels.' },
+        beschrijving: 'Compacte schoolvorm met efficiënte ruimtebenutting. Geschikt voor kleinere kavels.',
+        ambitieScores: { gezondSchool: 67, duurzameSchool: 55, adaptieveSchool: 67, veiligSchool: 75, digitaleSchool: 65 } },
       { id: 'lineair',   naam: 'Lineair type',   icon: '🏗️', bvo: 2800, bouwkosten: 7000000, tco: 15400000, duurzaamheid: 'Hoog',  maakbaarheid: 'Hoog',
-        beschrijving: 'Langgerekte plattegrond langs de straat. Optimale daglichttoetreding.' },
+        beschrijving: 'Langgerekte plattegrond langs de straat. Optimale daglichttoetreding.',
+        ambitieScores: { gezondSchool: 80, duurzameSchool: 67, adaptieveSchool: 67, veiligSchool: 70, digitaleSchool: 67 } },
       { id: 'cluster',   naam: 'Cluster type',   icon: '🏘️', bvo: 3100, bouwkosten: 7750000, tco: 17050000, duurzaamheid: 'Hoog',  maakbaarheid: 'Middel',
-        beschrijving: 'Groepering van functies rondom een centraal hart. Stimuleert ontmoeting.' },
+        beschrijving: 'Groepering van functies rondom een centraal hart. Stimuleert ontmoeting.',
+        ambitieScores: { gezondSchool: 70, duurzameSchool: 75, adaptieveSchool: 80, veiligSchool: 67, digitaleSchool: 70 } },
       { id: 'hof',       naam: 'Hof type',       icon: '🏛️', bvo: 3400, bouwkosten: 8500000, tco: 18700000, duurzaamheid: 'Middel', maakbaarheid: 'Laag',
-        beschrijving: 'Gesloten bouwvorm rondom een binnenhof. Beschutte buitenruimte voor kinderen.' },
+        beschrijving: 'Gesloten bouwvorm rondom een binnenhof. Beschutte buitenruimte voor kinderen.',
+        ambitieScores: { gezondSchool: 67, duurzameSchool: 60, adaptieveSchool: 55, veiligSchool: 85, digitaleSchool: 62 } },
       { id: 'toren',     naam: 'Toren type',     icon: '🗼', bvo: 2200, bouwkosten: 5500000, tco: 12100000, duurzaamheid: 'Laag',  maakbaarheid: 'Laag',
-        beschrijving: 'Meerdere bouwlagen op kleine footprint. Ideaal bij beperkt kavelbegrip.' },
+        beschrijving: 'Meerdere bouwlagen op kleine footprint. Ideaal bij beperkt kavelbegrip.',
+        ambitieScores: { gezondSchool: 55, duurzameSchool: 65, adaptieveSchool: 50, veiligSchool: 72, digitaleSchool: 75 } },
       { id: 'paviljon',  naam: 'Paviljoen type', icon: '⛺', bvo: 3600, bouwkosten: 9000000, tco: 19800000, duurzaamheid: 'Hoog',  maakbaarheid: 'Middel',
-        beschrijving: 'Losse paviljoens verbonden door overdekte passages. Flexibel en uitbreidbaar.' },
+        beschrijving: 'Losse paviljoens verbonden door overdekte passages. Flexibel en uitbreidbaar.',
+        ambitieScores: { gezondSchool: 85, duurzameSchool: 85, adaptieveSchool: 90, veiligSchool: 60, digitaleSchool: 70 } },
     ];
 
     const RATING_COLOR = { 'Hoog': '#059669', 'Middel': '#D97706', 'Laag': '#DC2626' };
+
+    const DIM_LABELS = {
+      gezondSchool: 'Gezonde school', duurzameSchool: 'Duurzame school',
+      adaptieveSchool: 'Adaptieve school', veiligSchool: 'Veilige school', digitaleSchool: 'Digitale school',
+    };
+
+    // Load PVE ambition targets once
+    const pveVariant   = getActivePveVariant();
+    const pveAmbitieScores = pveVariant
+      ? POM_CALC.calcAmbitieScores(pveVariant.ambities)
+      : { gezondSchool: 67, duurzameSchool: 67, adaptieveSchool: 67, veiligSchool: 67, digitaleSchool: 67 };
 
     let geselecteerdOptieId = variant.geselecteerdeOptie || null;
     let detailOptie = null;
@@ -162,6 +180,36 @@
         <div class="metric-pill" style="color:#059669;border-color:#D1FAE5;">TCO: ${POM_CALC.formatEuro(detailOptie.tco)}</div>
         <div class="metric-pill" style="color:${RATING_COLOR[detailOptie.duurzaamheid]};">Duurzaamheid: ${detailOptie.duurzaamheid}</div>
         <div class="metric-pill" style="color:${RATING_COLOR[detailOptie.maakbaarheid]};">Maakbaarheid: ${detailOptie.maakbaarheid}</div>`;
+
+      // Ambition comparison
+      const scores = detailOptie.ambitieScores || {};
+      const ambitieRows = Object.keys(DIM_LABELS).map(dim => {
+        const score  = scores[dim] ?? 67;
+        const target = pveAmbitieScores[dim] ?? 67;
+        const color  = score >= target ? '#059669' : score >= target - 15 ? '#D97706' : '#DC2626';
+        return `<div>
+          <div class="flex justify-between items-center" style="margin-bottom:2px;">
+            <span style="font-size:0.68rem;color:#6B7280;">${DIM_LABELS[dim]}</span>
+            <span style="font-size:0.68rem;font-weight:600;color:${color};">${score}%</span>
+          </div>
+          <div style="position:relative;width:100%;height:5px;background:#F3F4F6;border-radius:99px;">
+            <div style="width:${score}%;background:${color};height:5px;border-radius:99px;min-width:4px;"></div>
+            <div title="PVE doel: ${target}%"
+                 style="position:absolute;left:${target}%;top:-2px;width:2px;height:9px;background:#374151;border-radius:1px;transform:translateX(-50%);"></div>
+          </div>
+        </div>`;
+      }).join('');
+
+      document.getElementById('detail-ambities').innerHTML = `
+        <div style="border-top:1px solid #F3F4F6;padding-top:0.75rem;margin-top:0.25rem;">
+          <div style="font-size:0.65rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem;">
+            PVE Ambities
+          </div>
+          <div style="display:flex;flex-direction:column;gap:0.5rem;">${ambitieRows}</div>
+          <div style="font-size:0.6rem;color:#D1D5DB;margin-top:0.4rem;">
+            Balk = score optie &nbsp;|&nbsp; streep = PVE doel
+          </div>
+        </div>`;
     }
 
     function sluitDetail() {

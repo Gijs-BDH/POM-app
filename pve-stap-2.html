@@ -163,7 +163,7 @@
     if (!pveV) { window.location.href = 'pve-stap-1.html'; }
 
     document.getElementById('project-titel').textContent = project.naam;
-    document.getElementById('step-indicator').innerHTML = renderStepIndicator(1);
+    document.getElementById('step-indicator').innerHTML = renderStepIndicator(2, 5, ['pve-gebruiksduur.html']);
     document.getElementById('nav-panel').innerHTML = renderNavPanel('pve', project);
 
     const V = pveV.voorzieningen;
