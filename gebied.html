@@ -9,20 +9,12 @@
   <link rel="stylesheet" href="css/styles.css"/>
   <style>
     #map { height: 480px; border-radius: 0.75rem; }
-    .mode-pill {
-      width: 100%; padding: 0.5rem 1rem; border-radius: 99px;
-      border: 1.5px solid #E5E7EB; background: white;
-      color: #9CA3AF; font-size: 0.8rem; font-weight: 500;
-      text-align: center; cursor: pointer; transition: all 0.15s;
-    }
-    .mode-pill.active { border-color: #7C3AED; color: #7C3AED; box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
-    .mode-pill:hover:not(.active) { border-color: #D1D5DB; color: #6B7280; }
   </style>
 </head>
 <body class="min-h-screen bg-gray-50 p-8">
 
   <div class="max-w-7xl mx-auto">
-    <a href="project-overzicht.html" class="breadcrumb">← Project overzicht</a>
+    <a href="project-overzicht.html" class="text-xs text-gray-400 hover:text-violet-600">← Project overzicht</a>
     <h1 id="project-titel" class="page-title"></h1>
     <div id="step-indicator" class="mb-6"></div>
 
@@ -32,24 +24,19 @@
       <!-- Map -->
       <div class="flex-1">
         <div id="map"></div>
-        <p id="map-hint" class="text-xs text-gray-400 mt-2 text-center hidden">
-          Klik om punten te plaatsen &nbsp;·&nbsp; dubbelklik om te beëindigen
-        </p>
-        <p id="map-hint-select" class="text-xs text-gray-400 mt-2 text-center">
-          Klik op een perceel om het te selecteren
+        <p id="map-hint" class="text-xs text-gray-400 mt-2 text-center">
+          Zoek een locatie of druk op "Selecteer kavel(s)" om kavels toe te voegen
         </p>
       </div>
 
       <!-- Right panel -->
       <div class="w-56 flex-shrink-0 flex flex-col gap-3">
 
-        <!-- Location + search -->
+        <!-- Locatie card -->
         <div class="card p-4 flex flex-col gap-3">
           <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Locatie</h3>
-          <div class="flex flex-col gap-1">
-            <label class="text-xs text-gray-500">Naam variant</label>
-            <input id="locatie-naam" type="text" class="input-field" placeholder="bv. Locatie Noord"/>
-          </div>
+          <div class="text-sm font-semibold text-gray-700" id="variant-label"></div>
+          <div id="mode-badge" class="text-xs rounded-full px-2 py-0.5 self-start"></div>
           <div class="flex flex-col gap-1">
             <label class="text-xs text-gray-500">Zoek adres</label>
             <div class="flex gap-1">
@@ -61,7 +48,6 @@
             </div>
             <div id="zoek-feedback" class="text-xs text-gray-400 leading-tight min-h-[1rem]"></div>
           </div>
-          <!-- Kadaster overlay toggle -->
           <label class="flex items-center gap-2 cursor-pointer select-none">
             <input type="checkbox" id="kadaster-toggle" checked
                    onchange="toggleKadaster(this.checked)"
@@ -70,27 +56,24 @@
           </label>
         </div>
 
-        <!-- Perceel selection -->
+        <!-- Selected kavels card -->
         <div class="card p-4 flex flex-col gap-3">
-          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Perceel</h3>
-          <button class="mode-pill active" id="mode-selecteer" onclick="setMode('selecteer')">
-            Selecteer kavel
+          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Geselecteerde kavels</h3>
+          <button id="selecteer-btn" onclick="toggleSelecteren()"
+                  class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border border-violet-300 text-violet-600 hover:bg-violet-50 transition-all">
+            Selecteer kavel(s)
           </button>
-          <button class="mode-pill" id="mode-teken" onclick="setMode('teken')">
-            Teken handmatig
-          </button>
-          <div id="opp-row" class="flex items-center justify-between text-sm text-gray-600">
-            <span>Oppervlak:</span>
-            <span id="opp-display" class="font-semibold text-violet-700 text-xs">— m²</span>
+          <div id="kavels-list" class="flex flex-col gap-1.5"></div>
+          <p id="kavels-empty" class="text-xs text-gray-300">Nog geen kavels geselecteerd</p>
+          <div class="flex items-center justify-between text-xs text-gray-500 pt-1 border-t border-gray-100">
+            <span>Totaal</span>
+            <span id="opp-display" class="font-semibold text-violet-700">— m²</span>
           </div>
-          <button id="clear-btn" onclick="clearPlot()"
-                  class="text-xs text-gray-400 hover:text-red-500 transition-colors text-left hidden">
-            ✕ Verwijder selectie
-          </button>
-          <div id="select-status" class="text-xs text-gray-400 leading-tight min-h-[1rem]"></div>
         </div>
 
-        <button onclick="naarStap2()" class="btn-primary w-full">Volgende stap →</button>
+        <button id="volgende-btn" onclick="naarVolgende()" class="btn-primary w-full" disabled>
+          Volgende stap →
+        </button>
 
       </div>
     </div>
@@ -102,9 +85,23 @@
     const project = getCurrentProject();
     if (!project) { window.location.href = 'index.html'; }
 
+    const mode = new URLSearchParams(window.location.search).get('mode') || 'bouwvlak';
+
     document.getElementById('project-titel').textContent = project.naam;
     document.getElementById('step-indicator').innerHTML  = renderStepIndicator(1, 4);
     document.getElementById('nav-panel').innerHTML       = renderNavPanel('gebied', project);
+
+    const variantNr = (project.gebiedVarianten || []).length + 1;
+    document.getElementById('variant-label').textContent = 'Gebiedsvariant ' + variantNr;
+
+    const badge = document.getElementById('mode-badge');
+    if (mode === 'onderlegger') {
+      badge.textContent = 'Als onderlegger';
+      badge.className = 'text-xs rounded-full px-2 py-0.5 self-start bg-orange-100 text-orange-600';
+    } else {
+      badge.textContent = 'Als bouwvlak';
+      badge.className = 'text-xs rounded-full px-2 py-0.5 self-start bg-violet-100 text-violet-600';
+    }
 
     // ── Map init ─────────────────────────────────────────────────────────────
     const MAP_VIEW_KEY = 'pom_map_view_gebied_' + project.id;
@@ -144,12 +141,26 @@
       }
     });
 
-    // ── Plot state ───────────────────────────────────────────────────────────
-    let currentMode  = 'selecteer';
-    let plotPoly     = null;   // the selected/drawn polygon on the map
-    let plotGeo      = null;   // [[lat,lng], …]
-    let plotOpp      = 0;
-    let drawPoints   = [];
+    // ── Selected kavels state ─────────────────────────────────────────────────
+    let selectedKavels  = []; // { id, geo, opp, poly }
+    let nextKavelId     = 1;
+    let selecterenActief = false;
+
+    function toggleSelecteren() {
+      selecterenActief = !selecterenActief;
+      const btn = document.getElementById('selecteer-btn');
+      if (selecterenActief) {
+        btn.textContent = '✕ Stoppen met selecteren';
+        btn.className = 'w-full text-xs font-medium py-1.5 px-3 rounded-lg border border-red-300 text-red-500 hover:bg-red-50 transition-all';
+        map.getContainer().style.cursor = 'crosshair';
+        document.getElementById('map-hint').textContent = 'Klik op de kaart om kavels toe te voegen';
+      } else {
+        btn.textContent = 'Selecteer kavel(s)';
+        btn.className = 'w-full text-xs font-medium py-1.5 px-3 rounded-lg border border-violet-300 text-violet-600 hover:bg-violet-50 transition-all';
+        map.getContainer().style.cursor = '';
+        document.getElementById('map-hint').textContent = 'Zoek een locatie of druk op "Selecteer kavel(s)" om kavels toe te voegen';
+      }
+    }
 
     function calcAreaM2(latlngs) {
       if (!latlngs || latlngs.length < 3) return 0;
@@ -164,103 +175,60 @@
       return Math.round(Math.abs(area / 2) * DEG_TO_M * DEG_TO_M * Math.cos(52 * Math.PI / 180));
     }
 
-    function showPlot(geo, opp) {
-      if (plotPoly) map.removeLayer(plotPoly);
-      plotGeo  = geo;
-      plotOpp  = opp;
-      plotPoly = L.polygon(geo, { color: '#7C3AED', fillColor: '#7C3AED', fillOpacity: 0.25, weight: 2 }).addTo(map);
-      document.getElementById('opp-display').textContent = opp.toLocaleString('nl-NL') + ' m²';
-      document.getElementById('clear-btn').classList.remove('hidden');
+    function addKavel(latlng) {
+      const dLat = 0.00045;
+      const dLng = 0.00073;
+      const geo = [
+        [latlng.lat + dLat, latlng.lng - dLng],
+        [latlng.lat + dLat, latlng.lng + dLng],
+        [latlng.lat - dLat, latlng.lng + dLng],
+        [latlng.lat - dLat, latlng.lng - dLng],
+      ];
+      const opp  = calcAreaM2(geo.map(c => ({ lat: c[0], lng: c[1] })));
+      const poly = L.polygon(geo, { color: '#7C3AED', fillColor: '#7C3AED', fillOpacity: 0.25, weight: 2 }).addTo(map);
+      const id   = nextKavelId++;
+      selectedKavels.push({ id, geo, opp, poly });
+      renderKavelsList();
     }
 
-    function clearPlot() {
-      if (plotPoly) { map.removeLayer(plotPoly); plotPoly = null; }
-      plotGeo = null; plotOpp = 0; drawPoints = [];
-      document.getElementById('opp-display').textContent = '— m²';
-      document.getElementById('clear-btn').classList.add('hidden');
-      document.getElementById('select-status').textContent = '';
+    function removeKavel(id) {
+      const idx = selectedKavels.findIndex(k => k.id === id);
+      if (idx === -1) return;
+      map.removeLayer(selectedKavels[idx].poly);
+      selectedKavels.splice(idx, 1);
+      renderKavelsList();
     }
 
-    // ── Mode toggle ──────────────────────────────────────────────────────────
-    function setMode(m) {
-      currentMode = m;
-      document.getElementById('mode-selecteer').classList.toggle('active', m === 'selecteer');
-      document.getElementById('mode-teken').classList.toggle('active', m === 'teken');
-      document.getElementById('map-hint').classList.toggle('hidden', m !== 'teken');
-      document.getElementById('map-hint-select').classList.toggle('hidden', m !== 'selecteer');
-      if (m === 'teken') {
-        map.getContainer().style.cursor = 'crosshair';
-        drawPoints = [];
-        if (plotPoly) { map.removeLayer(plotPoly); plotPoly = null; }
-        document.getElementById('select-status').textContent = '';
-      } else {
-        map.getContainer().style.cursor = '';
-        drawPoints = [];
+    function renderKavelsList() {
+      const list  = document.getElementById('kavels-list');
+      const empty = document.getElementById('kavels-empty');
+      list.innerHTML = '';
+
+      if (selectedKavels.length === 0) {
+        empty.classList.remove('hidden');
+        document.getElementById('opp-display').textContent = '— m²';
+        document.getElementById('volgende-btn').disabled = true;
+        return;
       }
+
+      empty.classList.add('hidden');
+      selectedKavels.forEach((k, i) => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between text-xs';
+        row.innerHTML = `
+          <span class="text-gray-600">Kavel ${i + 1}</span>
+          <span class="text-gray-400">${k.opp.toLocaleString('nl-NL')} m²</span>
+          <button onclick="removeKavel(${k.id})" class="text-gray-300 hover:text-red-400 transition-colors leading-none ml-1">×</button>`;
+        list.appendChild(row);
+      });
+
+      const totalOpp = selectedKavels.reduce((s, k) => s + k.opp, 0);
+      document.getElementById('opp-display').textContent = totalOpp.toLocaleString('nl-NL') + ' m²';
+      document.getElementById('volgende-btn').disabled = false;
     }
 
-    // ── Map click: selecteer or teken ────────────────────────────────────────
-    map.on('click', async e => {
-      if (currentMode === 'selecteer') {
-        await selecteerKavel(e.latlng);
-      } else {
-        // Manual drawing: add point
-        drawPoints.push([e.latlng.lat, e.latlng.lng]);
-        if (drawPoints.length >= 3) {
-          if (plotPoly) map.removeLayer(plotPoly);
-          plotPoly = L.polygon(drawPoints, { color: '#7C3AED', fillColor: '#7C3AED', fillOpacity: 0.25, weight: 2 }).addTo(map);
-          const opp = calcAreaM2(plotPoly.getLatLngs()[0]);
-          document.getElementById('opp-display').textContent = opp.toLocaleString('nl-NL') + ' m²';
-          document.getElementById('clear-btn').classList.remove('hidden');
-          plotOpp = opp;
-        }
-      }
-    });
-
-    map.on('dblclick', e => {
-      if (currentMode !== 'teken' || drawPoints.length < 3) return;
-      plotGeo = plotPoly.getLatLngs()[0].map(p => [p.lat, p.lng]);
-      plotOpp = calcAreaM2(plotPoly.getLatLngs()[0]);
-      document.getElementById('opp-display').textContent = plotOpp.toLocaleString('nl-NL') + ' m²';
-      document.getElementById('map-hint').classList.add('hidden');
-      map.getContainer().style.cursor = '';
-      currentMode = 'teken'; // stay in teken but stop collecting points
-      drawPoints  = [];
-    });
-
-    // ── Kadaster parcel lookup via PDOK WFS ───────────────────────────────────
-    async function selecteerKavel(latlng) {
-      const status = document.getElementById('select-status');
-      status.textContent = 'Zoeken naar perceel…';
-      map.getContainer().style.cursor = 'wait';
-
-      const d    = 0.0002; // ~20 m buffer
-      const bbox = `${latlng.lng - d},${latlng.lat - d},${latlng.lng + d},${latlng.lat + d},urn:ogc:def:crs:EPSG::4326`;
-      const url  = `https://service.pdok.nl/kadaster/kadastralekaart/wfs/v5_0?service=WFS&version=2.0.0&request=GetFeature&typeName=kadastralekaart:Perceel&outputFormat=application/json&count=1&srsName=urn:ogc:def:crs:EPSG::4326&bbox=${bbox}`;
-
-      try {
-        const data = await fetch(url).then(r => r.json());
-        map.getContainer().style.cursor = '';
-        if (data.features && data.features.length > 0) {
-          const feat  = data.features[0];
-          const geom  = feat.geometry;
-          // GeoJSON coords are [lng, lat] → Leaflet needs [lat, lng]
-          const rings = geom.type === 'MultiPolygon' ? geom.coordinates[0] : geom.coordinates;
-          const geo   = rings[0].map(c => [c[1], c[0]]);
-          const opp   = calcAreaM2(geo.map(c => ({ lat: c[0], lng: c[1] })));
-          showPlot(geo, opp);
-          const props = feat.properties || {};
-          const label = [props.kadastralegemeente, props.sectie, props.perceelnummer]
-            .filter(Boolean).join(' ');
-          status.textContent = label || 'Perceel geselecteerd';
-        } else {
-          status.textContent = 'Geen perceel gevonden op deze locatie.';
-        }
-      } catch {
-        map.getContainer().style.cursor = '';
-        status.textContent = 'Ophalen mislukt. Probeer opnieuw of teken handmatig.';
-      }
-    }
+    // ── Map click ────────────────────────────────────────────────────────────
+    map.on('click', e => { if (selecterenActief) addKavel(e.latlng); });
 
     // ── Address search via Nominatim ─────────────────────────────────────────
     async function zoekLocatie() {
@@ -284,20 +252,33 @@
       }
     }
 
-    // ── Navigate to step 2 ───────────────────────────────────────────────────
-    function naarStap2() {
-      const naam    = document.getElementById('locatie-naam').value.trim() || null;
-      const variant = createNewGebiedVariant(naam);
-      const updates = { stedenbouwbeleid: { mode: 'simpel', goedgekeurd: false } };
-      if (plotGeo && plotGeo.length >= 3) {
-        // Seed bouwbaarGebied with the selected/drawn plot so stap-2 has a starting point
-        updates.geo           = plotGeo;
-        updates.opp           = plotOpp;
-        updates.bouwbaarGebied = { geo: plotGeo, opp: plotOpp };
+    // ── Navigate ─────────────────────────────────────────────────────────────
+    function naarVolgende() {
+      const totalOpp = selectedKavels.reduce((s, k) => s + k.opp, 0);
+      const mainGeo  = selectedKavels[0].geo;
+
+      if (mode === 'onderlegger') {
+        localStorage.setItem('pom_gebied_pending', JSON.stringify({
+          kavels: selectedKavels.map(k => ({ geo: k.geo, opp: k.opp })),
+          variantNr
+        }));
+        window.location.href = 'gebied-teken.html';
+        return;
       }
-      updateGebiedVariantById(variant.id, updates);
+
+      // bouwvlak: create variant directly
+      const naam    = 'Gebiedsvariant ' + variantNr;
+      const variant = createNewGebiedVariant(naam);
+      updateGebiedVariantById(variant.id, {
+        stedenbouwbeleid: { mode: 'simpel', goedgekeurd: false },
+        geo: mainGeo,
+        opp: totalOpp,
+        bouwbaarGebied: { geo: mainGeo, opp: totalOpp }
+      });
       window.location.href = 'gebied-stap-2.html?id=' + variant.id;
     }
+
+    renderKavelsList();
   </script>
 </body>
 </html>
