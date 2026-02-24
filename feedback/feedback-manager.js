@@ -314,7 +314,11 @@ export class FeedbackManager {
 
   async updateFeedbackState(id, newState) {
     try {
-      const response = await fetch(`${this.apiUrl}/${id}`, {
+      console.log('Updating feedback state:', id, newState);
+      const url = `${this.apiUrl}/${id}`;
+      console.log('PATCH URL:', url);
+
+      const response = await fetch(url, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -324,9 +328,16 @@ export class FeedbackManager {
         body: JSON.stringify({ state: newState })
       });
 
+      console.log('Response status:', response.status);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
         throw new Error('Failed to update state');
       }
+
+      const result = await response.json();
+      console.log('Update result:', result);
 
       await this.loadFeedbackList();
     } catch (error) {
