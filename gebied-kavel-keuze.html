@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>POM – Kavel keuze</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body class="min-h-screen bg-gray-50 p-8">
+
+  <div class="max-w-5xl mx-auto">
+    <a href="project-overzicht.html" class="text-xs text-gray-400 hover:text-violet-600">← Project overzicht</a>
+    <h1 id="project-titel" class="text-xl font-semibold text-gray-700 mt-1 mb-6"></h1>
+
+    <div class="flex gap-6">
+      <div id="nav-panel" class="nav-panel"></div>
+
+      <div class="flex-1">
+        <div class="card max-w-2xl">
+          <h2 class="text-2xl font-bold text-gray-800 mb-1">Kavel selecteren</h2>
+          <p class="text-sm text-gray-500 mb-6">
+            Hoe wilt u de geselecteerde kavel(s) gebruiken?
+          </p>
+
+          <div class="flex flex-col gap-3">
+
+            <button onclick="window.location.href='gebied.html?mode=bouwvlak'"
+                    class="text-left p-5 rounded-xl border-2 border-gray-200 hover:border-violet-400 hover:bg-violet-50 transition-all group">
+              <div class="flex items-start gap-4">
+                <div class="w-10 h-10 rounded-full bg-violet-50 group-hover:bg-violet-100 flex items-center justify-center flex-shrink-0">
+                  <svg class="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>
+                  </svg>
+                </div>
+                <div>
+                  <div class="font-semibold text-gray-700 text-sm">Kavel overnemen als bouwvlak</div>
+                  <div class="text-xs text-gray-400 mt-1">Selecteer een of meer kavels op de kaart — de kavelgrens wordt direct als bouwvlak gebruikt</div>
+                </div>
+              </div>
+            </button>
+
+            <button onclick="window.location.href='gebied.html?mode=onderlegger'"
+                    class="text-left p-5 rounded-xl border-2 border-gray-200 hover:border-orange-400 hover:bg-orange-50 transition-all group">
+              <div class="flex items-start gap-4">
+                <div class="w-10 h-10 rounded-full bg-orange-50 group-hover:bg-orange-100 flex items-center justify-center flex-shrink-0">
+                  <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                  </svg>
+                </div>
+                <div>
+                  <div class="font-semibold text-gray-700 text-sm">Kavel gebruiken als onderlegger</div>
+                  <div class="text-xs text-gray-400 mt-1">Selecteer een of meer kavels als referentie — teken daarna zelf het bouwvlak in</div>
+                </div>
+              </div>
+            </button>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/state.js"></script>
+  <script>
+    const project = getCurrentProject();
+    if (!project) { window.location.href = 'index.html'; }
+    document.getElementById('project-titel').textContent = project.naam;
+    document.getElementById('nav-panel').innerHTML = renderNavPanel('gebied', project);
+  </script>
+</body>
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>POM – Gebied Overzicht</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body class="min-h-screen bg-gray-50 p-8">
+
+  <div class="max-w-5xl mx-auto">
+    <a href="project-overzicht.html" class="text-xs text-gray-400 hover:text-violet-600">← Project overzicht</a>
+    <h1 id="project-titel" class="text-xl font-semibold text-gray-700 mt-1 mb-2"></h1>
+
+    <div class="flex gap-6">
+      <div id="nav-panel" class="nav-panel"></div>
+
+      <div class="flex-1">
+
+        <!-- Page header -->
+        <div class="flex items-end justify-between mb-6">
+          <div>
+            <h2 class="text-2xl font-semibold text-gray-800">Gebied Varianten</h2>
+            <p class="text-sm text-gray-400 mt-0.5">Klik op een variant om deze te bewerken</p>
+          </div>
+          <a href="nieuw-gebied.html" class="btn-primary px-4 py-2 text-sm">+ Nieuw gebied</a>
+        </div>
+
+        <div id="variant-list" class="flex flex-col gap-3"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/state.js"></script>
+  <script>
+    const project = getCurrentProject();
+    if (!project) { window.location.href = 'index.html'; }
+
+    document.getElementById('project-titel').textContent = project.naam;
+    document.getElementById('nav-panel').innerHTML = renderNavPanel('gebied', project);
+
+    function render() {
+      const p    = getCurrentProject();
+      const list = document.getElementById('variant-list');
+      list.innerHTML = '';
+
+      p.gebiedVarianten.forEach(variant => {
+        const isLoket = !!variant.wachtOpLoket;
+        const opp     = variant.opp || 0;
+        const bouwbaar = variant.bouwbaarGebied && variant.bouwbaarGebied.opp || 0;
+        const plein    = ((variant.onderbouwplein && variant.onderbouwplein.opp) || 0)
+                       + ((variant.bovenbouwPlein && variant.bovenbouwPlein.opp) || 0);
+        const parkeren     = variant.parkeren && variant.parkeren.opp || 0;
+        const fietsenstall = variant.fietsenstalling && variant.fietsenstalling.opp || 0;
+        const bomen        = variant.bomen && variant.bomen.aantal || 0;
+        const hasGeo       = variant.geo && variant.geo.length >= 3;
+
+        const card = document.createElement('div');
+        card.className = 'overflow-hidden rounded-2xl border cursor-pointer transition-all hover:shadow-md '
+          + (isLoket ? 'border-amber-300' : 'border-gray-200');
+
+        // ── Header bar ──
+        const hdr = document.createElement('div');
+        hdr.className = 'flex items-center justify-between px-5 py-3 '
+          + (isLoket ? 'bg-amber-500' : 'bg-gray-600');
+        hdr.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="text-white font-semibold text-sm">${variant.naam}</span>
+            ${isLoket
+              ? '<span class="text-xs rounded-full px-2 py-0.5 bg-white/20 text-white border border-white/30">loket aanvraag</span>'
+              : hasGeo
+                ? '<span class="text-xs rounded-full px-2 py-0.5 bg-white/20 text-white border border-white/30">getekend</span>'
+                : ''}
+          </div>
+          <div class="flex items-center gap-3" id="hdr-actions-${variant.id}"></div>`;
+
+        // ── Body: 3 columns ──
+        const body = document.createElement('div');
+        body.className = 'grid grid-cols-3 divide-x divide-gray-100 bg-white';
+        body.innerHTML = `
+          <!-- Oppervlak -->
+          <div class="px-5 py-4">
+            <div class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Oppervlak</div>
+            <div class="flex flex-col gap-2 text-xs">
+              <div class="flex justify-between">
+                <span class="text-gray-400">Totaal</span>
+                <span class="font-semibold text-orange-500">${opp.toLocaleString('nl-NL')} m²</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-400">Bouwbaar</span>
+                <span class="font-semibold text-gray-600">${bouwbaar.toLocaleString('nl-NL')} m²</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-400">Plein</span>
+                <span class="font-semibold text-gray-600">${plein.toLocaleString('nl-NL')} m²</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Inrichting -->
+          <div class="px-5 py-4">
+            <div class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Inrichting</div>
+            <div class="flex flex-col gap-2 text-xs">
+              <div class="flex justify-between">
+                <span class="text-gray-400">Parkeren</span>
+                <span class="font-semibold text-gray-600">${parkeren.toLocaleString('nl-NL')} m²</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-400">Fietsenstalling</span>
+                <span class="font-semibold text-gray-600">${fietsenstall.toLocaleString('nl-NL')} m²</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-400">Bomen</span>
+                <span class="font-semibold text-gray-600">${bomen} stuks</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Locatie -->
+          <div class="px-5 py-4">
+            <div class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Locatie</div>
+            <div class="flex flex-col gap-2 text-xs">
+              <div class="flex items-center gap-2 ${hasGeo ? 'text-gray-700' : 'text-gray-300'}">
+                <span class="w-2 h-2 rounded-full flex-shrink-0 ${hasGeo ? 'bg-orange-400' : 'bg-gray-200'}"></span>
+                <span>Perceel ingetekend</span>
+              </div>
+              <div class="flex items-center gap-2 ${isLoket ? 'text-gray-700' : 'text-gray-300'}">
+                <span class="w-2 h-2 rounded-full flex-shrink-0 ${isLoket ? 'bg-orange-400' : 'bg-gray-200'}"></span>
+                <span>Loket aanvraag</span>
+              </div>
+            </div>
+          </div>`;
+
+        card.appendChild(hdr);
+        card.appendChild(body);
+
+        const editHref = isLoket ? '#' : 'gebied-instellingen.html?id=' + variant.id;
+        card.addEventListener('click', () => { if (!isLoket) window.location.href = editHref; });
+
+        // ── Action buttons ──
+        const actions = hdr.querySelector('#hdr-actions-' + variant.id);
+
+        const copyBtn = document.createElement('button');
+        copyBtn.innerHTML = '&#x29C9;';
+        copyBtn.title = 'Kopieer variant';
+        copyBtn.className = 'text-white/60 hover:text-white text-base leading-none';
+        copyBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          const copy = { ...JSON.parse(JSON.stringify(variant)), id: crypto.randomUUID(), naam: variant.naam + ' (kopie)' };
+          const cur  = getCurrentProject();
+          updateCurrentProject({ gebiedVarianten: [...cur.gebiedVarianten, copy] });
+          window.location.href = 'gebied-instellingen.html?id=' + copy.id;
+        });
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = '×';
+        delBtn.title = 'Verwijder';
+        delBtn.className = 'text-white/60 hover:text-white text-lg leading-none';
+        delBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          showConfirm('Deze variant wordt permanent verwijderd en kan niet worden hersteld.', () => {
+            const cur = getCurrentProject();
+            updateCurrentProject({ gebiedVarianten: cur.gebiedVarianten.filter(v => v.id !== variant.id) });
+            window.location.reload();
+          });
+        });
+
+        actions.appendChild(copyBtn);
+        actions.appendChild(delBtn);
+        list.appendChild(card);
+      });
+    }
+
+
+    render();
+  </script>
+</body>
+</html>
