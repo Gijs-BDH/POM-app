@@ -34,6 +34,12 @@
                   this.closeGiveFeedbackPopup();
                 } else if (e.target.id === 'close-check-feedback' || e.target.closest('#close-check-feedback')) {
                   this.closeCheckFeedbackPopup();
+                } else if (e.target.id === 'give-feedback-popup') {
+                  this.closeGiveFeedbackPopup();
+                } else if (e.target.id === 'check-feedback-popup') {
+                  this.closeCheckFeedbackPopup();
+                } else if (e.target.id === 'feedback-error-modal') {
+                  this.closeErrorModal();
                 } else if (e.target.id === 'submit-feedback-btn') {
                   this.submitFeedback();
                 } else if (e.target.classList.contains('filter-btn')) {
