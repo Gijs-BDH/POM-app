@@ -7,33 +7,33 @@ window.POM_CALC = (() => {
 
   function calcPrimairBVO(leerlingen) {
     // 400 leerlingen → 2255 m²  (factor 5.6375)
-    return Math.round(leerlingen * 5.6375);
+    return Math.round(leerlingen * (2255/400));
   }
 
-  function calcKleuterplein(leerlingen) {
-    return Math.round(leerlingen * 2.25);
+  function calcOnderbouwplein(leerlingen) {
+    return Math.round(leerlingen * (350/400));
   }
 
-  function calcKinderplein(leerlingen) {
-    return Math.round(leerlingen * 3.5);
+  function calcBovenbouwplein(leerlingen) {
+    return Math.round(leerlingen * (550/400));
   }
 
   function calcFietsenstalling(leerlingen) {
     // returns aantal fietsen
-    return Math.round(leerlingen * 0.75);
+    return Math.round(leerlingen * (170/400));
   }
 
   function calcVoorschoolseBVO(groepen) {
     // 2 groepen → 230 m²  (factor 115)
-    return Math.round(groepen * 115);
+    return Math.round(groepen * (230/2));
   }
 
   function calcVoorschoolsePlein(groepen) {
-    return Math.round(groepen * 50);
+    return Math.round(groepen * (100/2));
   }
 
   function calcVoorschoolseFietsen(groepen) {
-    return Math.round(groepen * 10);
+    return Math.round(groepen * (10/2));
   }
 
   const SPORT_BVO = { gymzaal: 600, sportzaal: 1200, sporthal: 2400 };
@@ -113,7 +113,7 @@ window.POM_CALC = (() => {
   }
 
   return {
-    calcPrimairBVO, calcKleuterplein, calcKinderplein, calcFietsenstalling,
+    calcPrimairBVO, calcOnderbouwplein, calcBovenbouwplein, calcFietsenstalling,
     calcVoorschoolseBVO, calcVoorschoolsePlein, calcVoorschoolseFietsen,
     calcSportBVO, calcTotalBVO, calcDashboard, calcAmbitieScores,
     GEMIDDELDE_AMBITIES, SPORT_BVO, formatEuro, formatM2, selectionScore
