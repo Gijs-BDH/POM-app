@@ -13,26 +13,9 @@
 
     <!-- Main card -->
     <div class="card flex-1">
+      <a href="besluit.html" class="breadcrumb mb-4 inline-block">← Terug naar besluit</a>
       <h2 class="text-xl font-semibold text-gray-800 mb-1 text-center">beoordelingskader</h2>
       <p class="text-xs text-gray-400 text-center mb-6">Verdeel de 27 punten over de 9 dimensies (alle sliders staan standaard op 3).</p>
-
-      <!-- Gebruiksduur -->
-      <div class="flex items-center gap-4 mb-6 pb-5 border-b border-gray-100">
-        <label class="text-sm text-gray-500 w-44 text-right flex-shrink-0">Gebruiksduur in jaar</label>
-        <input id="gebruiksduur" type="number" class="input-field w-28" min="1" max="100" value="40"/>
-        <span class="info-wrap">
-          <button class="info-btn" type="button">i</button>
-          <span class="info-popover">Aantal jaar dat de school in gebruik zal zijn. Bepaalt de TCO-berekening: een langere gebruiksduur verlaagt de jaarlijkse kosten maar verhoogt de totale onderhoudslasten.</span>
-        </span>
-<!--
-        <select id="normering" class="select-field">
-          <option>NEN 2580</option>
-          <option>Frisse Scholen</option>
-          <option>Breeam NL</option>
-          <option>Placeholder norm</option>
-        </select>
-      -->
-      </div>
 
       <!-- Sliders -->
       <div id="sliders" class="flex flex-col gap-5"></div>
@@ -43,7 +26,7 @@
           Totaal: <span id="sum-display" class="font-bold text-violet-600">27</span> / 27
           <span id="sum-hint" class="ml-2 text-xs text-gray-400">(alle dimensies op 3)</span>
         </div>
-        <button id="maak-btn" onclick="maakProject()" class="btn-primary px-6 py-2">Maak project</button>
+        <button id="opslaan-btn" onclick="slaWegingen()" class="btn-primary px-6 py-2">Opslaan</button>
       </div>
     </div>
 
@@ -51,12 +34,15 @@
     <div class="info-card w-56 flex-shrink-0">
       <p class="font-semibold text-violet-700 mb-2">Beoordelingskader</p>
       Verdeel de 27 punten naar uw prioriteiten. Dimensies met meer punten wegen
-      zwaarder in het advies. De totaalsom moet precies 27 zijn om door te gaan.
+      zwaarder in het advies. De totaalsom moet precies 27 zijn om op te slaan.
     </div>
   </div>
 
   <script src="js/state.js"></script>
   <script>
+    const project = getCurrentProject();
+    if (!project) { window.location.href = 'index.html'; }
+
     const DIMENSIES = [
       { key: 'betereSchool',                label: 'Betere school',                 info: 'Weging voor algemene onderwijskwaliteit en pedagogische omgeving.' },
       { key: 'functioneleSchool',           label: 'Functionele school',            info: 'Hoe goed ruimtes aansluiten bij de onderwijspraktijk en dagelijkse activiteiten.' },
@@ -69,8 +55,7 @@
       { key: 'onderhoudsvriendelijkeSchool', label: 'Onderhoudsvriendelijke school', info: 'Laag onderhoud, eenvoudig beheer en lange technische levensduur.' },
     ];
 
-    const draft    = getDraft();
-    const initVals = draft.sliders || {};
+    const initVals = project.sliders || {};
 
     // Render sliders
     const container = document.getElementById('sliders');
@@ -106,15 +91,12 @@
       display.textContent = sum;
       display.className = sum === 27 ? 'font-bold text-violet-600' : 'font-bold text-red-500';
       document.getElementById('sum-hint').textContent = sum === 27 ? '✓' : `(${27 - sum > 0 ? 27 - sum + ' over' : Math.abs(27 - sum) + ' te veel'})`;
-      document.getElementById('maak-btn').disabled = sum !== 27;
+      document.getElementById('opslaan-btn').disabled = sum !== 27;
     }
 
-    function maakProject() {
-      const sliders      = getValues();
-      const gebruiksduur = parseInt(document.getElementById('gebruiksduur').value) || 40;
-      setDraft({ sliders, gebruiksduur });
-      const project = createProjectFromDraft();
-      window.location.href = 'project-overzicht.html';
+    function slaWegingen() {
+      updateCurrentProject({ sliders: getValues() });
+      window.location.href = 'besluit.html';
     }
 
     // Info popovers
@@ -134,7 +116,6 @@
       }
     });
 
-    // Initial state
     onSlider();
   </script>
 </body>
