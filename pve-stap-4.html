@@ -44,7 +44,7 @@
     const project = getCurrentProject();
     if (!project) { window.location.href = 'index.html'; }
     document.getElementById('project-titel').textContent = project.naam;
-    document.getElementById('step-indicator').innerHTML = renderStepIndicator(3, 5, ['pve-stap-2.html', 'pve-stap-3.html']);
+    document.getElementById('step-indicator').innerHTML = renderStepIndicator(2, 5, ['pve-stap-2.html']);
     document.getElementById('nav-panel').innerHTML = renderNavPanel('pve', project);
 
     function kiesBegeleid()  { window.location.href = 'pve-stap-4-begeleid.html'; }
