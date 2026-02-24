@@ -1,0 +1,85 @@
+
+<script type="module">
+    let applicationIsStarted = false;
+    let Application;
+    import * as PixelStreamingWebSdk from "https://unpkg.com/@arcware-cloud/pixelstreaming-websdk@latest/index.mjs";
+    (() => {
+        const { ArcwareInit } = PixelStreamingWebSdk;
+        const initResult = new ArcwareInit(
+            {
+                shareId: "share-ce1bac71-42f0-4cb7-814d-a7e203774ec8" //"share-9fbf3c70-315f-46dd-8835-85fed2df4b9a" // share-ce1bac71-42f0-4cb7-814d-a7e203774ec8
+            },
+            {
+                initialSettings: {
+                    StartVideoMuted: false,
+                    AutoConnect: true,
+                    AutoPlayVideo: true,
+                    KeyboardInput: true
+                },
+                settings: {
+                    infoButton: false,
+                    micButton: false,
+                    audioButton: false,
+                    fullscreenButton: true,
+                    settingsButton: false,
+                    connectionStrengthIcon: false
+                },
+            }
+        );
+
+        Application = initResult.Application;
+        Application.getApplicationResponse((responseInput) => { 
+            var response = JSON.parse(responseInput)
+
+            if (response.type == "StartupCompleted") {
+                console.log("set application as started")
+                console.log(response);
+                
+                var messageToSimulator = {
+                    type: "StartupMessage",
+                    data: {
+                                "version": "1.15.6.0",
+                                "authenticationToken": "76dd0a4b-d01c-4407-b6c5-66ed3ca6d5fd",
+                                "systemMessageUrl": "https://pomonderwijstender.api.buildify.nl/SystemMessages/6d732eee-4052-4192-8541-2148c00b4821"
+                            }}
+
+                sendMessageToPixelStreaming(messageToSimulator);
+            }
+        });
+
+        setTimeout(() =>
+        {
+            document
+                .getElementById("video-container")
+                .appendChild(Application.rootElement);
+        }        
+        );
+
+        // setTimeout(() => applicationIsStarted = true, 10000); // for now do as if starting takes 10 seconds.
+    })();
+
+    var _applicationIsStarted = false;
+
+    var sendMessageToPixelStreaming = function (message) {
+        Application.emitUIInteraction(message);
+    }
+
+    window.addEventListener("message", function (event) {
+        console.log("Message received from parent to iframe. Sending to PixelStreaming");
+
+
+    });
+
+    var videoContainerMousedown = function (event) {
+        var message = {
+            type: 'Mousedown',
+            data: null
+        }
+        window.parent.postMessage(message);
+    };
+
+    var videoContainer = document.getElementById("video-container");
+    videoContainer.addEventListener("mousedown", videoContainerMousedown);
+
+</script>
+<div id="video-container"></div>
