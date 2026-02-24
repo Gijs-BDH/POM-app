@@ -63,9 +63,15 @@
                          oninput="updatePO()"/>
                 </div>
 
+                <label class="form-label self-center">Aantal Fietsen</label>
+                <div class="flex items-center gap-2">
+                  <input id="po-fietsen" type="number" class="input-field w-24" value="160"
+                         oninput="updatePO()"/>
+                </div>
+
                 <label class="form-label self-center">Fietsenstalling</label>
                 <div class="flex items-center gap-2">
-                  <span id="po-fietsen-calc" class="font-semibold text-violet-700 w-20">170 fietsen</span>
+                  <span id="po-fietsen-calc" class="font-semibold text-violet-700 w-20">160 m²</span>
                   <input id="po-fietsen-hand" type="number" placeholder="handmatig" class="input-field w-28 text-xs"
                          oninput="updatePO()"/>
                 </div>
@@ -102,9 +108,17 @@
                          oninput="saveAll()"/>
                 </div>
 
+                
+
+                <label class="form-label self-center">Aantal Fietsen</label>
+                <div class="flex items-center gap-2">
+                  <input id="vs-fietsen" type="number" class="input-field w-24" value="15"
+                         oninput="updateVS()"/>
+                </div>
+
                 <label class="form-label self-center">Fietsenstalling</label>
                 <div class="flex items-center gap-2">
-                  <span id="vs-fietsen-calc" class="font-semibold text-violet-700 w-20">10 fietsen</span>
+                  <span id="vs-fietsen-calc" class="font-semibold text-violet-700 w-20">15 m²</span>
                   <input id="vs-fietsen-hand" type="number" placeholder="handmatig" class="input-field w-28 text-xs"
                          oninput="saveAll()"/>
                 </div>
@@ -138,10 +152,16 @@
             </div>
           </div>
 
-          <!-- Totaal BVO -->
-          <div class="flex justify-end items-center gap-3 pt-2 text-sm text-gray-600">
-            <span>Totaal benodigd BVO:</span>
-            <span id="totaal-bvo" class="font-bold text-violet-600 text-base">0 m²</span>
+          <!-- Totaal BVO + Plein -->
+          <div class="flex justify-end items-center gap-6 pt-2 text-sm text-gray-600">
+            <div class="flex items-center gap-2">
+              <span>Totaal benodigd plein:</span>
+              <span id="totaal-plein" class="font-bold text-violet-600 text-base">0 m²</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span>Totaal benodigd BVO:</span>
+              <span id="totaal-bvo" class="font-bold text-violet-600 text-base">0 m²</span>
+            </div>
           </div>
         </div>
 
@@ -199,7 +219,8 @@
       document.getElementById('po-bvo-calc').textContent    = POM_CALC.formatM2(POM_CALC.calcPrimairBVO(ll));
       document.getElementById('po-kleuter-calc').textContent = POM_CALC.formatM2(POM_CALC.calcOnderbouwplein(ll));
       document.getElementById('po-kinder-calc').textContent  = POM_CALC.formatM2(POM_CALC.calcBovenbouwplein(ll));
-      document.getElementById('po-fietsen-calc').textContent = POM_CALC.calcFietsenstalling(ll) + ' fietsen';
+      const poFietsen = parseInt(document.getElementById('po-fietsen').value) || 0;
+      document.getElementById('po-fietsen-calc').textContent = POM_CALC.formatM2(poFietsen);
       saveAll();
     }
 
@@ -207,7 +228,8 @@
       const gr = parseInt(document.getElementById('vs-groepen').value) || 0;
       document.getElementById('vs-bvo-calc').textContent    = POM_CALC.formatM2(POM_CALC.calcVoorschoolseBVO(gr));
       document.getElementById('vs-plein-calc').textContent  = POM_CALC.formatM2(POM_CALC.calcVoorschoolsePlein(gr));
-      document.getElementById('vs-fietsen-calc').textContent = POM_CALC.calcVoorschoolseFietsen(gr) + ' fietsen';
+      const vsFietsen = parseInt(document.getElementById('vs-fietsen').value) || 0;
+      document.getElementById('vs-fietsen-calc').textContent = POM_CALC.formatM2(vsFietsen);
       saveAll();
     }
 
@@ -221,6 +243,7 @@
     function saveAll() {
       const po = V.primairOnderwijs;
       po.leerlingen          = parseInt(document.getElementById('po-leerlingen').value) || 400;
+      po.fietsen             = parseInt(document.getElementById('po-fietsen').value) || 160;
       po.bvoHandmatig        = parseManual('po-bvo-hand');
       po.kleuterpleinHandmatig = parseManual('po-kleuter-hand');
       po.kinderpleinHandmatig  = parseManual('po-kinder-hand');
@@ -228,6 +251,7 @@
 
       const vs = V.voorschoolseOpvang;
       vs.groepen             = parseInt(document.getElementById('vs-groepen').value) || 2;
+      vs.fietsen             = parseInt(document.getElementById('vs-fietsen').value) || 15;
       vs.bvoHandmatig        = parseManual('vs-bvo-hand');
       vs.pleinHandmatig      = parseManual('vs-plein-hand');
       vs.fietsenstallingHandmatig = parseManual('vs-fietsen-hand');
@@ -248,8 +272,23 @@
     function updateTotaal() {
       const total = POM_CALC.calcTotalBVO(V);
       document.getElementById('totaal-bvo').textContent = POM_CALC.formatM2(total);
-      document.getElementById('dashboard-widget').innerHTML = renderDashboard(getCurrentProject());
 
+      let totalPlein = 0;
+      const po = V.primairOnderwijs;
+      if (po.actief) {
+        const ll = po.leerlingen;
+        totalPlein += po.kleuterpleinHandmatig  ?? POM_CALC.calcOnderbouwplein(ll);
+        totalPlein += po.kinderpleinHandmatig   ?? POM_CALC.calcBovenbouwplein(ll);
+        totalPlein += po.fietsenstallingHandmatig ?? (po.fietsen || 160);
+      }
+      const vs = V.voorschoolseOpvang;
+      if (vs.actief) {
+        totalPlein += vs.pleinHandmatig ?? POM_CALC.calcVoorschoolsePlein(vs.groepen);
+        totalPlein += vs.fietsenstallingHandmatig ?? (vs.fietsen || 15);
+      }
+      document.getElementById('totaal-plein').textContent = POM_CALC.formatM2(totalPlein);
+
+      document.getElementById('dashboard-widget').innerHTML = renderDashboard(getCurrentProject());
     }
 
     // ── Init from saved state ─────────────────────────────────────────────────
@@ -259,12 +298,14 @@
       const sp = V.sport;
 
       document.getElementById('po-leerlingen').value = po.leerlingen;
+      if (po.fietsen)              document.getElementById('po-fietsen').value = po.fietsen;
       if (po.bvoHandmatig)        document.getElementById('po-bvo-hand').value    = po.bvoHandmatig;
       if (po.kleuterpleinHandmatig) document.getElementById('po-kleuter-hand').value = po.kleuterpleinHandmatig;
       if (po.kinderpleinHandmatig)  document.getElementById('po-kinder-hand').value  = po.kinderpleinHandmatig;
       if (po.fietsenstallingHandmatig) document.getElementById('po-fietsen-hand').value = po.fietsenstallingHandmatig;
 
       document.getElementById('vs-groepen').value = vs.groepen;
+      if (vs.fietsen)              document.getElementById('vs-fietsen').value = vs.fietsen;
       if (vs.bvoHandmatig)   document.getElementById('vs-bvo-hand').value   = vs.bvoHandmatig;
       if (vs.pleinHandmatig) document.getElementById('vs-plein-hand').value = vs.pleinHandmatig;
       if (vs.fietsenstallingHandmatig) document.getElementById('vs-fietsen-hand').value = vs.fietsenstallingHandmatig;
