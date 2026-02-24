@@ -52,8 +52,8 @@ export class FeedbackManager {
         this.closeErrorModal();
       } else if (e.target.closest('.feedback-item')) {
         const item = e.target.closest('.feedback-item');
-        if (e.target.classList.contains('state-select')) {
-          this.updateFeedbackState(item.dataset.id, e.target.value);
+        if (e.target.classList.contains('mark-done-btn')) {
+          this.updateFeedbackState(item.dataset.id, 'done');
         } else {
           this.toggleFeedbackItem(item);
         }
@@ -269,14 +269,13 @@ export class FeedbackManager {
               <img src="${item.image}" alt="Screenshot" class="max-w-full rounded border border-gray-300">
             </div>
           ` : ''}
+          ${item.state !== 'done' ? `
           <div>
-            <label class="block font-medium text-gray-700 mb-2">Change State</label>
-            <select class="state-select px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent" onclick="event.stopPropagation()">
-              <option value="waiting" ${item.state === 'waiting' ? 'selected' : ''}>Waiting</option>
-              <option value="active" ${item.state === 'active' ? 'selected' : ''}>Active</option>
-              <option value="done" ${item.state === 'done' ? 'selected' : ''}>Done</option>
-            </select>
+            <button class="mark-done-btn px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md font-medium transition-colors" onclick="event.stopPropagation()">
+              Mark as Done
+            </button>
           </div>
+          ` : ''}
         </div>
       </div>
     `;
