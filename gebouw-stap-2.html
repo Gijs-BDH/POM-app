@@ -99,19 +99,21 @@
 
     // ── Building options catalog ──────────────────────────────────────────────
     const OPTIES = [
-      { id: 'compact',   naam: 'Compact type',   icon: '🏫', bvo: 2500, bouwkosten: 6250000, tco: 13750000,
+      { id: 'compact',   naam: 'Compact type',   icon: '🏫', bvo: 2500, bouwkosten: 6250000, tco: 13750000, duurzaamheid: 'Middel', maakbaarheid: 'Hoog',
         beschrijving: 'Compacte schoolvorm met efficiënte ruimtebenutting. Geschikt voor kleinere kavels.' },
-      { id: 'lineair',   naam: 'Lineair type',   icon: '🏗️', bvo: 2800, bouwkosten: 7000000, tco: 15400000,
+      { id: 'lineair',   naam: 'Lineair type',   icon: '🏗️', bvo: 2800, bouwkosten: 7000000, tco: 15400000, duurzaamheid: 'Hoog',  maakbaarheid: 'Hoog',
         beschrijving: 'Langgerekte plattegrond langs de straat. Optimale daglichttoetreding.' },
-      { id: 'cluster',   naam: 'Cluster type',   icon: '🏘️', bvo: 3100, bouwkosten: 7750000, tco: 17050000,
+      { id: 'cluster',   naam: 'Cluster type',   icon: '🏘️', bvo: 3100, bouwkosten: 7750000, tco: 17050000, duurzaamheid: 'Hoog',  maakbaarheid: 'Middel',
         beschrijving: 'Groepering van functies rondom een centraal hart. Stimuleert ontmoeting.' },
-      { id: 'hof',       naam: 'Hof type',       icon: '🏛️', bvo: 3400, bouwkosten: 8500000, tco: 18700000,
+      { id: 'hof',       naam: 'Hof type',       icon: '🏛️', bvo: 3400, bouwkosten: 8500000, tco: 18700000, duurzaamheid: 'Middel', maakbaarheid: 'Laag',
         beschrijving: 'Gesloten bouwvorm rondom een binnenhof. Beschutte buitenruimte voor kinderen.' },
-      { id: 'toren',     naam: 'Toren type',     icon: '🗼', bvo: 2200, bouwkosten: 5500000, tco: 12100000,
+      { id: 'toren',     naam: 'Toren type',     icon: '🗼', bvo: 2200, bouwkosten: 5500000, tco: 12100000, duurzaamheid: 'Laag',  maakbaarheid: 'Laag',
         beschrijving: 'Meerdere bouwlagen op kleine footprint. Ideaal bij beperkt kavelbegrip.' },
-      { id: 'paviljon',  naam: 'Paviljoen type', icon: '⛺', bvo: 3600, bouwkosten: 9000000, tco: 19800000,
+      { id: 'paviljon',  naam: 'Paviljoen type', icon: '⛺', bvo: 3600, bouwkosten: 9000000, tco: 19800000, duurzaamheid: 'Hoog',  maakbaarheid: 'Middel',
         beschrijving: 'Losse paviljoens verbonden door overdekte passages. Flexibel en uitbreidbaar.' },
     ];
+
+    const RATING_COLOR = { 'Hoog': '#059669', 'Middel': '#D97706', 'Laag': '#DC2626' };
 
     let geselecteerdOptieId = variant.geselecteerdeOptie || null;
     let detailOptie = null;
@@ -132,6 +134,9 @@
             <div class="flex gap-1 flex-wrap">
               <span class="metric-pill">BVO: ${opt.bvo.toLocaleString('nl-NL')} m²</span>
               <span class="metric-pill" style="color:#7C3AED;">${POM_CALC.formatEuro(opt.bouwkosten)}</span>
+              <span class="metric-pill" style="color:#059669;">TCO: ${POM_CALC.formatEuro(opt.tco)}</span>
+              <span class="metric-pill" style="color:${RATING_COLOR[opt.duurzaamheid]};">Duurzaamheid: ${opt.duurzaamheid}</span>
+              <span class="metric-pill" style="color:${RATING_COLOR[opt.maakbaarheid]};">Maakbaarheid: ${opt.maakbaarheid}</span>
             </div>
             <div class="flex gap-2">
               <button onclick="event.stopPropagation(); openDetail('${opt.id}')" class="btn-secondary flex-1 text-xs py-1.5">Details</button>
@@ -154,7 +159,9 @@
       metrics.innerHTML = `
         <div class="metric-pill">BVO: ${detailOptie.bvo.toLocaleString('nl-NL')} m²</div>
         <div class="metric-pill" style="color:#7C3AED;border-color:#7C3AED;">Bouwkosten: ${POM_CALC.formatEuro(detailOptie.bouwkosten)}</div>
-        <div class="metric-pill" style="color:#059669;border-color:#D1FAE5;">TCO: ${POM_CALC.formatEuro(detailOptie.tco)}</div>`;
+        <div class="metric-pill" style="color:#059669;border-color:#D1FAE5;">TCO: ${POM_CALC.formatEuro(detailOptie.tco)}</div>
+        <div class="metric-pill" style="color:${RATING_COLOR[detailOptie.duurzaamheid]};">Duurzaamheid: ${detailOptie.duurzaamheid}</div>
+        <div class="metric-pill" style="color:${RATING_COLOR[detailOptie.maakbaarheid]};">Maakbaarheid: ${detailOptie.maakbaarheid}</div>`;
     }
 
     function sluitDetail() {
