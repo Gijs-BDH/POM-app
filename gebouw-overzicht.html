@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>POM – Gebouw Overzicht</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body class="min-h-screen bg-gray-50 p-8">
+
+  <div class="max-w-5xl mx-auto">
+    <a href="project-overzicht.html" class="text-xs text-gray-400 hover:text-violet-600">← Project overzicht</a>
+    <h1 id="project-titel" class="text-xl font-semibold text-gray-700 mt-1 mb-2"></h1>
+
+    <div class="flex gap-6">
+      <div id="nav-panel" class="nav-panel"></div>
+
+      <div class="flex-1">
+
+        <!-- Page header -->
+        <div class="flex items-end justify-between mb-6">
+          <div>
+            <h2 class="text-2xl font-semibold text-gray-800">Gebouw Varianten</h2>
+            <p class="text-sm text-gray-400 mt-0.5">Klik op een variant om deze te bewerken</p>
+          </div>
+          <a href="gebouw.html" class="btn-primary px-4 py-2 text-sm">+ Nieuwe variant</a>
+        </div>
+
+        <div id="variant-list" class="flex flex-col gap-3"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/state.js"></script>
+  <script>
+    const project = getCurrentProject();
+    if (!project) { window.location.href = 'index.html'; }
+
+    document.getElementById('project-titel').textContent = project.naam;
+    document.getElementById('nav-panel').innerHTML = renderNavPanel('gebouw', project);
+
+    function avgKwaliteit(kb) {
+      if (!kb) return null;
+      const vals = [];
+      Object.values(kb).forEach(cat => {
+        if (typeof cat === 'object') {
+          Object.entries(cat).forEach(([k, v]) => {
+            if (k !== 'beschrijving' && typeof v === 'number') vals.push(v);
+          });
+        }
+      });
+      if (!vals.length) return null;
+      return (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1);
+    }
+
+    function render() {
+      const p    = getCurrentProject();
+      const list = document.getElementById('variant-list');
+      list.innerHTML = '';
+
+      p.gebouwVarianten.forEach(variant => {
+        const linkedPve    = (p.pveVarianten    || []).find(v => v.id === variant.pveId);
+        const linkedGebied = (p.gebiedVarianten || []).find(g => g.id === variant.gebiedId);
+        const avg          = avgKwaliteit(variant.kwaliteitsBeoordeling);
+        const optie        = variant.geselecteerdeOptie;
+
+        const card = document.createElement('div');
+        card.className = 'overflow-hidden rounded-2xl border cursor-pointer transition-all hover:shadow-md border-gray-200';
+
+        // ── Header bar ──
+        const hdr = document.createElement('div');
+        hdr.className = 'flex items-center justify-between px-5 py-3 bg-teal-600';
+        hdr.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="text-white font-semibold text-sm">${variant.naam}</span>
+            ${optie
+              ? `<span class="text-xs rounded-full px-2 py-0.5 bg-white/20 text-white border border-white/30">${optie}</span>`
+              : ''}
+          </div>
+          <div class="flex items-center gap-3" id="hdr-actions-${variant.id}"></div>`;
+
+        // ── Body: 3 columns ──
+        const body = document.createElement('div');
+        body.className = 'grid grid-cols-3 divide-x divide-gray-100 bg-white';
+        body.innerHTML = `
+          <!-- Koppeling -->
+          <div class="px-5 py-4">
+            <div class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Koppeling</div>
+            <div class="flex flex-col gap-2 text-xs">
+              <div class="flex items-center gap-2 ${linkedPve ? 'text-gray-700' : 'text-gray-300'}">
+                <span class="w-2 h-2 rounded-full flex-shrink-0 ${linkedPve ? 'bg-violet-500' : 'bg-gray-200'}"></span>
+                <span class="${linkedPve ? 'font-medium' : ''}">PVE</span>
+                ${linkedPve ? `<span class="text-gray-400">· ${linkedPve.naam}</span>` : '<span class="text-gray-300">· niet gekoppeld</span>'}
+              </div>
+              <div class="flex items-center gap-2 ${linkedGebied ? 'text-gray-700' : 'text-gray-300'}">
+                <span class="w-2 h-2 rounded-full flex-shrink-0 ${linkedGebied ? 'bg-orange-400' : 'bg-gray-200'}"></span>
+                <span class="${linkedGebied ? 'font-medium' : ''}">Gebied</span>
+                ${linkedGebied ? `<span class="text-gray-400">· ${linkedGebied.naam}</span>` : '<span class="text-gray-300">· niet gekoppeld</span>'}
+              </div>
+            </div>
+          </div>
+
+          <!-- Optie -->
+          <div class="px-5 py-4">
+            <div class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Geselecteerde optie</div>
+            <div class="text-xs text-gray-${optie ? '700' : '300'} font-${optie ? 'semibold' : 'normal'}">${optie || '–'}</div>
+          </div>
+
+          <!-- Kwaliteit -->
+          <div class="px-5 py-4">
+            <div class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Kwaliteitsbeoordeling</div>
+            <div class="flex flex-col gap-2 text-xs">
+              ${avg !== null
+                ? `<div class="flex justify-between">
+                    <span class="text-gray-400">Gemiddeld</span>
+                    <span class="font-semibold text-teal-600">${avg} / 4</span>
+                   </div>`
+                : '<div class="text-gray-300">Nog niet ingevuld</div>'}
+            </div>
+          </div>`;
+
+        card.appendChild(hdr);
+        card.appendChild(body);
+        card.addEventListener('click', () => window.location.href = 'gebouw-stap-2.html?id=' + variant.id);
+
+        // ── Action buttons ──
+        const actions = hdr.querySelector('#hdr-actions-' + variant.id);
+
+        const copyBtn = document.createElement('button');
+        copyBtn.innerHTML = '&#x29C9;';
+        copyBtn.title = 'Kopieer variant';
+        copyBtn.className = 'text-white/60 hover:text-white text-base leading-none';
+        copyBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          const copy = { ...JSON.parse(JSON.stringify(variant)), id: crypto.randomUUID(), naam: variant.naam + ' (kopie)' };
+          const cur  = getCurrentProject();
+          saveProject({ ...cur, gebouwVarianten: [...cur.gebouwVarianten, copy] });
+          window.location.href = 'gebouw-stap-2.html?id=' + copy.id;
+        });
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = '×';
+        delBtn.title = 'Verwijder';
+        delBtn.className = 'text-white/60 hover:text-white text-lg leading-none';
+        delBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          showConfirm('Deze variant wordt permanent verwijderd en kan niet worden hersteld.', () => {
+            const cur = getCurrentProject();
+            saveProject({ ...cur, gebouwVarianten: cur.gebouwVarianten.filter(v => v.id !== variant.id) });
+            window.location.reload();
+          });
+        });
+
+        actions.appendChild(copyBtn);
+        actions.appendChild(delBtn);
+        list.appendChild(card);
+      });
+    }
+
+    render();
+  </script>
+</body>
+</html>
