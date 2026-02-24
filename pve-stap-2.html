@@ -49,23 +49,23 @@
                          oninput="updatePO()"/>
                 </div>
 
-                <label class="form-label self-center">Kleuterplein</label>
+                <label class="form-label self-center">Onderbouwplein</label>
                 <div class="flex items-center gap-2">
-                  <span id="po-kleuter-calc" class="font-semibold text-violet-700 w-20">900 m²</span>
+                  <span id="po-kleuter-calc" class="font-semibold text-violet-700 w-20">350 m²</span>
                   <input id="po-kleuter-hand" type="number" placeholder="handmatig" class="input-field w-28 text-xs"
                          oninput="updatePO()"/>
                 </div>
 
-                <label class="form-label self-center">Kinderplein</label>
+                <label class="form-label self-center">Bovenbouwplein</label>
                 <div class="flex items-center gap-2">
-                  <span id="po-kinder-calc" class="font-semibold text-violet-700 w-20">1 400 m²</span>
+                  <span id="po-kinder-calc" class="font-semibold text-violet-700 w-20">550 m²</span>
                   <input id="po-kinder-hand" type="number" placeholder="handmatig" class="input-field w-28 text-xs"
                          oninput="updatePO()"/>
                 </div>
 
                 <label class="form-label self-center">Fietsenstalling</label>
                 <div class="flex items-center gap-2">
-                  <span id="po-fietsen-calc" class="font-semibold text-violet-700 w-20">300 fietsen</span>
+                  <span id="po-fietsen-calc" class="font-semibold text-violet-700 w-20">170 fietsen</span>
                   <input id="po-fietsen-hand" type="number" placeholder="handmatig" class="input-field w-28 text-xs"
                          oninput="updatePO()"/>
                 </div>
@@ -104,7 +104,7 @@
 
                 <label class="form-label self-center">Fietsenstalling</label>
                 <div class="flex items-center gap-2">
-                  <span id="vs-fietsen-calc" class="font-semibold text-violet-700 w-20">20 fietsen</span>
+                  <span id="vs-fietsen-calc" class="font-semibold text-violet-700 w-20">10 fietsen</span>
                   <input id="vs-fietsen-hand" type="number" placeholder="handmatig" class="input-field w-28 text-xs"
                          oninput="saveAll()"/>
                 </div>
@@ -197,8 +197,8 @@
     function updatePO() {
       const ll = parseInt(document.getElementById('po-leerlingen').value) || 0;
       document.getElementById('po-bvo-calc').textContent    = POM_CALC.formatM2(POM_CALC.calcPrimairBVO(ll));
-      document.getElementById('po-kleuter-calc').textContent = POM_CALC.formatM2(POM_CALC.calcKleuterplein(ll));
-      document.getElementById('po-kinder-calc').textContent  = POM_CALC.formatM2(POM_CALC.calcKinderplein(ll));
+      document.getElementById('po-kleuter-calc').textContent = POM_CALC.formatM2(POM_CALC.calcOnderbouwplein(ll));
+      document.getElementById('po-kinder-calc').textContent  = POM_CALC.formatM2(POM_CALC.calcBovenbouwplein(ll));
       document.getElementById('po-fietsen-calc').textContent = POM_CALC.calcFietsenstalling(ll) + ' fietsen';
       saveAll();
     }
