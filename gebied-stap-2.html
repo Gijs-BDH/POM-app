@@ -65,7 +65,7 @@
     if (!variant) { window.location.href = 'project-overzicht.html'; }
 
     document.getElementById('project-titel').textContent = project.naam;
-    document.getElementById('step-indicator').innerHTML  = renderStepIndicator(2, 4, ['gebied.html']);
+    document.getElementById('step-indicator').innerHTML  = renderStepIndicator(2, 5, ['gebied.html']);
     document.getElementById('nav-panel').innerHTML       = renderNavPanel('gebied', project);
 
     // ── Map ───────────────────────────────────────────────────────────────────
@@ -85,7 +85,7 @@
     });
 
     const TABS = [
-      { key: 'bouwbaarGebied', label: 'Bouwbaar gebied', color: '#F97316' },
+      { key: 'onbebouwdGebied', label: 'Onbebouwd gebied', color: '#F97316' },
       { key: 'uitsluiting',    label: 'Uitsluiting gebied', color: '#EF4444' },
       { key: 'parkeren',       label: 'Parkeren',          color: '#3B82F6' },
     ];

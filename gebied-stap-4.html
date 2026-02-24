@@ -9,6 +9,15 @@
   <link rel="stylesheet" href="css/styles.css"/>
   <style>
     #map { height: 520px; border-radius: 0.75rem; }
+    .tab-pill {
+      width: 100%; padding: 0.55rem 1rem; border-radius: 99px;
+      border: 1.5px solid #E5E7EB; background: white;
+      color: #9CA3AF; font-size: 0.8rem; font-weight: 500;
+      text-align: center; cursor: pointer; transition: all 0.15s;
+    }
+    .tab-pill.active  { border-color: #7C3AED; color: #7C3AED; box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
+    .tab-pill.done    { border-color: #D1FAE5; background: #ECFDF5; color: #059669; cursor: default; }
+    .tab-pill.pending { color: #D1D5DB; border-color: #F3F4F6; cursor: default; }
   </style>
 </head>
 <body class="min-h-screen bg-gray-50 p-8">
@@ -25,28 +34,13 @@
       <div class="flex-1">
         <div id="map"></div>
         <p id="map-hint" class="text-xs text-gray-400 mt-2 text-center hidden">
-          Klik op de kaart om bomen te plaatsen &nbsp;·&nbsp; dubbelklik om te stoppen
+          Klik op de kaart om punten te plaatsen &nbsp;·&nbsp; dubbelklik om te beëindigen
         </p>
       </div>
 
-      <!-- Right: Bomen panel -->
-      <div class="w-52 flex-shrink-0">
-        <div class="card p-4 flex flex-col gap-4" style="border: 2px solid #7C3AED;">
-          <h3 class="font-semibold text-sm text-gray-700">Bomen</h3>
-
-          <div class="flex items-center gap-2 text-sm text-gray-600">
-            <span>Teken boom:</span>
-            <button onclick="startTekenModus()" class="text-violet-600 hover:text-violet-800 font-medium text-xs">✏ Tekenen</button>
-          </div>
-
-          <div>
-            <label class="text-sm text-gray-500 block mb-1">Aantal</label>
-            <input id="bomen-aantal" type="number" class="input-field" min="0" placeholder="0"
-                   oninput="updateAantal()"/>
-          </div>
-
-          <button onclick="afronden()" class="btn-primary w-full text-sm py-2">volgende</button>
-        </div>
+      <!-- Right: tab list -->
+      <div class="w-52 flex-shrink-0 flex flex-col gap-3">
+        <div id="tabs-container" class="flex flex-col gap-2"></div>
       </div>
     </div>
   </div>
@@ -63,11 +57,8 @@
     if (!variant) { window.location.href = 'project-overzicht.html'; }
 
     document.getElementById('project-titel').textContent = project.naam;
-    document.getElementById('step-indicator').innerHTML  = renderStepIndicator(4, 4, ['gebied.html', 'gebied-stap-2.html?id=' + gebiedId, 'gebied-stap-3.html?id=' + gebiedId]);
+    document.getElementById('step-indicator').innerHTML  = renderStepIndicator(4, 5, ['gebied.html', 'gebied-stap-2.html?id=' + gebiedId, 'gebied-stap-3.html?id=' + gebiedId]);
     document.getElementById('nav-panel').innerHTML       = renderNavPanel('gebied', project);
-
-    // Pre-fill aantal
-    document.getElementById('bomen-aantal').value = (variant.bomen && variant.bomen.aantal) || '';
 
     // ── Map ───────────────────────────────────────────────────────────────────
     const MAP_VIEW_KEY = 'pom_map_view_gebied_' + project.id;
@@ -91,7 +82,7 @@
         fillOpacity: 0.06, weight: 2, dashArray: '6 4' }).addTo(map);
     }
 
-    // Context layers from previous steps
+    // Context layers from previous steps (read-only)
     const CTX = [
       { key: 'bouwbaarGebied', color: '#F97316' },
       { key: 'uitsluiting',    color: '#EF4444' },
@@ -108,60 +99,137 @@
         if (!hasBounds && !savedView) { map.fitBounds(poly.getBounds(), { padding: [40, 40] }); hasBounds = true; }
       }
     });
-    // Fall back to stap-1 kavel for fitBounds if no CTX layers present
     if (!hasBounds && !savedView && variant.geo && variant.geo.length >= 3) {
       map.fitBounds(L.polygon(variant.geo).getBounds(), { padding: [40, 40] });
       hasBounds = true;
     }
 
-    // Tree markers
-    const bomenLayer = L.layerGroup().addTo(map);
-    let tekenMode = false;
-    let bomenCount = (variant.bomen && variant.bomen.aantal) || 0;
+    const TABS = [
+      { key: 'obstakels',   label: 'Obstakels',   color: '#F59E0B' },
+      { key: 'placeholder', label: 'Placeholder',  color: '#14B8A6' },
+    ];
 
-    const boomIcon = L.divIcon({
-      className: '',
-      html: '<div style="font-size:1.4rem;line-height:1;">🌳</div>',
-      iconSize: [24, 24],
-      iconAnchor: [12, 12]
+    const layers = {};
+    TABS.forEach(t => {
+      layers[t.key] = L.layerGroup().addTo(map);
+      const geo = variant[t.key] && variant[t.key].geo;
+      if (geo && geo.length >= 3) {
+        L.polygon(geo, { color: t.color, fillColor: t.color, fillOpacity: 0.3, weight: 2 }).addTo(layers[t.key]);
+      }
     });
+
+    // ── Drawing state ─────────────────────────────────────────────────────────
+    let activeTab   = null;
+    let drawingMode = false;
+    let drawPoints  = [];
+    let currentPoly = null;
+
+    function calcAreaM2(latlngs) {
+      if (!latlngs || latlngs.length < 3) return 0;
+      let area = 0;
+      const n = latlngs.length;
+      for (let i = 0; i < n; i++) {
+        const j = (i + 1) % n;
+        area += latlngs[i].lat * latlngs[j].lng;
+        area -= latlngs[j].lat * latlngs[i].lng;
+      }
+      const DEG_TO_M = 111320;
+      return Math.round(Math.abs(area / 2) * DEG_TO_M * DEG_TO_M * Math.cos(52 * Math.PI / 180));
+    }
 
     map.on('click', e => {
-      if (!tekenMode) return;
-      L.marker([e.latlng.lat, e.latlng.lng], { icon: boomIcon }).addTo(bomenLayer);
-      bomenCount++;
-      document.getElementById('bomen-aantal').value = bomenCount;
+      if (!drawingMode) return;
+      drawPoints.push([e.latlng.lat, e.latlng.lng]);
+      if (drawPoints.length >= 3) {
+        layers[activeTab.key].clearLayers();
+        currentPoly = L.polygon(drawPoints, { color: activeTab.color, fillColor: activeTab.color, fillOpacity: 0.3, weight: 2 }).addTo(layers[activeTab.key]);
+        const opp = calcAreaM2(currentPoly.getLatLngs()[0]);
+        document.getElementById('opp-display-' + activeTab.key).textContent = opp.toLocaleString('nl-NL') + ' m²';
+        variant[activeTab.key].opp = opp;
+      }
     });
 
-    map.on('dblclick', () => {
-      if (!tekenMode) return;
-      tekenMode = false;
+    map.on('dblclick', e => {
+      if (!drawingMode) return;
+      drawingMode = false;
       map.getContainer().style.cursor = '';
       document.getElementById('map-hint').classList.add('hidden');
+      if (currentPoly) {
+        const geo = currentPoly.getLatLngs()[0].map(p => [p.lat, p.lng]);
+        variant[activeTab.key].geo = geo;
+        const upd = {};
+        upd[activeTab.key] = { geo, opp: variant[activeTab.key].opp };
+        updateGebiedVariantById(gebiedId, upd);
+      }
     });
 
-    function startTekenModus() {
-      tekenMode = true;
+    function startDrawing(tab) {
+      activeTab = tab;
+      drawingMode = true;
+      drawPoints = [];
+      currentPoly = null;
+      layers[tab.key].clearLayers();
       map.getContainer().style.cursor = 'crosshair';
       document.getElementById('map-hint').classList.remove('hidden');
     }
 
-    function updateAantal() {
-      bomenCount = parseInt(document.getElementById('bomen-aantal').value) || 0;
+    function renderTabs() {
+      const container = document.getElementById('tabs-container');
+      container.innerHTML = '';
+
+      TABS.forEach((tab, idx) => {
+        const data   = variant[tab.key] || { geo: [], opp: 0 };
+        const isDone = data.geo && data.geo.length >= 3;
+        const isActive = activeTab && activeTab.key === tab.key;
+
+        if (isActive) {
+          const card = document.createElement('div');
+          card.className = 'card p-4 flex flex-col gap-3';
+          card.style.border = '2px solid #7C3AED';
+          card.innerHTML = `
+            <h3 class="font-semibold text-sm text-gray-700">${tab.label}</h3>
+            <div class="flex items-center gap-2 text-sm text-gray-600">
+              <span>Teken plot:</span>
+              <button onclick="startDrawing(TABS[${idx}])" class="text-violet-600 hover:text-violet-800 font-medium text-xs">✏ Tekenen</button>
+            </div>
+            <div class="flex items-center gap-2 text-sm text-gray-600">
+              <span>Oppervlak:</span>
+              <span id="opp-display-${tab.key}" class="font-semibold text-violet-700 text-xs">${data.opp ? data.opp.toLocaleString('nl-NL') + ' m²' : '— m²'}</span>
+            </div>
+            <button onclick="volgendeTab(${idx})" class="btn-primary w-full text-sm py-2">volgende</button>`;
+          container.appendChild(card);
+        } else {
+          const pill = document.createElement('button');
+          pill.className = 'tab-pill ' + (isDone ? 'done' : 'pending');
+          pill.textContent = (isDone ? '✓ ' : '') + tab.label;
+          if (!isDone) pill.onclick = () => { activeTab = tab; renderTabs(); };
+          container.appendChild(pill);
+        }
+      });
     }
 
-    function afronden() {
-      const aantal = parseInt(document.getElementById('bomen-aantal').value) || bomenCount;
-      updateGebiedVariantById(gebiedId, { bomen: { aantal } });
-
-      // Also update the top-level opp from bouwbaarGebied
-      const fresh = getCurrentProject();
-      const v = (fresh.gebiedVarianten || []).find(g => g.id === gebiedId);
-      const opp = (v && v.bouwbaarGebied && v.bouwbaarGebied.opp) || 0;
-      if (opp > 0) updateGebiedVariantById(gebiedId, { opp });
-
-      window.location.href = 'project-overzicht.html';
+    function volgendeTab(currentIdx) {
+      if (currentPoly) {
+        const geo = currentPoly.getLatLngs()[0].map(p => [p.lat, p.lng]);
+        variant[activeTab.key].geo = geo;
+        const upd = {};
+        upd[activeTab.key] = { geo, opp: variant[activeTab.key].opp || 0 };
+        updateGebiedVariantById(gebiedId, upd);
+      }
+      drawingMode = false;
+      map.getContainer().style.cursor = '';
+      currentPoly = null;
+      drawPoints  = [];
+      if (currentIdx + 1 < TABS.length) {
+        activeTab = TABS[currentIdx + 1];
+        renderTabs();
+      } else {
+        window.location.href = 'gebied-stap-5.html?id=' + gebiedId;
+      }
     }
+
+    activeTab = TABS[0];
+    renderTabs();
   </script>
 </body>
 </html>
