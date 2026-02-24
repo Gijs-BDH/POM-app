@@ -94,7 +94,6 @@ export class FeedbackManager {
       await this.screenshotCapture.captureScreen();
     } catch (error) {
       console.error('Screenshot failed:', error);
-      this.showError('Failed to capture screenshot. You can still submit feedback.');
     } finally {
       if (loadingEl) loadingEl.classList.add('hidden');
     }
