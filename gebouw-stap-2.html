@@ -13,7 +13,6 @@
       transition: border-color 0.15s, box-shadow 0.15s;
       background: white;
     }
-    .optie-card:hover   { border-color: #7C3AED; }
     .optie-card.selected { border-color: #7C3AED; box-shadow: 0 0 0 3px rgba(124,58,237,0.15); }
     .optie-thumb {
       height: 120px; display: flex; align-items: center;
@@ -134,7 +133,10 @@
               <span class="metric-pill">BVO: ${opt.bvo.toLocaleString('nl-NL')} m²</span>
               <span class="metric-pill" style="color:#7C3AED;">${POM_CALC.formatEuro(opt.bouwkosten)}</span>
             </div>
-            <button onclick="event.stopPropagation(); selecteerEnNaarStap3('${opt.id}')" class="btn-primary w-full text-xs py-1.5">Selecteren</button>
+            <div class="flex gap-2">
+              <button onclick="event.stopPropagation(); openDetail('${opt.id}')" class="btn-secondary flex-1 text-xs py-1.5">Details</button>
+              <button onclick="event.stopPropagation(); selecteerEnNaarStap3('${opt.id}')" class="btn-primary flex-1 text-xs py-1.5">Selecteren</button>
+            </div>
           </div>`;
         card.onclick = () => openDetail(opt.id);
         grid.appendChild(card);
