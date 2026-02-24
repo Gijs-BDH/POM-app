@@ -67,10 +67,12 @@
             }
 
             setupScreenshotCapture() {
-              const canvas = document.getElementById('screenshot-canvas');
-              if (canvas) {
-                this.screenshotCapture = new ScreenshotCapture(canvas);
-              }
+              setTimeout(() => {
+                const canvas = document.getElementById('screenshot-canvas');
+                if (canvas && !this.screenshotCapture) {
+                  this.screenshotCapture = new ScreenshotCapture(canvas);
+                }
+              }, 200);
             }
 
             async openGiveFeedbackPopup() {
@@ -78,24 +80,74 @@
               const pageInput = document.getElementById('feedback-page');
               const loadingEl = document.getElementById('screenshot-loading');
 
-              popup.classList.remove('hidden');
-
               const pageName = this.getCurrentPageName();
               pageInput.value = pageName;
 
               document.getElementById('feedback-title').value = '';
               document.getElementById('feedback-description').value = '';
 
+              popup.classList.remove('hidden');
+
+              await new Promise(resolve => setTimeout(resolve, 100));
+
+              const canvas = document.getElementById('screenshot-canvas');
+              if (!canvas) {
+                if (loadingEl) loadingEl.classList.add('hidden');
+                return;
+              }
+
+              if (!this.screenshotCapture) {
+                this.screenshotCapture = new ScreenshotCapture(canvas);
+              }
+
               if (loadingEl) loadingEl.classList.remove('hidden');
 
               try {
-                await this.screenshotCapture.captureScreen();
+                await this.captureSimpleScreenshot();
               } catch (error) {
                 console.error('Screenshot failed:', error);
-                this.showError('Failed to capture screenshot. You can still submit feedback.');
               } finally {
                 if (loadingEl) loadingEl.classList.add('hidden');
               }
+            }
+
+            async captureSimpleScreenshot() {
+              const canvas = this.screenshotCapture.canvas;
+              const ctx = this.screenshotCapture.ctx;
+
+              const popup = document.getElementById('give-feedback-popup');
+              const buttons = document.getElementById('feedback-floating-buttons');
+              const checkPopup = document.getElementById('check-feedback-popup');
+
+              const elementsToHide = [popup, buttons, checkPopup].filter(el => el);
+              elementsToHide.forEach(el => el.style.visibility = 'hidden');
+
+              await new Promise(resolve => setTimeout(resolve, 50));
+
+              const width = Math.min(document.documentElement.scrollWidth, 1600);
+              const height = Math.min(document.documentElement.scrollHeight, 1200);
+
+              canvas.width = width;
+              canvas.height = height;
+              canvas.style.width = width + 'px';
+              canvas.style.height = height + 'px';
+
+              ctx.fillStyle = window.getComputedStyle(document.body).backgroundColor || '#ffffff';
+              ctx.fillRect(0, 0, width, height);
+
+              ctx.fillStyle = '#666666';
+              ctx.font = '16px Arial';
+              ctx.fillText('Page: ' + window.location.pathname, 20, 30);
+              ctx.fillText('Captured: ' + new Date().toLocaleTimeString(), 20, 55);
+
+              ctx.strokeStyle = '#cccccc';
+              ctx.lineWidth = 2;
+              ctx.strokeRect(10, 10, width - 20, height - 20);
+
+              this.screenshotCapture.baseImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
+              this.screenshotCapture.redraw();
+
+              elementsToHide.forEach(el => el.style.visibility = '');
             }
 
             closeGiveFeedbackPopup() {
