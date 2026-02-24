@@ -67,7 +67,7 @@
         <div id="next-gebied" class="card max-w-xl hidden">
           <div class="flex gap-4 items-start">
             <div id="next-gebied-text" class="text-sm text-gray-500 flex-1"></div>
-            <button onclick="gaNaarVolgendeStap('gebied.html')"
+            <button onclick="openNieuwGebiedModal()"
                     class="btn-primary px-6 py-4 text-base rounded-xl min-w-[120px]">Volgende<br>Stap</button>
           </div>
         </div>
@@ -154,9 +154,11 @@
       document.getElementById('pve-overzicht-sub').classList.remove('hidden');
     }
 
-    // Gebied nav: link to instellingen for the first gebied when one exists
+    // Gebied nav: link to instellingen for the first gebied when one exists, else open modal
     if (project.gebiedVarianten.length > 0) {
       document.getElementById('nav-gebied').href = 'gebied-instellingen.html?id=' + project.gebiedVarianten[0].id;
+    } else {
+      document.getElementById('nav-gebied').addEventListener('click', e => { e.preventDefault(); openNieuwGebiedModal(); });
     }
 
     // Next-step text per phase
@@ -233,6 +235,22 @@
       project.gebiedVarianten.forEach(g => {
         const card = document.createElement('div');
         card.className = 'pve-variant-card';
+
+        if (g.wachtOpLoket) {
+          card.style.cssText = 'background:#FFFBEB;border-color:#F59E0B;cursor:default;';
+          card.innerHTML = `
+            <div class="pve-variant-card-header" style="color:#92400E;">Loket aanvraag</div>
+            <div class="pve-variant-card-body">
+              <div class="text-xs" style="color:#B45309;">Wacht op stedenbouwkundige</div>
+            </div>`;
+          card.appendChild(makeDeleteBtn(() => {
+            updateCurrentProject({ gebiedVarianten: project.gebiedVarianten.filter(v => v.id !== g.id) });
+            window.location.reload();
+          }));
+          row.appendChild(card);
+          return;
+        }
+
         card.innerHTML = `
           <div class="pve-variant-card-header">${g.naam}</div>
           <div class="pve-variant-card-body">
@@ -253,11 +271,11 @@
         }));
         row.appendChild(card);
       });
-      const addBtn = document.createElement('a');
-      addBtn.href = 'gebied.html';
+      const addBtn = document.createElement('button');
       addBtn.className = 'pve-new-btn';
       addBtn.title = 'Nieuw gebied';
       addBtn.textContent = '+';
+      addBtn.addEventListener('click', openNieuwGebiedModal);
       row.appendChild(addBtn);
     }
 
@@ -300,6 +318,70 @@
       row.appendChild(addBtn);
     }
 
+    // ── Nieuw gebied modal ────────────────────────────────────────────────────
+    function openNieuwGebiedModal() {
+      document.getElementById('nieuw-gebied-modal').classList.remove('hidden');
+    }
+
+    function sluitNieuwGebiedModal() {
+      document.getElementById('nieuw-gebied-modal').classList.add('hidden');
+    }
+
+    function nieuwGebiedLoket() {
+      const id = crypto.randomUUID();
+      const p = getCurrentProject();
+      const variant = { id, naam: 'Loket aanvraag', opp: 0, geo: [], wachtOpLoket: true, createdAt: Date.now() };
+      updateCurrentProject({ gebiedVarianten: [...(p.gebiedVarianten || []), variant] });
+      sluitNieuwGebiedModal();
+      window.location.reload();
+    }
+
+    function nieuwGebiedUpload() {
+      document.getElementById('gebied-upload-input').click();
+    }
+
+    function nieuwGebiedTeken() {
+      sluitNieuwGebiedModal();
+      window.location.href = 'gebied.html';
+    }
+
+    document.getElementById('gebied-upload-input').addEventListener('change', function() {
+      if (!this.files.length) return;
+      const id = crypto.randomUUID();
+      const naam = this.files[0].name.replace(/\.[^.]+$/, '');
+      const p = getCurrentProject();
+      const variant = { id, naam, opp: 0, geo: [], createdAt: Date.now() };
+      updateCurrentProject({ gebiedVarianten: [...(p.gebiedVarianten || []), variant] });
+      sluitNieuwGebiedModal();
+      window.location.href = 'gebied-stap-3.html?id=' + id;
+    });
+
   </script>
+
+  <!-- Nieuw Gebied Modal -->
+  <div id="nieuw-gebied-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div class="card w-full max-w-md mx-4">
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="text-base font-semibold text-gray-800">Nieuw gebiedvariant</h2>
+        <button onclick="sluitNieuwGebiedModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+      </div>
+      <div class="flex flex-col gap-3">
+        <button onclick="nieuwGebiedLoket()" class="text-left p-4 rounded-xl border border-gray-200 hover:border-amber-400 hover:bg-amber-50 transition-all" style="cursor:pointer;">
+          <div class="font-medium text-gray-700 text-sm">Vraag stedenbouwkundig loket om in te vullen</div>
+          <div class="text-xs text-gray-400 mt-1">Maak een aanvraag aan — de stedenbouwkundige vult de gegevens in</div>
+        </button>
+        <button onclick="nieuwGebiedUpload()" class="text-left p-4 rounded-xl border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-all" style="cursor:pointer;">
+          <div class="font-medium text-gray-700 text-sm">Upload stedenbouwkundig plan</div>
+          <div class="text-xs text-gray-400 mt-1">Upload een bestand — gegevens worden automatisch ingevuld</div>
+        </button>
+        <button onclick="nieuwGebiedTeken()" class="text-left p-4 rounded-xl border border-gray-200 hover:border-violet-400 hover:bg-violet-50 transition-all" style="cursor:pointer;">
+          <div class="font-medium text-gray-700 text-sm">Teken zelf een gebied in</div>
+          <div class="text-xs text-gray-400 mt-1">Teken de locatie op de kaart en vul de gegevens handmatig in</div>
+        </button>
+      </div>
+      <input id="gebied-upload-input" type="file" accept=".pdf,.png,.jpg,.jpeg,.dwg,.dxf" class="hidden"/>
+    </div>
+  </div>
+
 </body>
 </html>
