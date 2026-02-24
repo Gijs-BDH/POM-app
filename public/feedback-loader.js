@@ -26,13 +26,13 @@
 
             attachEventListeners() {
               document.addEventListener('click', (e) => {
-                if (e.target.id === 'give-feedback-btn') {
+                if (e.target.id === 'give-feedback-btn' || e.target.closest('#give-feedback-btn')) {
                   this.openGiveFeedbackPopup();
-                } else if (e.target.id === 'check-feedback-btn') {
+                } else if (e.target.id === 'check-feedback-btn' || e.target.closest('#check-feedback-btn')) {
                   this.openCheckFeedbackPopup();
-                } else if (e.target.id === 'close-give-feedback' || e.target.id === 'cancel-feedback-btn') {
+                } else if (e.target.id === 'close-give-feedback' || e.target.closest('#close-give-feedback') || e.target.id === 'cancel-feedback-btn') {
                   this.closeGiveFeedbackPopup();
-                } else if (e.target.id === 'close-check-feedback') {
+                } else if (e.target.id === 'close-check-feedback' || e.target.closest('#close-check-feedback')) {
                   this.closeCheckFeedbackPopup();
                 } else if (e.target.id === 'submit-feedback-btn') {
                   this.submitFeedback();
