@@ -26,10 +26,6 @@ const injectFeedbackPlugin = () => {
         path.join(__dirname, 'feedback', 'feedback-ui.html'),
         path.join(feedbackDir, 'feedback-ui.html')
       );
-      fs.copyFileSync(
-        path.join(__dirname, 'feedback', 'screenshot.js'),
-        path.join(feedbackDir, 'screenshot.js')
-      );
     }
   };
 };

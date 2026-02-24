@@ -12,19 +12,15 @@
         const managerScript = document.createElement('script');
         managerScript.type = 'module';
         managerScript.textContent = `
-          import { ScreenshotCapture } from '/feedback/screenshot.js';
-
           class FeedbackManager {
             constructor() {
               this.apiUrl = '${window.location.origin.includes('localhost') ? 'http://localhost:54321' : 'https://jmrczihxwwdglvilwdnw.supabase.co'}/functions/v1/feedback';
               this.apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptcmN6aWh4d3dkZ2x2aWx3ZG53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5NTAzNDMsImV4cCI6MjA4NzUyNjM0M30.t_NU5jU0vM2XfTcWDblqPGMpD_TlUEK7cKYRpD33tGA';
-              this.screenshotCapture = null;
               this.feedbackList = [];
               this.activeFilters = new Set(['waiting', 'active']);
               this.searchQuery = '';
 
               this.attachEventListeners();
-              this.setupScreenshotCapture();
               this.loadFeedbackList();
             }
 
@@ -40,8 +36,6 @@
                   this.closeCheckFeedbackPopup();
                 } else if (e.target.id === 'submit-feedback-btn') {
                   this.submitFeedback();
-                } else if (e.target.id === 'clear-highlights-btn') {
-                  this.clearHighlights();
                 } else if (e.target.classList.contains('filter-btn')) {
                   this.toggleFilter(e.target.dataset.filter);
                 } else if (e.target.id === 'mark-all-done-btn') {
@@ -66,19 +60,9 @@
               });
             }
 
-            setupScreenshotCapture() {
-              setTimeout(() => {
-                const canvas = document.getElementById('screenshot-canvas');
-                if (canvas && !this.screenshotCapture) {
-                  this.screenshotCapture = new ScreenshotCapture(canvas);
-                }
-              }, 200);
-            }
-
             async openGiveFeedbackPopup() {
               const popup = document.getElementById('give-feedback-popup');
               const pageInput = document.getElementById('feedback-page');
-              const loadingEl = document.getElementById('screenshot-loading');
 
               const pageName = this.getCurrentPageName();
               pageInput.value = pageName;
@@ -87,75 +71,11 @@
               document.getElementById('feedback-description').value = '';
 
               popup.classList.remove('hidden');
-
-              await new Promise(resolve => setTimeout(resolve, 100));
-
-              const canvas = document.getElementById('screenshot-canvas');
-              if (!canvas) {
-                if (loadingEl) loadingEl.classList.add('hidden');
-                return;
-              }
-
-              if (!this.screenshotCapture) {
-                this.screenshotCapture = new ScreenshotCapture(canvas);
-              }
-
-              if (loadingEl) loadingEl.classList.remove('hidden');
-
-              try {
-                await this.captureSimpleScreenshot();
-              } catch (error) {
-                console.error('Screenshot failed:', error);
-              } finally {
-                if (loadingEl) loadingEl.classList.add('hidden');
-              }
-            }
-
-            async captureSimpleScreenshot() {
-              const canvas = this.screenshotCapture.canvas;
-              const ctx = this.screenshotCapture.ctx;
-
-              const popup = document.getElementById('give-feedback-popup');
-              const buttons = document.getElementById('feedback-floating-buttons');
-              const checkPopup = document.getElementById('check-feedback-popup');
-
-              const elementsToHide = [popup, buttons, checkPopup].filter(el => el);
-              elementsToHide.forEach(el => el.style.visibility = 'hidden');
-
-              await new Promise(resolve => setTimeout(resolve, 50));
-
-              const width = Math.min(document.documentElement.scrollWidth, 1600);
-              const height = Math.min(document.documentElement.scrollHeight, 1200);
-
-              canvas.width = width;
-              canvas.height = height;
-              canvas.style.width = width + 'px';
-              canvas.style.height = height + 'px';
-
-              ctx.fillStyle = window.getComputedStyle(document.body).backgroundColor || '#ffffff';
-              ctx.fillRect(0, 0, width, height);
-
-              ctx.fillStyle = '#666666';
-              ctx.font = '16px Arial';
-              ctx.fillText('Page: ' + window.location.pathname, 20, 30);
-              ctx.fillText('Captured: ' + new Date().toLocaleTimeString(), 20, 55);
-
-              ctx.strokeStyle = '#cccccc';
-              ctx.lineWidth = 2;
-              ctx.strokeRect(10, 10, width - 20, height - 20);
-
-              this.screenshotCapture.baseImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
-              this.screenshotCapture.redraw();
-
-              elementsToHide.forEach(el => el.style.visibility = '');
             }
 
             closeGiveFeedbackPopup() {
               const popup = document.getElementById('give-feedback-popup');
               popup.classList.add('hidden');
-              if (this.screenshotCapture) {
-                this.screenshotCapture.clearHighlights();
-              }
             }
 
             async openCheckFeedbackPopup() {
@@ -176,12 +96,6 @@
               return filename.replace('.html', '').replace(/-/g, ' ').replace(/\\b\\w/g, l => l.toUpperCase());
             }
 
-            clearHighlights() {
-              if (this.screenshotCapture) {
-                this.screenshotCapture.clearHighlights();
-              }
-            }
-
             async submitFeedback() {
               const title = document.getElementById('feedback-title').value.trim();
               const description = document.getElementById('feedback-description').value.trim();
@@ -196,8 +110,6 @@
                 this.showError('Please enter a description');
                 return;
               }
-
-              const imageData = this.screenshotCapture ? this.screenshotCapture.getImageData() : '';
 
               const submitBtn = document.getElementById('submit-feedback-btn');
               submitBtn.disabled = true;
@@ -215,7 +127,7 @@
                     page,
                     title,
                     description,
-                    image: imageData
+                    image: ''
                   })
                 });
 
@@ -314,12 +226,6 @@
                       <h4 class="font-medium text-gray-700 mb-2">Description</h4>
                       <p class="text-gray-600">\${this.escapeHtml(item.description)}</p>
                     </div>
-                    \${item.image ? \`
-                      <div class="mb-4">
-                        <h4 class="font-medium text-gray-700 mb-2">Screenshot</h4>
-                        <img src="\${item.image}" alt="Screenshot" class="max-w-full rounded border border-gray-300">
-                      </div>
-                    \` : ''}
                     <div>
                       <label class="block font-medium text-gray-700 mb-2">Change State</label>
                       <select class="state-select px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent" onclick="event.stopPropagation()">
