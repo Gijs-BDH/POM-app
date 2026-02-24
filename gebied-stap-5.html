@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="css/styles.css"/>
   <style>
     #map { height: 520px; border-radius: 0.75rem; }
+    #walkthrough-view { height: 520px; border-radius: 0.75rem; overflow: hidden; display: none; background: #f3f4f6; }
+    #walkthrough-view img { width: 100%; height: 100%; object-fit: contain; }
   </style>
 </head>
 <body class="min-h-screen bg-gray-50 p-8">
@@ -24,6 +26,9 @@
       <!-- Map -->
       <div class="flex-1">
         <div id="map"></div>
+        <div id="walkthrough-view">
+          <img src="src/assets/img_walkthrough.png" alt="Walkthrough"/>
+        </div>
         <p id="map-hint" class="text-xs text-gray-400 mt-2 text-center hidden">
           Klik op de kaart om bomen te plaatsen &nbsp;·&nbsp; dubbelklik om te stoppen
         </p>
@@ -31,7 +36,7 @@
       
       <!-- Right: bebouwbaar gebied panel -->
       <div class="w-52 flex-shrink-0">
-        <div class="card p-4 flex flex-col gap-4" style="border: 2px solid #7C3AED;">
+        <div class="card p-4 flex flex-col gap-4 h-full" style="border: 2px solid #7C3AED;">
           <h3 class="font-semibold text-sm text-gray-700">Bebouwbaar Gebied</h3>
 
           <div class="flex items-center gap-2 text-sm text-gray-600">
@@ -45,7 +50,10 @@
             <span> 3000 m2</span>
           </div>
 
-          <button onclick="afronden()" class="btn-primary w-full text-sm py-2">volgende</button>
+          <div class="mt-auto flex flex-col gap-2">
+            <button id="btn-walkthrough" onclick="toggleWalkthrough()" class="btn-secondary w-full text-sm py-2">Walkthrough</button>
+            <button onclick="afronden()" class="btn-primary w-full text-sm py-2">volgende</button>
+          </div>
         </div>
 
 
@@ -152,6 +160,14 @@
     // function updateAantal() {
     //   bomenCount = parseInt(document.getElementById('bomen-aantal').value) || 0;
     // }
+
+    let walkthroughActive = false;
+    function toggleWalkthrough() {
+      walkthroughActive = !walkthroughActive;
+      document.getElementById('map').style.display            = walkthroughActive ? 'none' : '';
+      document.getElementById('walkthrough-view').style.display = walkthroughActive ? 'block' : 'none';
+      document.getElementById('btn-walkthrough').textContent  = walkthroughActive ? 'Kaart' : 'Walkthrough';
+    }
 
     function afronden() {
       // const aantal = parseInt(document.getElementById('bomen-aantal').value) || bomenCount;
