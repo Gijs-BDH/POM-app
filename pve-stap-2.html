@@ -28,8 +28,8 @@
         <div class="flex flex-col gap-4 max-w-2xl">
 
           <!-- Primair onderwijs -->
-          <div id="card-po" class="selcard" onclick="toggleCard('po')">
-            <div class="selcard-header">
+          <div id="card-po" class="selcard">
+            <div class="selcard-header" onclick="toggleCard('po')" style="cursor:pointer">
               Primair onderwijs
               <span id="arrow-po" class="text-sm">▼</span>
             </div>
@@ -74,8 +74,8 @@
           </div>
 
           <!-- Voorschoolse opvang -->
-          <div id="card-vs" class="selcard" onclick="toggleCard('vs')">
-            <div class="selcard-header">
+          <div id="card-vs" class="selcard">
+            <div class="selcard-header" onclick="toggleCard('vs')" style="cursor:pointer">
               Voorschoolse opvang
               <span id="arrow-vs" class="text-sm">▼</span>
             </div>
@@ -113,8 +113,8 @@
           </div>
 
           <!-- Sport -->
-          <div id="card-sp" class="selcard" onclick="toggleCard('sp')">
-            <div class="selcard-header">
+          <div id="card-sp" class="selcard">
+            <div class="selcard-header" onclick="toggleCard('sp')" style="cursor:pointer">
               Sport
               <span id="arrow-sp" class="text-sm">▼</span>
             </div>
@@ -122,8 +122,7 @@
               <div class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
 
                 <label class="form-label self-center">Type</label>
-                <select id="sp-type" class="select-field w-44"
-                        onclick="event.stopPropagation()" onchange="updateSP()">
+                <select id="sp-type" class="select-field w-44" onchange="updateSP()">
                   <option value="gymzaal">Gymzaal (600 m²)</option>
                   <option value="sportzaal">Sportzaal (1 200 m²)</option>
                   <option value="sporthal">Sporthal (2 400 m²)</option>
