@@ -1,0 +1,9 @@
+{
+    "name":"Demo flow",
+    "type":"default value-set",
+    "value-set":{
+        "projectname":"placeholder",
+        "my-rol":"schoolbestuurder"
+        
+    }
+}
