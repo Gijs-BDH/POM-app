@@ -13,16 +13,59 @@
       transition: border-color 0.15s, box-shadow 0.15s;
       background: white;
     }
+    .optie-card:hover { border-color: #C4B5FD; box-shadow: 0 2px 8px rgba(124,58,237,0.08); }
     .optie-card.selected { border-color: #7C3AED; box-shadow: 0 0 0 3px rgba(124,58,237,0.15); }
-    .optie-thumb {
-      height: 120px; display: flex; align-items: center;
-      justify-content: center; font-size: 2.5rem;
-    }
+
+    .optie-thumb { height: 130px; overflow: hidden; position: relative; }
+    .optie-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
     .metric-pill {
       display: inline-flex; align-items: center; gap: 0.3rem;
       font-size: 0.72rem; border-radius: 99px;
       padding: 0.2rem 0.55rem; border: 1px solid #E5E7EB; color: #6B7280;
     }
+
+    /* ── Group tab strip ── */
+    .group-tabs {
+      display: flex; gap: 0.25rem; flex-wrap: wrap;
+      border-bottom: 2px solid #F3F4F6;
+      margin-bottom: 1.25rem; padding-bottom: 0;
+    }
+    .group-tab {
+      padding: 0.45rem 1rem; font-size: 0.78rem; font-weight: 500;
+      color: #6B7280; border-radius: 6px 6px 0 0;
+      cursor: pointer; border: 1.5px solid transparent;
+      border-bottom: none; background: transparent;
+      transition: color 0.12s, background 0.12s;
+      position: relative; bottom: -2px;
+    }
+    .group-tab:hover { color: #374151; background: #F9FAFB; }
+    .group-tab.active {
+      background: white; border-color: #E5E7EB; border-bottom-color: white;
+      color: #7C3AED; font-weight: 600;
+    }
+    .group-tab .tab-dot {
+      display: inline-block; width: 7px; height: 7px;
+      border-radius: 50%; margin-right: 0.3rem;
+      background: currentColor; opacity: 0.6; vertical-align: middle;
+    }
+    .group-tab.active .tab-dot { opacity: 1; }
+
+    /* ── Group description ── */
+    .group-desc {
+      font-size: 0.78rem; color: #6B7280; margin-bottom: 1rem;
+      padding: 0.6rem 0.9rem; background: #FAFAFA;
+      border-radius: 0.5rem; border: 1px solid #F3F4F6;
+    }
+
+    /* ── Eigenschappen tags ── */
+    .eigenschap-tag {
+      display: inline-block; font-size: 0.62rem; font-weight: 600;
+      padding: 0.1rem 0.4rem; border-radius: 99px;
+      background: #F5F3FF; color: #7C3AED; border: 1px solid #DDD6FE;
+    }
+
+    /* ── Detail view ── */
     .detail-view { display: none; }
     .detail-view.open { display: block; }
   </style>
@@ -37,44 +80,55 @@
     <div class="flex gap-6">
       <div id="nav-panel" class="nav-panel"></div>
 
-      <div class="flex-1">
+      <div class="flex-1 min-w-0">
 
-        <!-- Grid view -->
+        <!-- ── Grid view ── -->
         <div id="grid-view">
-          <h2 class="text-xl font-semibold text-gray-700 mb-6 text-center">Selecteer opties</h2>
-          <div id="optie-grid" class="grid grid-cols-3 gap-4"></div>
-
+          <!-- Option cards grid -->
+          <div id="optie-grid" class="grid gap-4"></div>
         </div>
 
-        <!-- Detail view -->
+        <!-- ── Detail view ── -->
         <div id="detail-view" class="detail-view">
           <button onclick="sluitDetail()" class="breadcrumb mb-4">← Terug naar opties</button>
           <div class="flex gap-6">
             <!-- Floor plans / media area -->
             <div class="flex-1 card p-4 flex flex-col gap-4">
-              <div id="view-plattegrond" class="rounded-xl overflow-hidden" style="height:220px;">
-                <img src="src/assets/img_floorplans_Wide.png" class="w-full h-full object-cover"/>
+              <div id="view-massstudy" class="rounded-xl overflow-hidden" style="height:240px;">
+                <img id="detail-img-massstudy" src="" class="w-full h-full object-cover"/>
               </div>
-              <div id="view-impressie" class="hidden rounded-xl overflow-hidden" style="height:220px;">
+              <div id="view-impressie" class="hidden rounded-xl overflow-hidden" style="height:240px;">
                 <img src="src/assets/img_impression.png" class="w-full h-full object-cover"/>
               </div>
-              <div id="view-walkthrough" class="hidden rounded-xl overflow-hidden" style="height:220px;">
+              <div id="view-walkthrough" class="hidden rounded-xl overflow-hidden" style="height:240px;">
                 <img src="src/assets/img_walkthrough.png" class="w-full h-full object-cover"/>
               </div>
               <!-- View toggle pills -->
               <div class="flex gap-2">
-                <button onclick="setView('plattegrond')"  id="pill-plattegrond"  class="metric-pill" style="border-color:#7C3AED;color:#7C3AED;">Plattegrond</button>
-                <button onclick="setView('impressie')"    id="pill-impressie"    class="metric-pill">Impressie</button>
-                <button onclick="setView('walkthrough')"  id="pill-walkthrough"  class="metric-pill">Walkthrough</button>
+                <button onclick="setView('massstudy')"   id="pill-massstudy"   class="metric-pill" style="border-color:#7C3AED;color:#7C3AED;">Massa-studie</button>
+                <button onclick="setView('impressie')"   id="pill-impressie"   class="metric-pill">Impressie</button>
+                <button onclick="setView('walkthrough')" id="pill-walkthrough" class="metric-pill">Walkthrough</button>
               </div>
             </div>
-            <!-- Detail info -->
+
+            <!-- Detail info panel -->
             <div class="w-64 flex-shrink-0 card p-5 flex flex-col gap-3">
-              <h3 id="detail-naam" class="font-semibold text-gray-700"></h3>
+              <div>
+                <div class="text-xs text-gray-400 uppercase tracking-widest mb-0.5" id="detail-groep-naam"></div>
+                <h3 id="detail-naam" class="font-semibold text-gray-700 text-base"></h3>
+              </div>
               <div class="text-xs text-gray-500 leading-relaxed" id="detail-beschrijving"></div>
+
+              <!-- Eigenschappen tags -->
+              <div id="detail-eigenschappen" class="flex flex-wrap gap-1"></div>
+
+              <!-- Key metrics -->
               <div id="detail-metrics" class="flex flex-col gap-1"></div>
+
+              <!-- Ambitie comparison bars -->
               <div id="detail-ambities"></div>
-              <button onclick="selecteerOptie()" class="btn-primary w-full mt-2">+ Selecteer</button>
+
+              <button onclick="selecteerOptie()" class="btn-primary w-full mt-auto">+ Selecteer deze optie</button>
             </div>
           </div>
         </div>
@@ -85,10 +139,11 @@
 
   <script src="js/state.js"></script>
   <script src="js/calculations.js"></script>
+  <script src="js/gebouw-opties.js"></script>
   <script>
-    const params    = new URLSearchParams(window.location.search);
-    const gebouwId  = params.get('id');
-    const project   = getCurrentProject();
+    const params   = new URLSearchParams(window.location.search);
+    const gebouwId = params.get('id');
+    const project  = getCurrentProject();
     if (!project) { window.location.href = 'index.html'; }
 
     let variant = (project.gebouwVarianten || []).find(g => g.id === gebouwId);
@@ -98,90 +153,123 @@
     document.getElementById('step-indicator').innerHTML  = renderStepIndicator(2, 5, ['gebouw-stap-1-uitgangspunten.html']);
     document.getElementById('nav-panel').innerHTML       = renderNavPanel('gebouw', project);
 
-    // ── Building options catalog ──────────────────────────────────────────────
-    const OPTIES = [
-      { id: 'compact',   naam: 'Compact type',   icon: '🏫', bvo: 2500, bouwkosten: 6250000, tco: 13750000, duurzaamheid: 'Middel', maakbaarheid: 'Hoog',
-        beschrijving: 'Compacte schoolvorm met efficiënte ruimtebenutting. Geschikt voor kleinere kavels.',
-        ambitieScores: { gezondSchool: 67, duurzameSchool: 55, adaptieveSchool: 67, veiligSchool: 75, digitaleSchool: 65 } },
-      { id: 'lineair',   naam: 'Lineair type',   icon: '🏗️', bvo: 2800, bouwkosten: 7000000, tco: 15400000, duurzaamheid: 'Hoog',  maakbaarheid: 'Hoog',
-        beschrijving: 'Langgerekte plattegrond langs de straat. Optimale daglichttoetreding.',
-        ambitieScores: { gezondSchool: 80, duurzameSchool: 67, adaptieveSchool: 67, veiligSchool: 70, digitaleSchool: 67 } },
-      { id: 'cluster',   naam: 'Cluster type',   icon: '🏘️', bvo: 3100, bouwkosten: 7750000, tco: 17050000, duurzaamheid: 'Hoog',  maakbaarheid: 'Middel',
-        beschrijving: 'Groepering van functies rondom een centraal hart. Stimuleert ontmoeting.',
-        ambitieScores: { gezondSchool: 70, duurzameSchool: 75, adaptieveSchool: 80, veiligSchool: 67, digitaleSchool: 70 } },
-      { id: 'hof',       naam: 'Hof type',       icon: '🏛️', bvo: 3400, bouwkosten: 8500000, tco: 18700000, duurzaamheid: 'Middel', maakbaarheid: 'Laag',
-        beschrijving: 'Gesloten bouwvorm rondom een binnenhof. Beschutte buitenruimte voor kinderen.',
-        ambitieScores: { gezondSchool: 67, duurzameSchool: 60, adaptieveSchool: 55, veiligSchool: 85, digitaleSchool: 62 } },
-      { id: 'toren',     naam: 'Toren type',     icon: '🗼', bvo: 2200, bouwkosten: 5500000, tco: 12100000, duurzaamheid: 'Laag',  maakbaarheid: 'Laag',
-        beschrijving: 'Meerdere bouwlagen op kleine footprint. Ideaal bij beperkt kavelbegrip.',
-        ambitieScores: { gezondSchool: 55, duurzameSchool: 65, adaptieveSchool: 50, veiligSchool: 72, digitaleSchool: 75 } },
-      { id: 'paviljon',  naam: 'Paviljoen type', icon: '⛺', bvo: 3600, bouwkosten: 9000000, tco: 19800000, duurzaamheid: 'Hoog',  maakbaarheid: 'Middel',
-        beschrijving: 'Losse paviljoens verbonden door overdekte passages. Flexibel en uitbreidbaar.',
-        ambitieScores: { gezondSchool: 85, duurzameSchool: 85, adaptieveSchool: 90, veiligSchool: 60, digitaleSchool: 70 } },
-    ];
-
     const RATING_COLOR = { 'Hoog': '#059669', 'Middel': '#D97706', 'Laag': '#DC2626' };
-
-    const DIM_LABELS = {
+    const DIM_LABELS   = {
       gezondSchool: 'Gezonde school', duurzameSchool: 'Duurzame school',
       adaptieveSchool: 'Adaptieve school', veiligSchool: 'Veilige school', digitaleSchool: 'Digitale school',
     };
 
-    // Load PVE ambition targets once
-    const pveVariant   = getActivePveVariant();
+    const pveVariant = getActivePveVariant();
     const pveAmbitieScores = pveVariant
       ? POM_CALC.calcAmbitieScores(pveVariant.ambities)
       : { gezondSchool: 67, duurzameSchool: 67, adaptieveSchool: 67, veiligSchool: 67, digitaleSchool: 67 };
 
     let geselecteerdOptieId = variant.geselecteerdeOptie || null;
-    let detailOptie = null;
+    let detailOptie         = null;
+    let detailGroepNaam     = '';
 
-    // ── Render grid ───────────────────────────────────────────────────────────
+    // ── Active group state ─────────────────────────────────────────────────────
+    // Default: group that contains the currently selected option, else first group
+    let activeGroupId = GEBOUW_OPTIES_GROUPS[0].id;
+    if (geselecteerdOptieId) {
+      const g = GEBOUW_OPTIES_GROUPS.find(g => g.opties.some(o => o.id === geselecteerdOptieId));
+      if (g) activeGroupId = g.id;
+    }
+
+    // ── Build group tabs ───────────────────────────────────────────────────────
+    function renderTabs() {
+      const tabBar = document.getElementById('group-tabs');
+      tabBar.innerHTML = '';
+      GEBOUW_OPTIES_GROUPS.forEach(g => {
+        const btn = document.createElement('button');
+        btn.className = 'group-tab' + (g.id === activeGroupId ? ' active' : '');
+        btn.style.setProperty('color', g.id === activeGroupId ? g.kleur : '', '');
+        btn.innerHTML = `<span class="tab-dot" style="background:${g.kleur};"></span>${g.naam} <span style="font-size:0.65rem;opacity:0.6;">(${g.opties.length})</span>`;
+        btn.addEventListener('click', () => {
+          activeGroupId = g.id;
+          renderTabs();
+          renderGrid();
+        });
+        tabBar.appendChild(btn);
+      });
+    }
+
+    // ── Render option grid for active group ────────────────────────────────────
     function renderGrid() {
+      const group = GEBOUW_OPTIES_GROUPS.find(g => g.id === activeGroupId);
+      if (!group) return;
+
+      // Adjust columns based on group size
+      const n = group.opties.length;
+      const cols = n <= 2 ? 2 : n <= 4 ? 2 : 3;
       const grid = document.getElementById('optie-grid');
+      grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
       grid.innerHTML = '';
-      OPTIES.forEach(opt => {
+
+      group.opties.forEach(opt => {
+        const isSelected = geselecteerdOptieId === opt.id;
         const card = document.createElement('div');
-        card.className = 'optie-card' + (geselecteerdOptieId === opt.id ? ' selected' : '');
+        card.className = 'optie-card' + (isSelected ? ' selected' : '');
+
         card.innerHTML = `
-          <div class="optie-thumb" style="padding:0;overflow:hidden;">
-            <img src="src/assets/img_massstudy.png" style="width:100%;height:100%;object-fit:cover;"/>
+          <div class="optie-thumb">
+            <img src="${opt.afbeelding}" alt="${opt.naam}"
+                 onerror="this.parentElement.style.background='#F5F3FF';this.style.display='none'"/>
+            ${isSelected ? `<div style="position:absolute;top:0.5rem;right:0.5rem;background:#7C3AED;color:white;font-size:0.62rem;font-weight:700;padding:0.15rem 0.45rem;border-radius:99px;">✓ Geselecteerd</div>` : ''}
           </div>
           <div class="p-3 flex flex-col gap-2">
-            <div class="text-sm font-semibold text-gray-700">${opt.naam}</div>
+            <!-- <div class="text-sm font-semibold text-gray-700">${opt.naam}</div>
+             <div style="font-size:0.7rem;color:#6B7280;line-height:1.35;">${opt.beschrijving.substring(0, 80)}…</div> -->
+            <div class="flex gap-1 flex-wrap" style="margin-top:0.1rem;">
+              ${(opt.eigenschappen || []).map(e => `<span class="eigenschap-tag">${e}</span>`).join('')}
+            </div>
             <div class="flex gap-1 flex-wrap">
               <span class="metric-pill">BVO: ${opt.bvo.toLocaleString('nl-NL')} m²</span>
               <span class="metric-pill" style="color:#7C3AED;">${POM_CALC.formatEuro(opt.bouwkosten)}</span>
-              <span class="metric-pill" style="color:#059669;">TCO: ${POM_CALC.formatEuro(opt.tco)}</span>
-              <span class="metric-pill" style="color:${RATING_COLOR[opt.duurzaamheid]};">Duurzaamheid: ${opt.duurzaamheid}</span>
-              <span class="metric-pill" style="color:${RATING_COLOR[opt.maakbaarheid]};">Maakbaarheid: ${opt.maakbaarheid}</span>
             </div>
-            <div class="flex gap-2">
-              <button onclick="event.stopPropagation(); openDetail('${opt.id}')" class="btn-secondary flex-1 text-xs py-1.5">Details</button>
-              <button onclick="event.stopPropagation(); selecteerEnNaarStap3('${opt.id}')" class="btn-primary flex-1 text-xs py-1.5">Selecteren</button>
+            <div class="flex gap-2 mt-1">
+              <button onclick="event.stopPropagation(); openDetail('${opt.id}', '${group.naam}')"
+                      class="btn-secondary flex-1 text-xs py-1.5">Details</button>
+              <button onclick="event.stopPropagation(); selecteerEnNaarStap3('${opt.id}')"
+                      class="btn-primary flex-1 text-xs py-1.5">Selecteren</button>
             </div>
           </div>`;
-        card.onclick = () => openDetail(opt.id);
+
+        card.addEventListener('click', () => openDetail(opt.id, group.naam));
         grid.appendChild(card);
       });
     }
 
-    // ── Detail view ───────────────────────────────────────────────────────────
-    function openDetail(id) {
-      detailOptie = OPTIES.find(o => o.id === id);
-      document.getElementById('grid-view').style.display   = 'none';
+    // ── Detail view ────────────────────────────────────────────────────────────
+    function openDetail(id, groepNaam) {
+      detailOptie     = window.getGebouwOptie(id);
+      detailGroepNaam = groepNaam || '';
+      if (!detailOptie) return;
+
+      document.getElementById('grid-view').style.display = 'none';
       document.getElementById('detail-view').classList.add('open');
-      document.getElementById('detail-naam').textContent = detailOptie.naam;
-      document.getElementById('detail-beschrijving').textContent = detailOptie.beschrijving;
-      const metrics = document.getElementById('detail-metrics');
-      metrics.innerHTML = `
+
+      document.getElementById('detail-groep-naam').textContent    = detailGroepNaam;
+      document.getElementById('detail-naam').textContent          = detailOptie.naam;
+      document.getElementById('detail-beschrijving').textContent  = detailOptie.beschrijving;
+      document.getElementById('detail-img-massstudy').src         = detailOptie.afbeelding;
+
+      // Eigenschappen
+      document.getElementById('detail-eigenschappen').innerHTML =
+        (detailOptie.eigenschappen || []).map(e => `<span class="eigenschap-tag">${e}</span>`).join('');
+
+      // Metrics
+      document.getElementById('detail-metrics').innerHTML = `
         <div class="metric-pill">BVO: ${detailOptie.bvo.toLocaleString('nl-NL')} m²</div>
+        <div class="metric-pill">Footprint: ${detailOptie.footprint ? detailOptie.footprint.toLocaleString('nl-NL') + ' m²' : '—'}</div>
+        <div class="metric-pill">${detailOptie.lagen || '—'} bouwla${detailOptie.lagen === 1 ? 'ag' : 'gen'}</div>
         <div class="metric-pill" style="color:#7C3AED;border-color:#7C3AED;">Bouwkosten: ${POM_CALC.formatEuro(detailOptie.bouwkosten)}</div>
+        <div class="metric-pill" style="color:#7C3AED;">Per m²: ${POM_CALC.formatEuro(Math.round(detailOptie.bouwkosten / detailOptie.bvo))}</div>
         <div class="metric-pill" style="color:#059669;border-color:#D1FAE5;">TCO: ${POM_CALC.formatEuro(detailOptie.tco)}</div>
         <div class="metric-pill" style="color:${RATING_COLOR[detailOptie.duurzaamheid]};">Duurzaamheid: ${detailOptie.duurzaamheid}</div>
         <div class="metric-pill" style="color:${RATING_COLOR[detailOptie.maakbaarheid]};">Maakbaarheid: ${detailOptie.maakbaarheid}</div>`;
 
-      // Ambition comparison
+      // Ambitie bars
       const scores = detailOptie.ambitieScores || {};
       const ambitieRows = Object.keys(DIM_LABELS).map(dim => {
         const score  = scores[dim] ?? 67;
@@ -202,19 +290,28 @@
 
       document.getElementById('detail-ambities').innerHTML = `
         <div style="border-top:1px solid #F3F4F6;padding-top:0.75rem;margin-top:0.25rem;">
-          <div style="font-size:0.65rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem;">
-            PVE Ambities
-          </div>
+          <div style="font-size:0.65rem;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem;">PVE Ambities</div>
           <div style="display:flex;flex-direction:column;gap:0.5rem;">${ambitieRows}</div>
-          <div style="font-size:0.6rem;color:#D1D5DB;margin-top:0.4rem;">
-            Balk = score optie &nbsp;|&nbsp; streep = PVE doel
-          </div>
+          <div style="font-size:0.6rem;color:#D1D5DB;margin-top:0.4rem;">Balk = score optie &nbsp;|&nbsp; streep = PVE doel</div>
         </div>`;
+
+      setView('massstudy');
     }
 
     function sluitDetail() {
       document.getElementById('grid-view').style.display = '';
       document.getElementById('detail-view').classList.remove('open');
+    }
+
+    function setView(type) {
+      ['massstudy', 'impressie', 'walkthrough'].forEach(v => {
+        document.getElementById('view-' + v).classList.toggle('hidden', v !== type);
+        const pill = document.getElementById('pill-' + v);
+        if (pill) {
+          pill.style.borderColor = v === type ? '#7C3AED' : '';
+          pill.style.color       = v === type ? '#7C3AED' : '';
+        }
+      });
     }
 
     function selecteerOptie() {
@@ -223,20 +320,13 @@
       window.location.href = 'gebouw-stap-3-kwaliteit.html?id=' + gebouwId;
     }
 
-    function setView(type) {
-      ['plattegrond', 'impressie', 'walkthrough'].forEach(v => {
-        document.getElementById('view-' + v).classList.toggle('hidden', v !== type);
-        const pill = document.getElementById('pill-' + v);
-        if (pill) { pill.style.borderColor = v === type ? '#7C3AED' : ''; pill.style.color = v === type ? '#7C3AED' : ''; }
-      });
-    }
-
     function selecteerEnNaarStap3(id) {
       geselecteerdOptieId = id;
       updateGebouwVariantById(gebouwId, { geselecteerdeOptie: id });
       window.location.href = 'gebouw-stap-3-kwaliteit.html?id=' + gebouwId;
     }
 
+    // ── Init ──────────────────────────────────────────────────────────────────
     renderGrid();
   </script>
   <script src="js/bot.js"></script>
