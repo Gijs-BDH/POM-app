@@ -407,7 +407,44 @@
     renderCards();
     renderKwalTable();
     renderKostTable();
+
+    // ── Bot check (called after bot.js loads) ───────────────────────────────────
+    function checkBesluitVarianten() {
+      if (variants.length > 2) return;
+
+      const pveVarianten    = project.pveVarianten    || [];
+      const gebiedVarianten = project.gebiedVarianten || [];
+
+      const usedPveIds    = new Set(variants.map(v => v.pveId).filter(Boolean));
+      const usedGebiedIds = new Set(variants.map(v => v.gebiedId).filter(Boolean));
+
+      const missingPve    = pveVarianten.filter(p => !usedPveIds.has(p.id));
+      const missingGebied = gebiedVarianten.filter(g => !usedGebiedIds.has(g.id));
+
+      if (missingPve.length === 0 && missingGebied.length === 0) {
+        triggerBot('besluit_weinig_varianten_alle_gekoppeld');
+        return;
+      }
+
+      // Build a specific message naming the unrepresented variants
+      const parts = [];
+      if (missingPve.length)
+        parts.push('PVE-variant' + (missingPve.length > 1 ? 'en' : '') + ': ' +
+          missingPve.map(p => '\u201C' + p.naam + '\u201D').join(', '));
+      if (missingGebied.length)
+        parts.push('gebiedsvariant' + (missingGebied.length > 1 ? 'en' : '') + ': ' +
+          missingGebied.map(g => '\u201C' + g.naam + '\u201D').join(', '));
+
+      const n   = variants.length;
+      const nStr = n === 0 ? 'geen' : String(n);
+      const msg = `Je hebt momenteel ${nStr} gebouwvariant${n === 1 ? '' : 'en'}. ` +
+        `De volgende varianten zijn nog niet meegenomen in een gebouwoptie: ${parts.join(' en ')}. ` +
+        `Overweeg een nieuwe gebouwvariant aan te maken om alle scenario\u2019s te vergelijken.`;
+
+      triggerBotMessage(msg, [{ id: 'go_to_gebouw_nieuw', label: 'Maak nieuwe variant' }]);
+    }
   </script>
   <script src="js/bot.js"></script>
+  <script>checkBesluitVarianten();</script>
 </body>
 </html>
