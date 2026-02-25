@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>POM – Besluit rapport</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <style>
+    body { background: #D1D5DB; font-family: ui-sans-serif, system-ui, sans-serif; }
+
+    /* ── Paper ─────────────────────────────────────────────────────────────── */
+    .paper {
+      background: white;
+      width: 794px;
+      min-height: 1123px;
+      margin: 2rem auto;
+      padding: 60px 68px;
+      box-shadow: 0 6px 48px rgba(0,0,0,0.22);
+      border-radius: 2px;
+      color: #111827;
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+    /* ── Print toolbar ─────────────────────────────────────────────────────── */
+    .print-toolbar {
+      width: 794px; margin: 1.5rem auto 0;
+      display: flex; align-items: center; gap: 0.75rem;
+    }
+    @media print {
+      body { background: white; }
+      .print-toolbar { display: none !important; }
+      .paper { box-shadow: none; margin: 0; padding: 40px 52px; border-radius: 0; width: 100%; }
+      .page-break { page-break-before: always; }
+    }
+
+    /* ── Typography ────────────────────────────────────────────────────────── */
+    .doc-eyebrow {
+      font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.14em; color: #7C3AED; margin-bottom: 0.25rem;
+    }
+    .doc-title  { font-size: 1.9rem; font-weight: 800; color: #111827; letter-spacing: -0.025em; line-height: 1.1; }
+    .doc-sub    { font-size: 0.78rem; color: #6B7280; margin-top: 0.35rem; }
+    .doc-h2 {
+      font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: white;
+      background: #7C3AED; padding: 0.3rem 0.7rem;
+      border-radius: 3px; display: inline-block; margin: 1.75rem 0 0.9rem;
+    }
+    .doc-h2.orange { background: #F97316; }
+    .doc-h2.teal   { background: #0D9488; }
+    .doc-h2.slate  { background: #6B7280; }
+    .doc-h3 {
+      font-size: 0.82rem; font-weight: 700; color: #111827;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .doc-h4 {
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.07em; color: #6B7280; margin: 0.9rem 0 0.35rem;
+    }
+
+    /* ── Structural ────────────────────────────────────────────────────────── */
+    .doc-rule  { border: none; border-top: 1px solid #E5E7EB; margin: 0.5rem 0; }
+    .doc-rule.heavy { border-top: 1.5px solid #D1D5DB; }
+
+    .variant-block {
+      border: 1px solid #E5E7EB; border-radius: 6px;
+      margin-bottom: 1rem; overflow: hidden;
+      page-break-inside: avoid;
+    }
+    .variant-header {
+      background: #F9FAFB; border-bottom: 1px solid #E5E7EB;
+      padding: 0.6rem 1rem;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .variant-body { padding: 0.8rem 1rem; }
+
+    /* ── KV grid ───────────────────────────────────────────────────────────── */
+    .kv { display: flex; flex-direction: column; gap: 0.08rem; }
+    .kv-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.06em; color: #9CA3AF; }
+    .kv-val   { font-size: 0.82rem; color: #111827; font-weight: 500; }
+    .kv-val.muted { color: #9CA3AF; font-weight: 400; }
+
+    .kv-grid   { display: grid; gap: 0.6rem 1.5rem; }
+    .cols-2 { grid-template-columns: 1fr 1fr; }
+    .cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+    /* ── Data table ────────────────────────────────────────────────────────── */
+    .data-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+    .data-table th {
+      text-align: left; font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.07em; color: #9CA3AF; padding: 0.3rem 0.6rem;
+      border-bottom: 1px solid #E5E7EB; background: #F9FAFB;
+    }
+    .data-table td { padding: 0.32rem 0.6rem; border-bottom: 1px solid #F3F4F6; color: #374151; }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr.section-row td {
+      background: #F5F3FF; font-weight: 700; color: #5B21B6;
+      font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em;
+      padding: 0.25rem 0.6rem; border-top: 1px solid #DDD6FE;
+    }
+    .data-table tr.total-row td { font-weight: 700; color: #111827; background: #FAFAFA; }
+    .data-table td.right { text-align: right; font-variant-numeric: tabular-nums; }
+    .data-table td.euro  { text-align: right; font-variant-numeric: tabular-nums; color: #7C3AED; font-weight: 600; }
+
+    /* ── Score bar ─────────────────────────────────────────────────────────── */
+    .sbar-wrap { height: 5px; background: #F3F4F6; border-radius: 99px; overflow: hidden; min-width: 48px; }
+    .sbar-fill { height: 5px; border-radius: 99px; }
+
+    /* ── Score dot row ─────────────────────────────────────────────────────── */
+    .dot-row { display: flex; gap: 3px; align-items: center; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .dot.filled  { background: #7C3AED; }
+    .dot.empty   { background: #E5E7EB; }
+    .dot.filled-5 { background: #10B981; }
+
+    /* ── Ambitie badge ─────────────────────────────────────────────────────── */
+    .amb {
+      display: inline-block; font-size: 0.6rem; font-weight: 700;
+      padding: 0.1rem 0.4rem; border-radius: 99px;
+      border: 1px solid currentColor; white-space: nowrap;
+    }
+    .amb-basis { color: #9CA3AF; border-color: #D1D5DB; background: #F9FAFB; }
+    .amb-beter { color: #059669; border-color: #6EE7B7; background: #ECFDF5; }
+    .amb-beste { color: #7C3AED; border-color: #C4B5FD; background: #F5F3FF; }
+
+    /* ── Slider bar (project ambities 1–5) ────────────────────────────────── */
+    .slider-row {
+      display: grid; grid-template-columns: 12rem 1fr 2rem;
+      align-items: center; gap: 0.5rem; padding: 0.22rem 0;
+    }
+    .slider-label { font-size: 0.75rem; color: #374151; }
+    .slider-track { height: 7px; background: #EDE9FE; border-radius: 99px; overflow: hidden; }
+    .slider-fill  { height: 7px; background: #7C3AED; border-radius: 99px; }
+    .slider-val   { font-size: 0.72rem; font-weight: 700; color: #7C3AED; text-align: right; }
+
+    /* ── Stakeholder table ─────────────────────────────────────────────────── */
+    .sth-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+    .sth-table th {
+      text-align: left; font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.07em; color: #9CA3AF; padding: 0.3rem 0.6rem;
+      border-bottom: 1px solid #E5E7EB;
+    }
+    .sth-table td { padding: 0.3rem 0.6rem; border-bottom: 1px solid #F3F4F6; color: #374151; }
+    .sth-table tr:last-child td { border-bottom: none; }
+
+    /* ── Kwal category row ─────────────────────────────────────────────────── */
+    .kwal-cat { margin-bottom: 0.7rem; }
+    .kwal-cat-title {
+      font-size: 0.68rem; font-weight: 700; color: #374151;
+      text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.3rem;
+    }
+    .kwal-item {
+      display: grid; grid-template-columns: 9rem 1fr 2.5rem;
+      align-items: center; gap: 0.4rem; padding: 0.18rem 0;
+    }
+    .kwal-item-label { font-size: 0.73rem; color: #6B7280; }
+    .kwal-item-val   { font-size: 0.7rem; font-weight: 700; text-align: right; }
+
+    /* ── Summary comparison table ──────────────────────────────────────────── */
+    .cmp-table { width: 100%; border-collapse: collapse; font-size: 0.76rem; }
+    .cmp-table th {
+      background: #F5F3FF; color: #5B21B6; font-weight: 700;
+      padding: 0.4rem 0.6rem; font-size: 0.7rem; text-align: center;
+      border: 1px solid #DDD6FE;
+    }
+    .cmp-table th.row-hdr { text-align: left; background: #F9FAFB; color: #6B7280; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .cmp-table td { padding: 0.3rem 0.6rem; border: 1px solid #F3F4F6; color: #374151; text-align: center; }
+    .cmp-table td.row-label { text-align: left; color: #6B7280; font-size: 0.75rem; }
+    .cmp-table td.euro-cell { color: #7C3AED; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .cmp-table tr.best-row td { background: #F0FDF4; }
+
+    /* ── Doc footer ────────────────────────────────────────────────────────── */
+    .doc-footer-txt { font-size: 0.62rem; color: #9CA3AF; }
+
+    /* ── Tag ───────────────────────────────────────────────────────────────── */
+    .tag {
+      display: inline-block; font-size: 0.6rem; font-weight: 600;
+      padding: 0.1rem 0.45rem; border-radius: 99px;
+    }
+    .tag-violet { background: #EDE9FE; color: #7C3AED; }
+    .tag-active { background: #7C3AED; color: white; }
+    .tag-teal   { background: #CCFBF1; color: #0D9488; }
+    .tag-ok     { background: #D1FAE5; color: #059669; }
+    .tag-warn   { background: #FEF3C7; color: #B45309; }
+  </style>
+</head>
+<body>
+
+  <!-- Toolbar -->
+  <div class="print-toolbar">
+    <a href="besluit.html" class="btn-ghost text-sm">← Terug naar besluit</a>
+    <button onclick="window.print()" class="btn-primary text-sm px-5">&#128438;&ensp;Afdrukken / Opslaan als PDF</button>
+  </div>
+
+  <!-- Paper -->
+  <div class="paper">
+
+    <!-- ══ Cover header ════════════════════════════════════════════════════ -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.5rem;">
+      <div style="flex:1;">
+        <div class="doc-eyebrow">Projectontwikkeling tool &mdash; Besluit rapport</div>
+        <div class="doc-title" id="hdr-naam">—</div>
+        <div class="doc-sub"  id="hdr-sub"></div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;padding-left:1.5rem;">
+        <div style="font-size:2.4rem;font-weight:900;letter-spacing:-0.04em;color:#EDE9FE;line-height:1;">POM</div>
+        <div class="doc-footer-txt" id="hdr-datum"></div>
+      </div>
+    </div>
+
+    <hr class="doc-rule heavy"/>
+
+    <!-- ── Project samenvatting ── -->
+    <div class="kv-grid cols-4" id="proj-summary" style="margin:0.9rem 0 1.5rem;"></div>
+
+    <hr class="doc-rule heavy"/>
+
+    <!-- ══ 1. Projectambities ═══════════════════════════════════════════════ -->
+    <div id="section-ambities"></div>
+
+    <!-- ══ 2. Stakeholders ══════════════════════════════════════════════════ -->
+    <div id="section-stakeholders"></div>
+
+    <!-- ══ 3. PVE ═══════════════════════════════════════════════════════════ -->
+    <div id="section-pve"></div>
+
+    <!-- ══ 4. Gebied ════════════════════════════════════════════════════════ -->
+    <div id="section-gebied"></div>
+
+    <!-- ══ 5. Gebouw ════════════════════════════════════════════════════════ -->
+    <div id="section-gebouw"></div>
+
+    <!-- ══ 6. Vergelijking gebouwvarianten ══════════════════════════════════ -->
+    <div id="section-vergelijking"></div>
+
+    <!-- ── Document footer ── -->
+    <div style="margin-top:3rem;padding-top:0.75rem;border-top:1px solid #E5E7EB;display:flex;justify-content:space-between;">
+      <div class="doc-footer-txt">Gegenereerd door POM &mdash; Projectontwikkeling tool</div>
+      <div class="doc-footer-txt" id="footer-datum"></div>
+    </div>
+
+  </div><!-- /paper -->
+  <div style="height:2rem;"></div>
+
+  <script src="js/state.js"></script>
+  <script src="js/calculations.js"></script>
+  <script src="js/gebouw-opties.js"></script>
+  <script>
+  (() => {
+    const project = getCurrentProject();
+    if (!project) { window.location.href = 'index.html'; return; }
+
+    /* ── Helpers ──────────────────────────────────────────────────────────── */
+    const fmt    = n => '€\u202F' + Math.round(n).toLocaleString('nl-NL');
+    const fmtM2  = n => n ? n.toLocaleString('nl-NL') + '\u202Fm²' : '—';
+    const fmtN   = n => (n && n > 0) ? n.toLocaleString('nl-NL') : '—';
+    const dash   = v => (v != null && v !== '' && v !== 0 && v !== '0') ? v : '—';
+    const dateStr = new Date().toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    function scoreColor(s) {
+      if (s >= 3.5) return '#10B981';
+      if (s >= 2.5) return '#84CC16';
+      if (s >= 1.5) return '#F97316';
+      return '#EF4444';
+    }
+    function scoreLabel(s) {
+      if (s >= 3.5) return 'Excellent';
+      if (s >= 2.5) return 'Hoog';
+      if (s >= 1.5) return 'Gemiddeld';
+      return 'Laag';
+    }
+    function sbar(val, max, color) {
+      const pct = Math.min(Math.round((val / max) * 100), 100);
+      return `<div class="sbar-wrap"><div class="sbar-fill" style="width:${pct}%;background:${color};"></div></div>`;
+    }
+    function dots5(val) {
+      let h = '<div class="dot-row">';
+      for (let i = 1; i <= 5; i++) h += `<div class="dot ${i <= val ? 'filled' : 'empty'}"></div>`;
+      return h + '</div>';
+    }
+    function dots4(val) {
+      const c = scoreColor(val);
+      let h = '<div class="dot-row">';
+      for (let i = 1; i <= 4; i++) h += `<div class="dot" style="${i <= Math.round(val) ? 'background:'+c : 'background:#E5E7EB'}"></div>`;
+      return h + '</div>';
+    }
+    function ambBadge(val) {
+      if (!val) return `<span class="amb amb-basis">—</span>`;
+      const l = val.toLowerCase();
+      if (l === 'beste' || l === 'best')       return `<span class="amb amb-beste">${val}</span>`;
+      if (l === 'beter' || l.startsWith('b'))  return `<span class="amb amb-beter">${val}</span>`;
+      return `<span class="amb amb-basis">${val}</span>`;
+    }
+    function kv(label, value, muted) {
+      return `<div class="kv"><div class="kv-label">${label}</div><div class="kv-val${muted ? ' muted' : ''}">${value}</div></div>`;
+    }
+
+    /* ── Cover ────────────────────────────────────────────────────────────── */
+    document.getElementById('hdr-naam').textContent  = project.naam;
+    document.getElementById('hdr-datum').textContent = dateStr;
+    document.getElementById('footer-datum').textContent = dateStr;
+    document.getElementById('hdr-sub').textContent =
+      [project.rol, project.huidigeStap, project.ervaring].filter(Boolean).join(' · ');
+
+    const pveVarianten   = project.pveVarianten   || [];
+    const gebiedVarianten = project.gebiedVarianten || [];
+    const gebouwVarianten = project.gebouwVarianten || [];
+
+    /* ── Project summary bar ─────────────────────────────────────────────── */
+    const summaryEl = document.getElementById('proj-summary');
+    [
+      { label: 'Aangemaakt',     value: new Date(project.createdAt).toLocaleDateString('nl-NL') },
+      { label: 'Gebruiksduur',   value: project.gebruiksduur ? project.gebruiksduur + ' jaar' : '—' },
+      { label: 'PVE varianten',  value: pveVarianten.length    || '0' },
+      { label: 'Gebieden',       value: gebiedVarianten.length || '0' },
+      { label: 'Gebouw opties',  value: gebouwVarianten.length || '0' },
+      { label: 'Stakeholders',   value: (project.stakeholders || []).length || '0' },
+    ].forEach(({ label, value }) => {
+      summaryEl.innerHTML += kv(label, value);
+    });
+
+    /* ══ 1. Projectambities ════════════════════════════════════════════════ */
+    const sliders = project.sliders || {};
+    const SLIDER_LABELS = {
+      betereSchool:               'Betere school',
+      functioneleSchool:          'Functionele school',
+      aantrekkelijkeSchool:       'Aantrekkelijke school',
+      inclusieveSchool:           'Inclusieve school',
+      gezondSchool:               'Gezonde school',
+      duurzameSchool:             'Duurzame school',
+      veiligSchool:               'Veilige school',
+      digitaleSchool:             'Digitale school',
+      onderhoudsvriendelijkeSchool: 'Onderhoudsvriendelijke school',
+    };
+
+    let ambitiesHtml = '<div class="doc-h2">1 &nbsp; Projectambities</div><div>';
+    Object.entries(SLIDER_LABELS).forEach(([key, label]) => {
+      const val = sliders[key] || 3;
+      ambitiesHtml += `
+        <div class="slider-row">
+          <div class="slider-label">${label}</div>
+          <div class="slider-track"><div class="slider-fill" style="width:${(val/5)*100}%"></div></div>
+          <div class="slider-val">${val}/5</div>
+        </div>`;
+    });
+    ambitiesHtml += '</div>';
+    document.getElementById('section-ambities').innerHTML = ambitiesHtml;
+
+    /* ══ 2. Stakeholders ═══════════════════════════════════════════════════ */
+    const stakeholders = project.stakeholders || [];
+    let sthHtml = '<div class="doc-h2">2 &nbsp; Stakeholders</div>';
+    if (!stakeholders.length) {
+      sthHtml += '<p style="color:#9CA3AF;font-size:0.78rem;">Geen stakeholders geregistreerd.</p>';
+    } else {
+      sthHtml += `<table class="sth-table">
+        <thead><tr>
+          <th>#</th><th>Naam</th><th>Rol</th><th>Organisatie</th><th>Betrokkenheid</th>
+        </tr></thead><tbody>`;
+      stakeholders.forEach((s, i) => {
+        sthHtml += `<tr>
+          <td style="color:#9CA3AF;">${i+1}</td>
+          <td style="font-weight:600;">${s.naam || '—'}</td>
+          <td>${s.rol || '—'}</td>
+          <td>${s.organisatie || '—'}</td>
+          <td>${s.betrokkenheid || '—'}</td>
+        </tr>`;
+      });
+      sthHtml += '</tbody></table>';
+    }
+    document.getElementById('section-stakeholders').innerHTML = sthHtml;
+
+    /* ══ 3. PVE varianten ══════════════════════════════════════════════════ */
+    let pveHtml = '<div class="doc-h2">3 &nbsp; Programma van Eisen</div>';
+    if (!pveVarianten.length) {
+      pveHtml += '<p style="color:#9CA3AF;font-size:0.78rem;">Geen PVE varianten.</p>';
+    } else {
+      pveVarianten.forEach((v, idx) => {
+        const isActive = v.id === project.activePveId;
+        const vz = v.voorzieningen || {};
+        const po = vz.primairOnderwijs   || {};
+        const vs = vz.voorschoolseOpvang || {};
+        const sp = vz.sport              || {};
+        const ab = v.ambities            || {};
+
+        // BVO from POM_CALC if available
+        let bvoTotal = null, bouwkostenCalc = null, tcoCalc = null;
+        if (window.POM_CALC && typeof POM_CALC.calcDashboard === 'function') {
+          try {
+            const r = POM_CALC.calcDashboard(vz);
+            bvoTotal = r.totalBVO;
+            bouwkostenCalc = r.bouwkosten;
+            tcoCalc  = r.tco;
+          } catch(e) {}
+        }
+
+        pveHtml += `<div class="variant-block">
+          <div class="variant-header">
+            <div class="doc-h3">
+              ${v.naam || 'PVE variant ' + (idx + 1)}
+              ${isActive ? '<span class="tag tag-active">Actief</span>' : ''}
+            </div>
+            ${bvoTotal ? `<div style="font-size:0.78rem;font-weight:700;color:#7C3AED;">${fmtM2(bvoTotal)} BVO</div>` : ''}
+          </div>
+          <div class="variant-body">`;
+
+        /* – Voorzieningen – */
+        pveHtml += '<div class="doc-h4">Voorzieningen</div>';
+        pveHtml += `<table class="data-table">
+          <thead><tr>
+            <th>Voorziening</th><th>Actief</th><th>Detail</th><th class="right">BVO handmatig</th>
+          </tr></thead><tbody>`;
+        pveHtml += `<tr>
+          <td style="font-weight:600;">Primair Onderwijs</td>
+          <td>${po.actief ? '<span class="tag tag-ok">Ja</span>' : '<span style="color:#9CA3AF;">Nee</span>'}</td>
+          <td>${po.actief ? (po.leerlingen || '—') + ' leerlingen' : '—'}</td>
+          <td class="right">${po.bvoHandmatig ? fmtM2(po.bvoHandmatig) : '—'}</td>
+        </tr>`;
+        pveHtml += `<tr>
+          <td style="font-weight:600;">Voorschoolse Opvang</td>
+          <td>${vs.actief ? '<span class="tag tag-ok">Ja</span>' : '<span style="color:#9CA3AF;">Nee</span>'}</td>
+          <td>${vs.actief ? (vs.groepen || '—') + ' groepen' : '—'}</td>
+          <td class="right">${vs.bvoHandmatig ? fmtM2(vs.bvoHandmatig) : '—'}</td>
+        </tr>`;
+        pveHtml += `<tr>
+          <td style="font-weight:600;">Sport</td>
+          <td>${sp.actief ? '<span class="tag tag-ok">Ja</span>' : '<span style="color:#9CA3AF;">Nee</span>'}</td>
+          <td>${sp.actief ? (sp.type || '—') : '—'}</td>
+          <td class="right">${sp.bvoHandmatig ? fmtM2(sp.bvoHandmatig) : '—'}</td>
+        </tr>`;
+        if (bvoTotal || bouwkostenCalc) {
+          pveHtml += `<tr class="total-row">
+            <td colspan="2" style="font-weight:700;">Totaal (berekend)</td>
+            <td>${bvoTotal ? fmtM2(bvoTotal) : '—'}</td>
+            <td class="euro">${bouwkostenCalc ? fmt(bouwkostenCalc) : '—'}</td>
+          </tr>`;
+        }
+        pveHtml += '</tbody></table>';
+
+        /* – Ambities – */
+        const AMBITIE_CATS = [
+          {
+            key: 'gezondSchool', label: 'Gezonde school',
+            items: [
+              { k: 'geluid',              l: 'Akoestiek / Geluid' },
+              { k: 'temperatuur',         l: 'Thermisch comfort' },
+              { k: 'licht',               l: 'Daglicht & verlichting' },
+              { k: 'lucht',               l: 'Luchtkwaliteit' },
+              { k: 'kwaliteitsborging',   l: 'Kwaliteitsborging' },
+              { k: 'comfortNietOnderwijs',l: 'Comfort niet-onderwijsruimtes' },
+            ]
+          },
+          {
+            key: 'duurzameSchool', label: 'Duurzame school',
+            items: [
+              { k: 'energiegebruik',     l: 'Energiegebruik' },
+              { k: 'materiaalgebruik',   l: 'Materiaalgebruik' },
+              { k: 'watergebruik',       l: 'Watergebruik' },
+              { k: 'natuurInclusiviteit',l: 'Natuur-inclusiviteit' },
+              { k: 'klimaatAdaptie',     l: 'Klimaatadaptatie' },
+            ]
+          },
+          {
+            key: 'adaptieveSchool', label: 'Adaptieve school',
+            items: [
+              { k: 'adaptievePlattegrond', l: 'Adaptieve plattegrond' },
+              { k: 'adaptieveTechniek',    l: 'Adaptieve techniek' },
+            ]
+          },
+          {
+            key: 'veiligSchool', label: 'Veilige school',
+            items: [
+              { k: 'bouwkundigInbraak',   l: 'Bouwkundig inbraakpreventie' },
+              { k: 'technischInbraak',    l: 'Technisch inbraakpreventie' },
+              { k: 'bouwkundigVandalisme',l: 'Bouwkundig vandalisme' },
+              { k: 'technischVandalisme', l: 'Technisch vandalisme' },
+            ]
+          },
+          {
+            key: 'digitaleSchool', label: 'Digitale school',
+            items: [
+              { k: 'technischeIntegratie', l: 'Technische integratie' },
+            ]
+          },
+        ];
+
+        pveHtml += '<div class="doc-h4">Ambities</div>';
+        pveHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem 1.5rem;">';
+        AMBITIE_CATS.forEach(cat => {
+          const catData = ab[cat.key] || {};
+          pveHtml += `<div>
+            <div style="font-size:0.68rem;font-weight:700;color:#374151;margin-bottom:0.3rem;">${cat.label}</div>
+            <table style="width:100%;border-collapse:collapse;">`;
+          cat.items.forEach(item => {
+            const val = catData[item.k];
+            pveHtml += `<tr>
+              <td style="font-size:0.72rem;color:#6B7280;padding:0.12rem 0 0.12rem 0;border-bottom:1px solid #F3F4F6;">${item.l}</td>
+              <td style="text-align:right;padding:0.12rem 0;border-bottom:1px solid #F3F4F6;">${ambBadge(val)}</td>
+            </tr>`;
+          });
+          pveHtml += '</table></div>';
+        });
+        pveHtml += '</div>';
+
+        pveHtml += '</div></div>'; // variant-body / variant-block
+      });
+    }
+    document.getElementById('section-pve').innerHTML = pveHtml;
+
+    /* ══ 4. Gebied varianten ═══════════════════════════════════════════════ */
+    let gebiedHtml = '<div class="doc-h2 orange">4 &nbsp; Gebiedsanalyse</div>';
+    if (!gebiedVarianten.length) {
+      gebiedHtml += '<p style="color:#9CA3AF;font-size:0.78rem;">Geen gebiedsvarianten.</p>';
+    } else {
+      gebiedVarianten.forEach((g, idx) => {
+        if (g.wachtOpLoket) {
+          gebiedHtml += `<div class="variant-block">
+            <div class="variant-header" style="background:#FFFBEB;border-color:#FDE68A;">
+              <div class="doc-h3" style="color:#92400E;">Loket aanvraag (in behandeling)</div>
+            </div>
+          </div>`;
+          return;
+        }
+
+        const sb  = g.stedenbouwbeleid || {};
+        const opp = g.opp || (g.bouwbaarGebied || {}).opp || 0;
+
+        const areas = [
+          { label: 'Totaal kaveloppervlak',   val: opp,                                         color: '#7C3AED' },
+          { label: 'Bouwbaar gebied',          val: (g.bouwbaarGebied   || {}).opp || 0,          color: '#059669' },
+          { label: 'Uitsluiting',              val: (g.uitsluiting       || {}).opp || 0,          color: '#EF4444' },
+          { label: 'Parkeren',                 val: (g.parkeren          || {}).opp || 0,          color: '#F97316' },
+          { label: 'Onderbouw plein',          val: (g.onderbouwplein    || {}).opp || 0,          color: '#F59E0B' },
+          { label: 'Bovenbouw plein',          val: (g.bovenbouwPlein    || {}).opp || 0,          color: '#3B82F6' },
+          { label: 'Fietsenstalling',          val: (g.fietsenstalling   || {}).opp || 0,          color: '#8B5CF6' },
+        ];
+        const bomen = (g.bomen || {}).aantal || 0;
+
+        gebiedHtml += `<div class="variant-block">
+          <div class="variant-header">
+            <div class="doc-h3">${g.naam || 'Gebiedsvariant ' + (idx + 1)}</div>
+            <div style="display:flex;gap:0.4rem;align-items:center;">
+              <span class="tag ${sb.goedgekeurd ? 'tag-ok' : 'tag-warn'}">${sb.goedgekeurd ? 'Goedgekeurd' : 'Niet goedgekeurd'}</span>
+              <span class="tag tag-violet">${sb.mode || 'simpel'}</span>
+            </div>
+          </div>
+          <div class="variant-body">
+            <div class="doc-h4">Oppervlakken</div>
+            <table class="data-table">
+              <thead><tr>
+                <th>Onderdeel</th><th class="right">Oppervlak</th><th style="width:40%;">Verhouding</th>
+              </tr></thead><tbody>`;
+
+        areas.forEach(a => {
+          const pct = opp > 0 ? Math.round((a.val / opp) * 100) : 0;
+          gebiedHtml += `<tr ${a.label === 'Totaal kaveloppervlak' ? 'class="total-row"' : ''}>
+            <td>${a.label}</td>
+            <td class="right" style="font-weight:${a.label === 'Totaal kaveloppervlak' ? '700' : '400'};">${a.val > 0 ? fmtM2(a.val) : '—'}</td>
+            <td>${a.val > 0 && a.label !== 'Totaal kaveloppervlak'
+              ? `<div style="display:flex;align-items:center;gap:0.4rem;">
+                   <div style="flex:1;">${sbar(a.val, opp, a.color)}</div>
+                   <div style="font-size:0.65rem;color:#9CA3AF;width:2rem;text-align:right;">${pct}%</div>
+                 </div>`
+              : '—'}</td>
+          </tr>`;
+        });
+
+        gebiedHtml += `<tr>
+          <td>Bomen</td>
+          <td class="right">${bomen > 0 ? bomen + ' stuks' : '—'}</td>
+          <td>—</td>
+        </tr>`;
+
+        gebiedHtml += `</tbody></table>
+          </div>
+        </div>`;
+      });
+    }
+    document.getElementById('section-gebied').innerHTML = gebiedHtml;
+
+    /* ══ 5. Gebouw varianten ═══════════════════════════════════════════════ */
+    const getOptie = id => window.getGebouwOptie(id);
+
+    function avgKwal(kb) {
+      if (!kb) return null;
+      const vals = [];
+      Object.values(kb).forEach(cat => {
+        if (typeof cat === 'object') {
+          Object.entries(cat).forEach(([k, val]) => {
+            if (k !== 'beschrijving' && typeof val === 'number') vals.push(val);
+          });
+        }
+      });
+      return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+    }
+
+    const KWAL_CATS = [
+      {
+        key: 'locatie', label: 'Kenmerken locatie',
+        items: { verkeer: 'Verkeer', parkeren: 'Parkeren', fietsenstalling: 'Fietsenstalling', buitenruimte: 'Buitenruimte' }
+      },
+      {
+        key: 'kenmerkenSchool', label: 'Kenmerken school',
+        items: { structuur: 'Structuur', aanvullendeFuncties: 'Aanvullende functies', combinatieFuncties: 'Combinatiefuncties' }
+      },
+      {
+        key: 'uitstraling', label: 'Uitstraling',
+        items: { interieur: 'Interieur', exterieur: 'Exterieur' }
+      },
+      {
+        key: 'huisvestingConcept', label: 'Huisvesting concept',
+        items: { algemeen: 'Algemeen', ruimtelijkeIndeling: 'Ruimtelijke indeling', logistiek: 'Logistiek', gemeenschappelijkeRuimtes: 'Gem. ruimtes', typologieLokalen: 'Typologie lokalen' }
+      },
+      {
+        key: 'vandalismeBestendig', label: 'Vandalisme bestendig',
+        items: { overzichtEnControle: 'Overzicht & controle' }
+      },
+      {
+        key: 'gebruiksvriendelijkheid', label: 'Gebruiksvriendelijkheid',
+        items: { hoogteverschillen: 'Hoogteverschillen', socialeVeiligheid: 'Sociale veiligheid' }
+      },
+    ];
+
+    let gebouwHtml = '<div class="doc-h2 teal">5 &nbsp; Gebouw varianten</div>';
+    if (!gebouwVarianten.length) {
+      gebouwHtml += '<p style="color:#9CA3AF;font-size:0.78rem;">Geen gebouwvarianten.</p>';
+    } else {
+      gebouwVarianten.forEach((v, idx) => {
+        const optie        = getOptie(v.geselecteerdeOptie);
+        const linkedPve    = pveVarianten.find(p => p.id === v.pveId);
+        const linkedGebied = gebiedVarianten.find(g => g.id === v.gebiedId);
+        const kwalAvg      = avgKwal(v.kwaliteitsBeoordeling);
+        const kb           = v.kwaliteitsBeoordeling || {};
+
+        gebouwHtml += `<div class="variant-block">
+          <div class="variant-header">
+            <div class="doc-h3">
+              ${v.naam || 'Gebouw variant ' + (idx + 1)}
+              ${optie ? `<span class="tag tag-teal">${optie.naam}</span>` : ''}
+            </div>
+            ${kwalAvg !== null ? `<div style="font-size:0.78rem;font-weight:700;color:${scoreColor(kwalAvg)};">${kwalAvg.toFixed(1)}/4 &mdash; ${scoreLabel(kwalAvg)}</div>` : ''}
+          </div>
+          <div class="variant-body">`;
+
+        /* – Koppeling – */
+        gebouwHtml += `<div class="kv-grid cols-4" style="margin-bottom:0.8rem;">
+          ${kv('Gekoppeld PVE',   linkedPve    ? linkedPve.naam    : '—', !linkedPve)}
+          ${kv('Gekoppeld Gebied',linkedGebied ? linkedGebied.naam : '—', !linkedGebied)}
+          ${kv('Bouwtype', optie ? optie.naam : '—', !optie)}
+          ${kv('BVO', optie ? fmtM2(optie.bvo) : '—', !optie)}
+        </div>`;
+
+        /* – Kosten – */
+        gebouwHtml += '<div class="doc-h4">Kostenopbouw</div>';
+        if (optie) {
+          const inrichting  = Math.round(optie.bouwkosten * 0.10);
+          const onvoorzien  = Math.round(optie.bouwkosten * 0.05);
+          const stichting   = Math.round(optie.bouwkosten * 1.15);
+          const exploitPj   = Math.round((optie.tco - optie.bouwkosten) / 40);
+          const onderhoudPj = Math.round(optie.bouwkosten * 0.01);
+          const energiePj   = Math.round(optie.bvo * 25);
+          gebouwHtml += `<table class="data-table" style="margin-bottom:0.9rem;">
+            <tbody>
+              <tr class="section-row"><td colspan="3">Investeringskosten</td></tr>
+              <tr><td>Bouwkosten</td>            <td></td><td class="euro">${fmt(optie.bouwkosten)}</td></tr>
+              <tr><td>Bouwkosten per m² BVO</td> <td></td><td class="euro">${fmt(Math.round(optie.bouwkosten / optie.bvo))}/m²</td></tr>
+              <tr><td>Inrichtingskosten (10%)</td><td></td><td class="euro">${fmt(inrichting)}</td></tr>
+              <tr><td>Onvoorzien (5%)</td>        <td></td><td class="euro">${fmt(onvoorzien)}</td></tr>
+              <tr class="total-row"><td>Stichtingskosten (totaal)</td><td></td><td class="euro">${fmt(stichting)}</td></tr>
+              <tr class="section-row"><td colspan="3">Exploitatie &amp; beheer (jaarlijks)</td></tr>
+              <tr><td>Exploitatiekosten</td>      <td></td><td class="euro">${fmt(exploitPj)}/jr</td></tr>
+              <tr><td>Onderhoudskosten (1%)</td>  <td></td><td class="euro">${fmt(onderhoudPj)}/jr</td></tr>
+              <tr><td>Energiekosten (€25/m²)</td> <td></td><td class="euro">${fmt(energiePj)}/jr</td></tr>
+              <tr class="total-row"><td>TCO (40 jaar)</td><td></td><td class="euro">${fmt(optie.tco)}</td></tr>
+            </tbody>
+          </table>`;
+        } else {
+          gebouwHtml += '<p style="color:#9CA3AF;font-size:0.75rem;margin-bottom:0.9rem;">Geen gebouwtype geselecteerd — kosten niet beschikbaar.</p>';
+        }
+
+        /* – Kwaliteitsbeoordeling – */
+        gebouwHtml += '<div class="doc-h4">Kwaliteitsbeoordeling</div>';
+        if (kwalAvg !== null) {
+          gebouwHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem 1.5rem;">';
+          KWAL_CATS.forEach(cat => {
+            const catData = kb[cat.key] || {};
+            const catVals = Object.entries(cat.items).map(([k]) => catData[k] || 2);
+            const catAvg  = catVals.reduce((a, b) => a + b, 0) / catVals.length;
+            gebouwHtml += `<div class="kwal-cat">
+              <div class="kwal-cat-title" style="color:${scoreColor(catAvg)};">${cat.label} — ${catAvg.toFixed(1)}/4</div>`;
+            Object.entries(cat.items).forEach(([k, l]) => {
+              const val = catData[k] || 2;
+              gebouwHtml += `<div class="kwal-item">
+                <div class="kwal-item-label">${l}</div>
+                ${sbar(val, 4, scoreColor(val))}
+                <div class="kwal-item-val" style="color:${scoreColor(val)};">${val}</div>
+              </div>`;
+            });
+            // Beschrijving if present
+            if (catData.beschrijving) {
+              gebouwHtml += `<div style="font-size:0.68rem;color:#6B7280;font-style:italic;margin-top:0.2rem;padding-left:0.1rem;">"${catData.beschrijving}"</div>`;
+            }
+            gebouwHtml += '</div>';
+          });
+          gebouwHtml += '</div>';
+        } else {
+          gebouwHtml += '<p style="color:#9CA3AF;font-size:0.75rem;">Kwaliteitsbeoordeling nog niet ingevuld.</p>';
+        }
+
+        gebouwHtml += '</div></div>'; // variant-body / variant-block
+      });
+    }
+    document.getElementById('section-gebouw').innerHTML = gebouwHtml;
+
+    /* ══ 6. Vergelijking ═══════════════════════════════════════════════════ */
+    let vergHtml = '<div class="doc-h2 slate">6 &nbsp; Vergelijking gebouwvarianten</div>';
+    if (gebouwVarianten.length < 2) {
+      vergHtml += '<p style="color:#9CA3AF;font-size:0.78rem;">Minimaal 2 gebouwvarianten nodig voor vergelijking.</p>';
+    } else {
+      // Find best per metric
+      const withOptie = gebouwVarianten.filter(v => getOptie(v.geselecteerdeOptie));
+      const bestKosten  = withOptie.length ? withOptie.reduce((a, b) => {
+        const oa = getOptie(a.geselecteerdeOptie), ob = getOptie(b.geselecteerdeOptie);
+        return oa.bouwkosten < ob.bouwkosten ? a : b;
+      }).id : null;
+      const bestTco = withOptie.length ? withOptie.reduce((a, b) => {
+        const oa = getOptie(a.geselecteerdeOptie), ob = getOptie(b.geselecteerdeOptie);
+        return oa.tco < ob.tco ? a : b;
+      }).id : null;
+      const withKwal = gebouwVarianten.filter(v => avgKwal(v.kwaliteitsBeoordeling) !== null);
+      const bestKwal = withKwal.length ? withKwal.reduce((a, b) =>
+        (avgKwal(a.kwaliteitsBeoordeling) >= avgKwal(b.kwaliteitsBeoordeling)) ? a : b
+      ).id : null;
+
+      vergHtml += `<table class="cmp-table"><thead><tr>
+        <th class="row-hdr">Kenmerk</th>
+        ${gebouwVarianten.map((v, i) => `<th>Optie #${i+1}<br/><span style="font-weight:400;font-size:0.65rem;">${v.naam}</span></th>`).join('')}
+      </tr></thead><tbody>`;
+
+      const rows = [
+        { label: 'Gebouwtype',      fn: v => { const o = getOptie(v.geselecteerdeOptie); return o ? o.naam : '—'; }, type: 'text' },
+        { label: 'BVO',             fn: v => { const o = getOptie(v.geselecteerdeOptie); return o ? fmtM2(o.bvo) : '—'; }, type: 'text' },
+        { label: 'Bouwkosten',      fn: v => { const o = getOptie(v.geselecteerdeOptie); return o ? fmt(o.bouwkosten) : '—'; }, type: 'euro', bestId: bestKosten },
+        { label: 'Stichtingskosten',fn: v => { const o = getOptie(v.geselecteerdeOptie); return o ? fmt(Math.round(o.bouwkosten*1.15)) : '—'; }, type: 'euro' },
+        { label: 'TCO (40 jr)',     fn: v => { const o = getOptie(v.geselecteerdeOptie); return o ? fmt(o.tco) : '—'; }, type: 'euro', bestId: bestTco },
+        { label: 'Kwaliteit gem.',  fn: v => { const a = avgKwal(v.kwaliteitsBeoordeling); return a !== null ? `${a.toFixed(1)}/4` : '—'; }, type: 'kwal', bestId: bestKwal },
+        { label: 'Gekoppeld PVE',   fn: v => { const p = pveVarianten.find(x => x.id === v.pveId); return p ? p.naam : '—'; }, type: 'text' },
+        { label: 'Gekoppeld Gebied',fn: v => { const g = gebiedVarianten.find(x => x.id === v.gebiedId); return g ? g.naam : '—'; }, type: 'text' },
+      ];
+
+      rows.forEach(row => {
+        vergHtml += '<tr>';
+        vergHtml += `<td class="row-label">${row.label}</td>`;
+        gebouwVarianten.forEach(v => {
+          const val    = row.fn(v);
+          const isBest = row.bestId && v.id === row.bestId;
+          const cls    = row.type === 'euro' ? 'euro-cell' : '';
+          vergHtml += `<td class="${cls}" style="${isBest ? 'background:#F0FDF4;font-weight:700;' : ''}">${val}${isBest ? ' <span style="color:#059669;font-size:0.6rem;">✓ Laagst</span>' : ''}</td>`;
+        });
+        vergHtml += '</tr>';
+      });
+
+      vergHtml += '</tbody></table>';
+    }
+    document.getElementById('section-vergelijking').innerHTML = vergHtml;
+
+  })();
+  </script>
+</body>
+</html>

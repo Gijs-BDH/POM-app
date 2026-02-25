@@ -81,7 +81,7 @@
             <button class="view-pill"        id="pill-kosten"    onclick="setView('kosten')">kosten</button>
           </div>
           <div class="flex flex-col gap-2 items-end">
-            <button class="dl-btn">Download besluit-document</button>
+            <a href="besluit-rapport.html" class="dl-btn">Download besluit-document</a>
             <button class="dl-btn">Download aanvraag documenten</button>
             <a href="project-stap-3-beoordeling.html" class="dl-btn text-center">Wegingen instellen</a>
           </div>
@@ -113,6 +113,7 @@
 
   <script src="js/state.js"></script>
   <script src="js/calculations.js"></script>
+  <script src="js/gebouw-opties.js"></script>
   <script>
     const project = getCurrentProject();
     if (!project) { window.location.href = 'index.html'; }
@@ -122,16 +123,7 @@
     const variants = project.gebouwVarianten || [];
     const CARD_W = 220; // fixed column width (px) per option — drives cards + table alignment
 
-    // Same catalog as gebouw-stap-2
-    const OPTIES = [
-      { id: 'compact',  naam: 'Compact type',   bvo: 2500, bouwkosten: 6250000, tco: 13750000 },
-      { id: 'lineair',  naam: 'Lineair type',   bvo: 2800, bouwkosten: 7000000, tco: 15400000 },
-      { id: 'cluster',  naam: 'Cluster type',   bvo: 3100, bouwkosten: 7750000, tco: 17050000 },
-      { id: 'hof',      naam: 'Hof type',       bvo: 3400, bouwkosten: 8500000, tco: 18700000 },
-      { id: 'toren',    naam: 'Toren type',     bvo: 2200, bouwkosten: 5500000, tco: 12100000 },
-      { id: 'paviljon', naam: 'Paviljoen type', bvo: 3600, bouwkosten: 9000000, tco: 19800000 },
-    ];
-    const getOptie = id => OPTIES.find(o => o.id === id) || null;
+    const getOptie = id => window.getGebouwOptie(id);
 
     // ── Score helpers ───────────────────────────────────────────────────────────
     function scoreColor(s) {
