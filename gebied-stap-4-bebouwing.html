@@ -57,7 +57,7 @@
     if (!variant) { window.location.href = 'project-overzicht.html'; }
 
     document.getElementById('project-titel').textContent = project.naam;
-    document.getElementById('step-indicator').innerHTML  = renderStepIndicator(4, 5, ['gebied.html', 'gebied-stap-2.html?id=' + gebiedId, 'gebied-stap-3.html?id=' + gebiedId]);
+    document.getElementById('step-indicator').innerHTML  = renderStepIndicator(4, 5, ['gebied-stap-1b-kavels.html', 'gebied-stap-2-stedenbouw.html?id=' + gebiedId, 'gebied-stap-3-programma.html?id=' + gebiedId]);
     document.getElementById('nav-panel').innerHTML       = renderNavPanel('gebied', project);
 
     // ── Map ───────────────────────────────────────────────────────────────────
@@ -224,7 +224,7 @@
         activeTab = TABS[currentIdx + 1];
         renderTabs();
       } else {
-        window.location.href = 'gebied-stap-5.html?id=' + gebiedId;
+        window.location.href = 'gebied-stap-5-bouwvlak.html?id=' + gebiedId;
       }
     }
 

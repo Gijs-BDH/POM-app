@@ -92,10 +92,10 @@
     if (!project) { window.location.href = 'index.html'; }
 
     let variant = (project.gebouwVarianten || []).find(g => g.id === gebouwId);
-    if (!variant) { window.location.href = 'gebouw.html'; }
+    if (!variant) { window.location.href = 'gebouw-stap-1-uitgangspunten.html'; }
 
     document.getElementById('project-titel').textContent = project.naam;
-    document.getElementById('step-indicator').innerHTML  = renderStepIndicator(2, 5, ['gebouw.html']);
+    document.getElementById('step-indicator').innerHTML  = renderStepIndicator(2, 5, ['gebouw-stap-1-uitgangspunten.html']);
     document.getElementById('nav-panel').innerHTML       = renderNavPanel('gebouw', project);
 
     // ── Building options catalog ──────────────────────────────────────────────
@@ -220,7 +220,7 @@
     function selecteerOptie() {
       geselecteerdOptieId = detailOptie.id;
       updateGebouwVariantById(gebouwId, { geselecteerdeOptie: geselecteerdOptieId });
-      window.location.href = 'gebouw-stap-3.html?id=' + gebouwId;
+      window.location.href = 'gebouw-stap-3-kwaliteit.html?id=' + gebouwId;
     }
 
     function setView(type) {
@@ -234,7 +234,7 @@
     function selecteerEnNaarStap3(id) {
       geselecteerdOptieId = id;
       updateGebouwVariantById(gebouwId, { geselecteerdeOptie: id });
-      window.location.href = 'gebouw-stap-3.html?id=' + gebouwId;
+      window.location.href = 'gebouw-stap-3-kwaliteit.html?id=' + gebouwId;
     }
 
     renderGrid();

@@ -50,7 +50,7 @@
           <div id="pve-row" class="flex gap-3 flex-wrap"></div>
           <p id="pve-empty" class="text-sm text-gray-400 hidden">
             Nog geen PVE aangemaakt.
-            <a href="pve-stap-1.html" class="text-violet-600 hover:underline">Maak een PVE →</a>
+            <a href="pve-stap-1-invoer.html" class="text-violet-600 hover:underline">Maak een PVE →</a>
           </p>
         </div>
 
@@ -60,7 +60,7 @@
           <div id="gebied-row" class="flex gap-3 flex-wrap"></div>
           <p id="gebied-empty" class="text-sm text-gray-400 hidden">
             Nog geen gebied aangemaakt.
-            <a href="gebied.html" class="text-violet-600 hover:underline">Maak een gebied →</a>
+            <a href="gebied-stap-1b-kavels.html" class="text-violet-600 hover:underline">Maak een gebied →</a>
           </p>
         </div>
       </div>
@@ -159,7 +159,7 @@
       const list = document.getElementById('gebouw-variant-list');
       gebouwVarianten.forEach(gv => {
         const item = document.createElement('a');
-        item.href = 'gebouw-stap-2.html?id=' + gv.id;
+        item.href = 'gebouw-stap-2-opties.html?id=' + gv.id;
         item.className = 'project-list-item text-sm';
         item.innerHTML = `
           <div><div class="font-semibold text-gray-700">${gv.naam}</div></div>
@@ -191,7 +191,7 @@
 
     function maakGebouwVariant() {
       const variant = createNewGebouwVariant(null, selectedPveId, selectedGebiedId);
-      window.location.href = 'gebouw-stap-2.html?id=' + variant.id;
+      window.location.href = 'gebouw-stap-2-opties.html?id=' + variant.id;
     }
   </script>
   <script src="js/bot.js"></script>

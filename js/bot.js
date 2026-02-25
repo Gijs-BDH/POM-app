@@ -232,7 +232,7 @@ function handleBotAction(actionId) {
 
     case 'go_to_pve':
       closeBot();
-      // window.location.href = 'pve-stap-1.html';
+      // window.location.href = 'pve-stap-1-invoer.html';
       console.info('[POM Bot] Action: go_to_pve');
       break;
 

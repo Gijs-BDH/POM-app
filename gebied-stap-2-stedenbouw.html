@@ -65,7 +65,7 @@
     if (!variant) { window.location.href = 'project-overzicht.html'; }
 
     document.getElementById('project-titel').textContent = project.naam;
-    document.getElementById('step-indicator').innerHTML  = renderStepIndicator(2, 5, ['gebied.html']);
+    document.getElementById('step-indicator').innerHTML  = renderStepIndicator(2, 5, ['gebied-stap-1b-kavels.html']);
     document.getElementById('nav-panel').innerHTML       = renderNavPanel('gebied', project);
 
     // ── Map ───────────────────────────────────────────────────────────────────
@@ -230,7 +230,7 @@
         activeTab = TABS[currentIdx + 1];
         renderTabs();
       } else {
-        window.location.href = 'gebied-stap-3.html?id=' + gebiedId;
+        window.location.href = 'gebied-stap-3-programma.html?id=' + gebiedId;
       }
     }
 

@@ -64,10 +64,10 @@
     if (!project) { window.location.href = 'index.html'; }
 
     let variant = (project.gebouwVarianten || []).find(g => g.id === gebouwId);
-    if (!variant) { window.location.href = 'gebouw.html'; }
+    if (!variant) { window.location.href = 'gebouw-stap-1-uitgangspunten.html'; }
 
     document.getElementById('project-titel').textContent = project.naam;
-    document.getElementById('step-indicator').innerHTML  = renderStepIndicator(3, 5, ['gebouw.html', 'gebouw-stap-2.html?id=' + gebouwId]);
+    document.getElementById('step-indicator').innerHTML  = renderStepIndicator(3, 5, ['gebouw-stap-1-uitgangspunten.html', 'gebouw-stap-2-opties.html?id=' + gebouwId]);
     document.getElementById('nav-panel').innerHTML       = renderNavPanel('gebouw', project);
 
     // ── Categories ────────────────────────────────────────────────────────────

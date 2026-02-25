@@ -218,9 +218,9 @@ function renderNavPanel(activePage, project) {
 
   return `
     <nav class="nav-panel">
-      ${link('pve',    'PVE',    'pve-stap-1.html')}
-      ${link('gebied', 'Gebied', 'gebied.html')}
-      ${link('gebouw', 'Gebouw', 'gebouw.html')}
+      ${link('pve',    'PVE',    'pve-stap-1-invoer.html')}
+      ${link('gebied', 'Gebied', 'gebied-stap-1b-kavels.html')}
+      ${link('gebouw', 'Gebouw', 'gebouw-stap-1-uitgangspunten.html')}
       ${link('besluit','Besluit','besluit.html')}
     </nav>`;
 }

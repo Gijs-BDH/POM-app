@@ -24,7 +24,7 @@
             <h2 class="text-2xl font-semibold text-gray-800">Gebouw Varianten</h2>
             <p class="text-sm text-gray-400 mt-0.5">Klik op een variant om deze te bewerken</p>
           </div>
-          <a href="gebouw.html" class="btn-primary px-4 py-2 text-sm">+ Nieuwe variant</a>
+          <a href="gebouw-stap-1-uitgangspunten.html" class="btn-primary px-4 py-2 text-sm">+ Nieuwe variant</a>
         </div>
 
         <div id="variant-list" class="flex flex-col gap-3"></div>
@@ -122,7 +122,7 @@
 
         card.appendChild(hdr);
         card.appendChild(body);
-        card.addEventListener('click', () => window.location.href = 'gebouw-stap-2.html?id=' + variant.id);
+        card.addEventListener('click', () => window.location.href = 'gebouw-stap-2-opties.html?id=' + variant.id);
 
         // ── Action buttons ──
         const actions = hdr.querySelector('#hdr-actions-' + variant.id);
@@ -136,7 +136,7 @@
           const copy = { ...JSON.parse(JSON.stringify(variant)), id: crypto.randomUUID(), naam: variant.naam + ' (kopie)' };
           const cur  = getCurrentProject();
           saveProject({ ...cur, gebouwVarianten: [...cur.gebouwVarianten, copy] });
-          window.location.href = 'gebouw-stap-2.html?id=' + copy.id;
+          window.location.href = 'gebouw-stap-2-opties.html?id=' + copy.id;
         });
 
         const delBtn = document.createElement('button');

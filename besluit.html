@@ -83,7 +83,7 @@
           <div class="flex flex-col gap-2 items-end">
             <button class="dl-btn">Download besluit-document</button>
             <button class="dl-btn">Download aanvraag documenten</button>
-            <a href="nieuw-project-3.html" class="dl-btn text-center">Wegingen instellen</a>
+            <a href="project-stap-3-beoordeling.html" class="dl-btn text-center">Wegingen instellen</a>
           </div>
         </div>
 
@@ -165,7 +165,7 @@
     function renderCards() {
       const el = document.getElementById('optie-cards');
       if (!variants.length) {
-        el.innerHTML = '<p class="text-sm text-gray-400 py-2">Nog geen gebouw varianten. Ga naar <a href="gebouw.html" class="text-violet-600 hover:underline">Gebouw</a> om te beginnen.</p>';
+        el.innerHTML = '<p class="text-sm text-gray-400 py-2">Nog geen gebouw varianten. Ga naar <a href="gebouw-stap-1-uitgangspunten.html" class="text-violet-600 hover:underline">Gebouw</a> om te beginnen.</p>';
         return;
       }
       const n = variants.length;
@@ -191,7 +191,7 @@
             </div>
           </div>
           <div class="px-3 pb-3">
-            <a href="gebouw-stap-3.html?id=${v.id}"
+            <a href="gebouw-stap-3-kwaliteit.html?id=${v.id}"
                class="btn-primary block w-full text-center"
                style="font-size:0.72rem;padding:0.35rem 0.5rem;">[zie details]</a>
           </div>
