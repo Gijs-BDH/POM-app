@@ -56,6 +56,11 @@ const BOT_SCRIPTS = {
       { id: "next_step",  label: "Volgende stap" },
       { id: "close_bot",  label: "Sluiten" }
     ]
+  },
+
+  "ambitie_dimensies_niet_bekeken": {
+    message: "Ik zie dat je nog niet alle instellingen hebt bekeken, kijk ook eens naar jouw ambities op het vlak van een duurzame school, een veilige school en een digitale school.",
+    actions: []
   }
 
 };
