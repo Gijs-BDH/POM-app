@@ -44,7 +44,7 @@
             <div class="flex flex-wrap gap-2 justify-center mt-4">
               <button onclick="selectDimensie('gezondSchool')"     id="dim-gezondSchool"     class="dim-lbl">Gezonde school</button>
               <button onclick="selectDimensie('duurzameSchool')"   id="dim-duurzameSchool"   class="dim-lbl">Duurzame school</button>
-              <button onclick="selectDimensie('adaptieveSchool')"  id="dim-adaptieveSchool"  class="dim-lbl">Adaptieve school</button>
+              <!-- <button onclick="selectDimensie('adaptieveSchool')"  id="dim-adaptieveSchool"  class="dim-lbl">Adaptieve school</button> -->
               <button onclick="selectDimensie('veiligSchool')"     id="dim-veiligSchool"     class="dim-lbl">Veilige school</button>
               <button onclick="selectDimensie('digitaleSchool')"   id="dim-digitaleSchool"   class="dim-lbl">Digitale school</button>
             </div>
@@ -89,11 +89,12 @@
     document.getElementById('nav-panel').innerHTML = renderNavPanel('pve', project);
     document.getElementById('dashboard-widget').innerHTML = renderDashboard(project);
 
-    const DIMS = ['gezondSchool','duurzameSchool','adaptieveSchool','veiligSchool','digitaleSchool'];
+    // const DIMS = ['gezondSchool','duurzameSchool','adaptieveSchool','veiligSchool','digitaleSchool'];
+    const DIMS = ['gezondSchool','duurzameSchool','veiligSchool','digitaleSchool'];
     const DIM_LABELS = {
       gezondSchool:    'Gezonde school',
       duurzameSchool:  'Duurzame school',
-      adaptieveSchool: 'Adaptieve school',
+      // adaptieveSchool: 'Adaptieve school',
       veiligSchool:    'Veilige school',
       digitaleSchool:  'Digitale school',
     };
@@ -106,32 +107,37 @@
         { key:'licht',               label:'Licht',                        opts:['C','B','A'] },
         { key:'lucht',               label:'Lucht',                        opts:['C','B','A'] },
         { key:'kwaliteitsborging',   label:'Kwaliteitsborging',             opts:['C','B','A'] },
-        { key:'comfortNietOnderwijs',label:'Comfort niet-onderwijsruimten', opts:['bbl','C','B','A'] },
+        { key:'comfortNietOnderwijs',label:'Comfort niet-onderwijsruimten', opts:['BBL','C','B','A'] },
       ],
       duurzameSchool: [
-        { key:'energiegebruik',      label:'Energiegebruik',        opts:['Goed','Beter','Beste'] },
-        { key:'materiaalgebruik',    label:'Materiaalgebruik',      opts:['Goed','Beter','Beste'] },
-        { key:'watergebruik',        label:'Watergebruik',          opts:['Goed','Beter','Beste'] },
-        { key:'natuurInclusiviteit', label:'Natuur inclusiviteit',  opts:['Goed','Beter','Beste'] },
-        { key:'klimaatAdaptie',      label:'Klimaat adaptie',       opts:['Goed','Beter','Beste'] },
+        { key:'energiegebruik',      label:'Energiegebruik',        opts:['BENG','C','B','A','ENG','E-neutraal'] },
+        { key:'materiaalgebruik',    label:'Gebruik van duurzame materialen',      opts:['15%','25%','35%'] },
+        { key:'meteriaalhergebruik',    label:'Herbruikbaarheid van materialen',      opts:['30%','40%','50%'] },
+        { key:'Subbemetering',        label:'Subbemetering',          opts:['Geen','Wel'] },
+        { key:'afvalwater hergebruik',        label:'afvalwater hergebruik',          opts:['Geen','Wel'] },
+        { key:'grijswatersysteem',        label:'grijswatersysteem',          opts:['Geen','Wel'] },
+        { key:'natuurInclusiviteit', label:'Groendak',  opts:['Geen','Wel'] },
+        { key:'klimaatAdaptie',      label:'Waterretentie systeem',       opts:['Geen','Wel'] },
       ],
-      adaptieveSchool: [
-        { key:'adaptievePlattegrond',label:'Adaptieve plattegrond', opts:['Goed','Beter','Beste'] },
-        { key:'adaptieveTechniek',   label:'Adaptieve techniek',    opts:['Goed','Beter','Beste'] },
-      ],
+      // adaptieveSchool: [
+      //   { key:'adaptievePlattegrond',label:'Adaptieve plattegrond', opts:['Goed','Beter','Beste'] },
+      //   { key:'adaptieveTechniek',   label:'Adaptieve techniek',    opts:['Goed','Beter','Beste'] },
+      // ],
       veiligSchool: [
-        { key:'bouwkundigInbraak',    label:'Bouwk. inbraakbestendigheid',    opts:['Goed','Beter','Beste'] },
-        { key:'technischInbraak',     label:'Techn. inbraakbestendigheid',    opts:['Goed','Beter','Beste'] },
-        { key:'bouwkundigVandalisme', label:'Bouwk. vandalismebestendigheid', opts:['Goed','Beter','Beste'] },
-        { key:'technischVandalisme',  label:'Techn. vandalismebestendigheid', opts:['Goed','Beter','Beste'] },
+        { key:'bouwkundigInbraak',    label:'Bouwkundige beveiligingsmaatregelen',    opts:['Geen','Wel'] },
+        { key:'technischInbraak',     label:'togangscontrole systeem',    opts:['Geen','Wel'] },
+        { key:'bouwkundigVandalisme', label:'Camera systeem', opts:['Geen','Wel'] },
+        { key:'technischVandalisme',  label:'vandalismebestendigheidmaatregelen binnen', opts:['Geen','Wel'] },
       ],
       digitaleSchool: [
-        { key:'technischeIntegratie', label:'Technische integratie', opts:['Goed','Beter','Beste'] },
+        { key:'technischeIntegratie', label:'Slim gebouw', opts:['Geen','Wel'] },
       ],
     };
 
     let ambities = pveV ? pveV.ambities : defaultPve().ambities;
     let selectedDim = 'gezondSchool';
+    const viewedDims = new Set(['gezondSchool']);
+    let volgendeStapCooldown = false;
 
     // ── Chart ─────────────────────────────────────────────────────────────────
     const ctx = document.getElementById('radar-chart').getContext('2d');
@@ -191,6 +197,7 @@
     // ── Ambitieinstelling panel ───────────────────────────────────────────────
     function selectDimensie(dim) {
       selectedDim = dim;
+      viewedDims.add(dim);
       document.querySelectorAll('.dim-lbl').forEach(el => el.classList.remove('active'));
       document.getElementById('dim-' + dim).classList.add('active');
       renderAmbitiePanel();
@@ -229,6 +236,23 @@
     }
 
     function volgendeStap() {
+      const otherDims = ['duurzameSchool', 'veiligSchool', 'digitaleSchool'];
+      const hasViewedOther = otherDims.some(d => viewedDims.has(d));
+
+      if (!hasViewedOther && !volgendeStapCooldown) {
+        triggerBot('ambitie_dimensies_niet_bekeken');
+        volgendeStapCooldown = true;
+        const btn = document.querySelector('button[onclick="volgendeStap()"]');
+        btn.disabled = true;
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+        setTimeout(() => {
+          volgendeStapCooldown = true; // keep flag set so next click goes through
+          btn.disabled = false;
+          btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }, 3000);
+        return;
+      }
+
       window.location.href = 'pve-stap-5-planning.html';
     }
 
