@@ -180,10 +180,10 @@
     const project = getCurrentProject();
     if (!project) { window.location.href = 'index.html'; }
     const pveV = getActivePveVariant();
-    if (!pveV) { window.location.href = 'pve-stap-1.html'; }
+    if (!pveV) { window.location.href = 'pve-stap-1-invoer.html'; }
 
     document.getElementById('project-titel').textContent = project.naam;
-    document.getElementById('step-indicator').innerHTML = renderStepIndicator(2, 5, ['pve-gebruiksduur.html']);
+    document.getElementById('step-indicator').innerHTML = renderStepIndicator(2, 5, ['pve-stap-1b-gebruiksduur.html']);
     document.getElementById('nav-panel').innerHTML = renderNavPanel('pve', project);
 
     const V = pveV.voorzieningen;
@@ -325,7 +325,7 @@
 
     function volgendeStap() {
       saveAll();
-      window.location.href = 'pve-stap-4.html';
+      window.location.href = 'pve-stap-4-ruimte.html';
     }
 
     initFromState();

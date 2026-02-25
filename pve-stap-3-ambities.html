@@ -82,10 +82,10 @@
     const project = getCurrentProject();
     if (!project) { window.location.href = 'index.html'; }
     const pveV = getActivePveVariant();
-    if (!pveV) { window.location.href = 'pve-stap-1.html'; }
+    if (!pveV) { window.location.href = 'pve-stap-1-invoer.html'; }
 
     document.getElementById('project-titel').textContent = project.naam;
-    document.getElementById('step-indicator').innerHTML = renderStepIndicator(3, 5, ['pve-stap-2.html', 'pve-stap-4.html']);
+    document.getElementById('step-indicator').innerHTML = renderStepIndicator(3, 5, ['pve-stap-2-voorzieningen.html', 'pve-stap-4-ruimte.html']);
     document.getElementById('nav-panel').innerHTML = renderNavPanel('pve', project);
     document.getElementById('dashboard-widget').innerHTML = renderDashboard(project);
 
@@ -229,7 +229,7 @@
     }
 
     function volgendeStap() {
-      window.location.href = 'pve-stap-5.html';
+      window.location.href = 'pve-stap-5-planning.html';
     }
 
     // Init

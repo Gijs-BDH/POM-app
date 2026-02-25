@@ -94,7 +94,7 @@
     }
 
     function kiesTeken() {
-      window.location.href = 'gebied-kavel-keuze.html';
+      window.location.href = 'gebied-stap-1-methode.html';
     }
 
     document.getElementById('gebied-upload-input').addEventListener('change', function() {
@@ -104,7 +104,7 @@
       const p    = getCurrentProject();
       const variant = { id, naam, opp: 0, geo: [], createdAt: Date.now() };
       updateCurrentProject({ gebiedVarianten: [...(p.gebiedVarianten || []), variant] });
-      window.location.href = 'gebied-stap-3.html?id=' + id;
+      window.location.href = 'gebied-stap-3-programma.html?id=' + id;
     });
   </script>
   <script src="js/bot.js"></script>

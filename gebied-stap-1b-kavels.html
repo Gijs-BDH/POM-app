@@ -262,7 +262,7 @@
           kavels: selectedKavels.map(k => ({ geo: k.geo, opp: k.opp })),
           variantNr
         }));
-        window.location.href = 'gebied-teken.html';
+        window.location.href = 'gebied-stap-1c-tekenen.html';
         return;
       }
 
@@ -275,7 +275,7 @@
         opp: totalOpp,
         bouwbaarGebied: { geo: mainGeo, opp: totalOpp }
       });
-      window.location.href = 'gebied-stap-2.html?id=' + variant.id;
+      window.location.href = 'gebied-stap-2-stedenbouw.html?id=' + variant.id;
     }
 
     renderKavelsList();

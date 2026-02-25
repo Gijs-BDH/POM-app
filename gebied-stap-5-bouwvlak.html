@@ -73,7 +73,7 @@
     if (!variant) { window.location.href = 'project-overzicht.html'; }
 
     document.getElementById('project-titel').textContent = project.naam;
-    document.getElementById('step-indicator').innerHTML  = renderStepIndicator(5, 5, ['gebied.html', 'gebied-stap-2.html?id=' + gebiedId, 'gebied-stap-3.html?id=' + gebiedId, 'gebied-stap-4.html?id=' + gebiedId]);
+    document.getElementById('step-indicator').innerHTML  = renderStepIndicator(5, 5, ['gebied-stap-1b-kavels.html', 'gebied-stap-2-stedenbouw.html?id=' + gebiedId, 'gebied-stap-3-programma.html?id=' + gebiedId, 'gebied-stap-4-bebouwing.html?id=' + gebiedId]);
     document.getElementById('nav-panel').innerHTML       = renderNavPanel('gebied', project);
 
     // Pre-fill aantal

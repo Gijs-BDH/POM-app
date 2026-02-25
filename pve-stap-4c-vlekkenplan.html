@@ -39,7 +39,7 @@
 <body class="min-h-screen bg-gray-50 p-8">
 
   <div class="max-w-6xl mx-auto">
-    <a href="pve-stap-4.html" class="text-xs text-gray-400 hover:text-violet-600">← Ruimte definities</a>
+    <a href="pve-stap-4-ruimte.html" class="text-xs text-gray-400 hover:text-violet-600">← Ruimte definities</a>
     <h1 id="project-titel" class="text-xl font-semibold text-gray-700 mt-1 mb-2"></h1>
     <div id="step-indicator" class="mb-4"></div>
 
@@ -119,10 +119,10 @@
     const project = getCurrentProject();
     if (!project) { window.location.href = 'index.html'; }
     const pveV = getActivePveVariant();
-    if (!pveV) { window.location.href = 'pve-stap-1.html'; }
+    if (!pveV) { window.location.href = 'pve-stap-1-invoer.html'; }
 
     document.getElementById('project-titel').textContent = project.naam;
-    document.getElementById('step-indicator').innerHTML = renderStepIndicator(2, 5, ['pve-stap-2.html']);
+    document.getElementById('step-indicator').innerHTML = renderStepIndicator(2, 5, ['pve-stap-2-voorzieningen.html']);
     document.getElementById('nav-panel').innerHTML = renderNavPanel('pve', project);
     document.getElementById('dashboard-widget').innerHTML = renderDashboard(project);
 
@@ -230,7 +230,7 @@
 
     function volgendeStap() {
       saveAndRender();
-      window.location.href = 'pve-stap-3.html';
+      window.location.href = 'pve-stap-3-ambities.html';
     }
 
     // Keyboard dismiss modals
