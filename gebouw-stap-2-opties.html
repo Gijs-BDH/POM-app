@@ -95,45 +95,53 @@
 
         <!-- ── Detail view ── -->
         <div id="detail-view" class="detail-view">
-          <button onclick="sluitDetail()" class="breadcrumb mb-4">← Terug naar opties</button>
-          <div class="flex gap-6">
+          <button id="detail-back-btn" onclick="sluitDetail()" class="breadcrumb mb-4">← Terug naar opties</button>
+          <div class="flex flex-col gap-4">
             <!-- Floor plans / media area -->
-            <div class="flex-1 card p-4 flex flex-col gap-4">
-              <div id="view-massstudy" class="rounded-xl overflow-hidden" style="height:240px;">
+            <div class="card p-4 flex flex-col gap-4">
+              <div id="view-massstudy" class="rounded-xl overflow-hidden" style="height:300px;">
                 <img id="detail-img-massstudy" src="" class="w-full h-full object-cover"/>
               </div>
-              <div id="view-impressie" class="hidden rounded-xl overflow-hidden" style="height:240px;">
+              <div id="view-plattegrond" class="rounded-xl overflow-hidden" style="height:300px;">
+                <img src="src/assets/img_floorplans_Wide.png" class="w-full h-full object-cover"/>
+              </div>
+              <div id="view-impressie" class="hidden rounded-xl overflow-hidden" style="height:300px;">
                 <img src="src/assets/img_impression.png" class="w-full h-full object-cover"/>
               </div>
-              <div id="view-walkthrough" class="hidden rounded-xl overflow-hidden" style="height:240px;">
+              <div id="view-walkthrough" class="hidden rounded-xl overflow-hidden" style="height:300px;">
                 <img src="src/assets/img_walkthrough.png" class="w-full h-full object-cover"/>
               </div>
               <!-- View toggle pills -->
               <div class="flex gap-2">
                 <button onclick="setView('massstudy')"   id="pill-massstudy"   class="metric-pill" style="border-color:#7C3AED;color:#7C3AED;">Massa-studie</button>
+                <button onclick="setView('plattegrond')" id="pill-plattegrond" class="metric-pill">Plattegrond</button>
                 <button onclick="setView('impressie')"   id="pill-impressie"   class="metric-pill">Impressie</button>
                 <button onclick="setView('walkthrough')" id="pill-walkthrough" class="metric-pill">Walkthrough</button>
               </div>
             </div>
 
             <!-- Detail info panel -->
-            <div class="w-64 flex-shrink-0 card p-5 flex flex-col gap-3">
-              <div>
-                <div class="text-xs text-gray-400 uppercase tracking-widest mb-0.5" id="detail-groep-naam"></div>
-                <h3 id="detail-naam" class="font-semibold text-gray-700 text-base"></h3>
+            <div class="card p-5">
+              <div class="flex gap-6">
+                <!-- Col 1: naam, beschrijving, eigenschappen -->
+                <div class="flex flex-col gap-3 flex-1 min-w-0">
+                  <div>
+                    <div class="text-xs text-gray-400 uppercase tracking-widest mb-0.5" id="detail-groep-naam"></div>
+                    <h3 id="detail-naam" class="font-semibold text-gray-700 text-base"></h3>
+                  </div>
+                  <div class="text-xs text-gray-500 leading-relaxed" id="detail-beschrijving"></div>
+                  <div id="detail-eigenschappen" class="flex flex-wrap gap-1"></div>
+                </div>
+                <!-- Col 2: key metrics -->
+                <div class="flex flex-col gap-0" style="width:180px;flex-shrink:0;border-left:1px solid #F3F4F6;padding-left:1.25rem;">
+                  <div id="detail-metrics"></div>
+                </div>
+                <!-- Col 3: ambitie bars + button -->
+                <div class="flex flex-col gap-3" style="width:220px;flex-shrink:0;border-left:1px solid #F3F4F6;padding-left:1.25rem;">
+                  <div id="detail-ambities" class="flex-1"></div>
+                  <button id="detail-select-btn" onclick="selecteerOptie()" class="btn-primary w-full">Toevoegen aan vergelijking</button>
+                </div>
               </div>
-              <div class="text-xs text-gray-500 leading-relaxed" id="detail-beschrijving"></div>
-
-              <!-- Eigenschappen tags -->
-              <div id="detail-eigenschappen" class="flex flex-wrap gap-1"></div>
-
-              <!-- Key metrics -->
-              <div id="detail-metrics" class="flex flex-col gap-1"></div>
-
-              <!-- Ambitie comparison bars -->
-              <div id="detail-ambities"></div>
-
-              <button onclick="selecteerOptie()" class="btn-primary w-full mt-auto">+ Selecteer deze optie</button>
             </div>
           </div>
         </div>
@@ -146,8 +154,9 @@
   <script src="js/calculations.js"></script>
   <script src="js/gebouw-opties.js"></script>
   <script>
-    const params   = new URLSearchParams(window.location.search);
-    const gebouwId = params.get('id');
+    const params     = new URLSearchParams(window.location.search);
+    const gebouwId   = params.get('id');
+    const detailMode = params.get('detail') === '1';
     const project  = getCurrentProject();
     if (!project) { window.location.href = 'index.html'; }
 
@@ -244,7 +253,7 @@
               <button onclick="event.stopPropagation(); openDetail('${opt.id}', '${group.naam}')"
                       class="btn-secondary flex-1 text-xs py-1.5">Details</button>
               <button onclick="event.stopPropagation(); selecteerEnNaarStap3('${opt.id}')"
-                      class="btn-primary flex-1 text-xs py-1.5">Selecteren</button>
+                      class="btn-primary flex-1 text-xs py-1.5">Toevoegen aan vergelijking</button>
             </div>
           </div>`;
 
@@ -272,15 +281,20 @@
         (detailOptie.eigenschappen || []).map(e => `<span class="eigenschap-tag">${e}</span>`).join('');
 
       // Metrics
-      document.getElementById('detail-metrics').innerHTML = `
-        <div class="metric-pill">BVO: ${detailOptie.bvo.toLocaleString('nl-NL')} m²</div>
-        <div class="metric-pill">Footprint: ${detailOptie.footprint ? detailOptie.footprint.toLocaleString('nl-NL') + ' m²' : '—'}</div>
-        <div class="metric-pill">${detailOptie.lagen || '—'} bouwla${detailOptie.lagen === 1 ? 'ag' : 'gen'}</div>
-        <div class="metric-pill" style="color:#7C3AED;border-color:#7C3AED;">Bouwkosten: ${POM_CALC.formatEuro(detailOptie.bouwkosten)}</div>
-        <div class="metric-pill" style="color:#7C3AED;">Per m²: ${POM_CALC.formatEuro(Math.round(detailOptie.bouwkosten / detailOptie.bvo))}</div>
-        <div class="metric-pill" style="color:#059669;border-color:#D1FAE5;">TCO: ${POM_CALC.formatEuro(detailOptie.tco)}</div>
-        <div class="metric-pill" style="color:${RATING_COLOR[detailOptie.duurzaamheid]};">Duurzaamheid: ${detailOptie.duurzaamheid}</div>
-        <div class="metric-pill" style="color:${RATING_COLOR[detailOptie.maakbaarheid]};">Maakbaarheid: ${detailOptie.maakbaarheid}</div>`;
+      const metricRow = (label, value, color) =>
+        `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:0.35rem 0;border-bottom:1px solid #F9FAFB;">
+          <span style="font-size:0.7rem;color:#9CA3AF;">${label}</span>
+          <span style="font-size:0.75rem;font-weight:600;color:${color || '#374151'};">${value}</span>
+        </div>`;
+      document.getElementById('detail-metrics').innerHTML =
+        metricRow('BVO', detailOptie.bvo.toLocaleString('nl-NL') + ' m²') +
+        metricRow('Footprint', detailOptie.footprint ? detailOptie.footprint.toLocaleString('nl-NL') + ' m²' : '—') +
+        metricRow('Bouwlagen', (detailOptie.lagen || '—') + (detailOptie.lagen === 1 ? ' laag' : ' lagen')) +
+        metricRow('Bouwkosten', POM_CALC.formatEuro(detailOptie.bouwkosten), '#7C3AED') +
+        metricRow('Per m²', POM_CALC.formatEuro(Math.round(detailOptie.bouwkosten / detailOptie.bvo)), '#7C3AED') +
+        metricRow('TCO', POM_CALC.formatEuro(detailOptie.tco), '#059669') +
+        metricRow('Duurzaamheid', detailOptie.duurzaamheid, RATING_COLOR[detailOptie.duurzaamheid]) +
+        metricRow('Maakbaarheid', detailOptie.maakbaarheid, RATING_COLOR[detailOptie.maakbaarheid]);
 
       // Ambitie bars
       const scores = detailOptie.ambitieScores || {};
@@ -317,7 +331,7 @@
     }
 
     function setView(type) {
-      ['massstudy', 'impressie', 'walkthrough'].forEach(v => {
+      ['massstudy','plattegrond', 'impressie', 'walkthrough'].forEach(v => {
         document.getElementById('view-' + v).classList.toggle('hidden', v !== type);
         const pill = document.getElementById('pill-' + v);
         if (pill) {
@@ -340,7 +354,14 @@
     }
 
     // ── Init ──────────────────────────────────────────────────────────────────
-    renderGrid();
+    if (detailMode && variant.geselecteerdeOptie) {
+      const selGroup = GEBOUW_OPTIES_GROUPS.find(g => g.opties.some(o => o.id === variant.geselecteerdeOptie));
+      openDetail(variant.geselecteerdeOptie, selGroup ? selGroup.naam : '');
+      document.getElementById('detail-back-btn').style.display   = 'none';
+      document.getElementById('detail-select-btn').style.display = 'none';
+    } else {
+      renderGrid();
+    }
   </script>
   <script src="js/bot.js"></script>
 </body>

@@ -337,15 +337,24 @@ function renderDashboard(project) {
   const badge = (color, val) =>
     `<span style="background:${color};color:white;border-radius:99px;padding:0.1rem 0.45rem;font-size:0.7rem">${val}</span>`;
 
+  const pillStyle = 'cursor:pointer;transition:background 0.15s;';
+  const onHover   = `onmouseenter="this.style.background='#F5F3FF'" onmouseleave="this.style.background=''"`;
+
   return `
-    <div class="dashboard-pill">
-      <span style="color:#6B7280;font-weight:500">Bouwkosten:</span>
+    <div class="dashboard-pill" style="${pillStyle}" ${onHover}
+         onclick="if(window.showDashboardDetail)showDashboardDetail('bouwkosten')"
+         title="Klik voor details">
+      <span style="color:#6B7280;font-weight:500">Bouwkosten</span>
       ${badge('#7C3AED', bPct + '%')}
       <span style="color:#374151;font-weight:600">${fmt(bouwkosten)}</span>
+      <span style="color:#C4B5FD;font-size:0.7rem;margin-left:1px">ⓘ</span>
     </div>
-    <div class="dashboard-pill">
-      <span style="color:#6B7280;font-weight:500">TCO:</span>
+    <div class="dashboard-pill" style="${pillStyle}" ${onHover}
+         onclick="if(window.showDashboardDetail)showDashboardDetail('tco')"
+         title="Klik voor details">
+      <span style="color:#6B7280;font-weight:500">TCO</span>
       ${badge('#34D399', tPct + '%')}
       <span style="color:#374151;font-weight:600">${fmt(tco)}</span>
+      <span style="color:#6EE7B7;font-size:0.7rem;margin-left:1px">ⓘ</span>
     </div>`;
 }
