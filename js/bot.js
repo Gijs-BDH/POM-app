@@ -61,6 +61,13 @@ const BOT_SCRIPTS = {
   "ambitie_dimensies_niet_bekeken": {
     message: "Ik zie dat je nog niet alle instellingen hebt bekeken, kijk ook eens naar jouw ambities op het vlak van een duurzame school, een veilige school en een digitale school.",
     actions: []
+  },
+
+  "besluit_weinig_varianten_alle_gekoppeld": {
+    message: "Je hebt momenteel minder dan 3 gebouwvarianten. Voor een goede vergelijking adviseren wij minimaal 3 varianten te maken. Wil je een nieuwe variant aanmaken?",
+    actions: [
+      { id: "go_to_gebouw_nieuw", label: "Maak nieuwe variant" }
+    ]
   }
 
 };
@@ -157,7 +164,16 @@ function closeBot() {
 }
 
 
-// ── 5. triggerBot(eventId) ────────────────────────────────────────────────────
+// ── 5. triggerBot(eventId) / triggerBotMessage(message, actions) ──────────────
+
+function triggerBotMessage(message, actions) {
+  _appendBotMessage(message);
+  if (actions && actions.length) _appendActions(actions);
+  _showBadge();
+  const wrap = document.getElementById('pom-bot-wrap');
+  wrap.classList.remove('pom-bot-hidden');
+  wrap.classList.add('pom-bot-visible');
+}
 
 function triggerBot(eventId) {
   const script = BOT_SCRIPTS[eventId];
@@ -252,6 +268,11 @@ function handleBotAction(actionId) {
       closeBot();
       // window.location.href = 'gebouw-overzicht.html';
       console.info('[POM Bot] Action: go_to_gebouw');
+      break;
+
+    case 'go_to_gebouw_nieuw':
+      closeBot();
+      window.location.href = 'gebouw-stap-1-uitgangspunten.html';
       break;
 
     case 'next_step':
