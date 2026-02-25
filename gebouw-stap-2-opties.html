@@ -95,12 +95,15 @@
 
         <!-- ── Detail view ── -->
         <div id="detail-view" class="detail-view">
-          <button onclick="sluitDetail()" class="breadcrumb mb-4">← Terug naar opties</button>
+          <button id="detail-back-btn" onclick="sluitDetail()" class="breadcrumb mb-4">← Terug naar opties</button>
           <div class="flex gap-6">
             <!-- Floor plans / media area -->
             <div class="flex-1 card p-4 flex flex-col gap-4">
               <div id="view-massstudy" class="rounded-xl overflow-hidden" style="height:240px;">
                 <img id="detail-img-massstudy" src="" class="w-full h-full object-cover"/>
+              </div>
+              <div id="view-plattegrond" class="rounded-xl overflow-hidden" style="height:240px;">
+                <img src="src/assets/img_floorplans_Wide.png" class="w-full h-full object-cover"/>
               </div>
               <div id="view-impressie" class="hidden rounded-xl overflow-hidden" style="height:240px;">
                 <img src="src/assets/img_impression.png" class="w-full h-full object-cover"/>
@@ -111,6 +114,7 @@
               <!-- View toggle pills -->
               <div class="flex gap-2">
                 <button onclick="setView('massstudy')"   id="pill-massstudy"   class="metric-pill" style="border-color:#7C3AED;color:#7C3AED;">Massa-studie</button>
+                <button onclick="setView('plattegrond')"   id="pill-plattegrond"   class="metric-pill">Plattegrond</button>
                 <button onclick="setView('impressie')"   id="pill-impressie"   class="metric-pill">Impressie</button>
                 <button onclick="setView('walkthrough')" id="pill-walkthrough" class="metric-pill">Walkthrough</button>
               </div>
@@ -133,7 +137,7 @@
               <!-- Ambitie comparison bars -->
               <div id="detail-ambities"></div>
 
-              <button onclick="selecteerOptie()" class="btn-primary w-full mt-auto">+ Selecteer deze optie</button>
+              <button id="detail-select-btn" onclick="selecteerOptie()" class="btn-primary w-full mt-auto">Toevoegen aan vergelijking</button>
             </div>
           </div>
         </div>
@@ -146,8 +150,9 @@
   <script src="js/calculations.js"></script>
   <script src="js/gebouw-opties.js"></script>
   <script>
-    const params   = new URLSearchParams(window.location.search);
-    const gebouwId = params.get('id');
+    const params     = new URLSearchParams(window.location.search);
+    const gebouwId   = params.get('id');
+    const detailMode = params.get('detail') === '1';
     const project  = getCurrentProject();
     if (!project) { window.location.href = 'index.html'; }
 
@@ -244,7 +249,7 @@
               <button onclick="event.stopPropagation(); openDetail('${opt.id}', '${group.naam}')"
                       class="btn-secondary flex-1 text-xs py-1.5">Details</button>
               <button onclick="event.stopPropagation(); selecteerEnNaarStap3('${opt.id}')"
-                      class="btn-primary flex-1 text-xs py-1.5">Selecteren</button>
+                      class="btn-primary flex-1 text-xs py-1.5">Toevoegen aan vergelijking</button>
             </div>
           </div>`;
 
@@ -317,7 +322,7 @@
     }
 
     function setView(type) {
-      ['massstudy', 'impressie', 'walkthrough'].forEach(v => {
+      ['massstudy','plattegrond', 'impressie', 'walkthrough'].forEach(v => {
         document.getElementById('view-' + v).classList.toggle('hidden', v !== type);
         const pill = document.getElementById('pill-' + v);
         if (pill) {
@@ -340,7 +345,14 @@
     }
 
     // ── Init ──────────────────────────────────────────────────────────────────
-    renderGrid();
+    if (detailMode && variant.geselecteerdeOptie) {
+      const selGroup = GEBOUW_OPTIES_GROUPS.find(g => g.opties.some(o => o.id === variant.geselecteerdeOptie));
+      openDetail(variant.geselecteerdeOptie, selGroup ? selGroup.naam : '');
+      document.getElementById('detail-back-btn').style.display   = 'none';
+      document.getElementById('detail-select-btn').style.display = 'none';
+    } else {
+      renderGrid();
+    }
   </script>
   <script src="js/bot.js"></script>
 </body>
