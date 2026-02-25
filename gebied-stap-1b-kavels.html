@@ -25,7 +25,7 @@
       <div class="flex-1">
         <div id="map"></div>
         <p id="map-hint" class="text-xs text-gray-400 mt-2 text-center">
-          Zoek een locatie of druk op "Selecteer kavel(s)" om kavels toe te voegen
+          Druk op "Selecteer kavel(s)" om kavels toe te voegen
         </p>
       </div>
 
@@ -37,17 +37,6 @@
           <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Locatie</h3>
           <div class="text-sm font-semibold text-gray-700" id="variant-label"></div>
           <div id="mode-badge" class="text-xs rounded-full px-2 py-0.5 self-start"></div>
-          <div class="flex flex-col gap-1">
-            <label class="text-xs text-gray-500">Zoek adres</label>
-            <div class="flex gap-1">
-              <input id="zoek-input" type="text" class="input-field"
-                     placeholder="Adres of plaats…"
-                     onkeydown="if(event.key==='Enter') zoekLocatie()"/>
-              <button onclick="zoekLocatie()" class="btn-primary flex-shrink-0"
-                      style="padding:0.5rem 0.75rem;">→</button>
-            </div>
-            <div id="zoek-feedback" class="text-xs text-gray-400 leading-tight min-h-[1rem]"></div>
-          </div>
           <label class="flex items-center gap-2 cursor-pointer select-none">
             <input type="checkbox" id="kadaster-toggle" checked
                    onchange="toggleKadaster(this.checked)"
@@ -158,7 +147,7 @@
         btn.textContent = 'Selecteer kavel(s)';
         btn.className = 'w-full text-xs font-medium py-1.5 px-3 rounded-lg border border-violet-300 text-violet-600 hover:bg-violet-50 transition-all';
         map.getContainer().style.cursor = '';
-        document.getElementById('map-hint').textContent = 'Zoek een locatie of druk op "Selecteer kavel(s)" om kavels toe te voegen';
+        document.getElementById('map-hint').textContent = 'Druk op "Selecteer kavel(s)" om kavels toe te voegen';
       }
     }
 
@@ -229,28 +218,6 @@
 
     // ── Map click ────────────────────────────────────────────────────────────
     map.on('click', e => { if (selecterenActief) addKavel(e.latlng); });
-
-    // ── Address search via Nominatim ─────────────────────────────────────────
-    async function zoekLocatie() {
-      const q        = document.getElementById('zoek-input').value.trim();
-      const feedback = document.getElementById('zoek-feedback');
-      if (!q) return;
-      feedback.textContent = 'Zoeken…';
-      try {
-        const results = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&countrycodes=nl`
-        ).then(r => r.json());
-        if (results.length) {
-          const { lat, lon, display_name } = results[0];
-          map.setView([+lat, +lon], 17);
-          feedback.textContent = display_name.split(',').slice(0, 2).join(', ');
-        } else {
-          feedback.textContent = 'Geen resultaten gevonden.';
-        }
-      } catch {
-        feedback.textContent = 'Zoeken mislukt, probeer opnieuw.';
-      }
-    }
 
     // ── Navigate ─────────────────────────────────────────────────────────────
     function naarVolgende() {

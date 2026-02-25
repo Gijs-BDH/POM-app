@@ -70,7 +70,7 @@
         <div id="next-gebied" class="card max-w-xl hidden">
           <div class="flex gap-4 items-start">
             <div id="next-gebied-text" class="text-sm text-gray-500 flex-1"></div>
-            <button onclick="gaNaarVolgendeStap('gebied-nieuw.html')"
+            <button onclick="gaNaarVolgendeStap('gebied-stap-1-locatie.html')"
                     class="btn-primary px-6 py-4 text-base rounded-xl min-w-[120px]">Volgende<br>Stap</button>
           </div>
         </div>
@@ -167,7 +167,7 @@
       navGebied.style.alignItems = 'flex-start';
       document.getElementById('gebied-overzicht-sub').classList.remove('hidden');
     } else {
-      document.getElementById('nav-gebied').href = 'gebied-nieuw.html';
+      document.getElementById('nav-gebied').href = 'gebied-stap-1-locatie.html';
     }
 
     // Gebouw nav: link to overview when variants exist
@@ -293,7 +293,7 @@
       addBtn.className = 'pve-new-btn';
       addBtn.title = 'Nieuw gebied';
       addBtn.textContent = '+';
-      addBtn.addEventListener('click', () => window.location.href = 'gebied-nieuw.html');
+      addBtn.addEventListener('click', () => window.location.href = 'gebied-stap-1-locatie.html');
       row.appendChild(addBtn);
     }
 
