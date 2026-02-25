@@ -1,6 +1,6 @@
-# bolt-changes branch is there to keep bolt seperate from the actively developed ui, whilst still allowing to update bolt when needed
+# /// bolt-changes branch is there to keep bolt seperate from the actively developed ui, whilst still allowing to update bolt when needed
 
-# demoflow branch exists as the version with dummy data and automations such that the presentation flows well (some things need autofill when adding new variants in interest of time)
+# /// demoflow branch exists as the version with dummy data and automations such that the presentation flows well (some things need autofill when adding new variants in interest of time)
 
 
 
