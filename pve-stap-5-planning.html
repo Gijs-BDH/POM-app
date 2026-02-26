@@ -6,6 +6,76 @@
   <title>POM – Project Planning</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="css/styles.css"/>
+  <style>
+    /* ── Timeline canvas ────────────────────────────────────────────── */
+    #tl-canvas { position: relative; }
+
+    /* Milestone block */
+    .tl-ms {
+      position: absolute;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .tl-diamond {
+      width: 36px; height: 36px;
+      border: 2px solid var(--primary); background: white;
+      transform: rotate(45deg); flex-shrink: 0;
+    }
+    .tl-ms-label {
+      font-size: 0.72rem; font-weight: 600; color: #374151;
+      margin-top: 0.45rem; text-align: center;
+    }
+    .tl-ms-date { font-size: 0.65rem; color: #9CA3AF; text-align: center; min-height: 1em; }
+
+    /* Compact date input inside Startdatum block */
+    .tl-date-input {
+      border: 1.5px solid #E5E7EB; border-radius: 0.375rem;
+      padding: 0.2rem 0.35rem; font-size: 0.68rem; color: #374151;
+      outline: none; width: 118px; margin-top: 0.3rem; text-align: center;
+      cursor: pointer;
+    }
+    .tl-date-input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(124,58,237,0.1); }
+
+    /* Phase block */
+    .tl-phase {
+      position: absolute;
+      display: flex; flex-direction: column; align-items: flex-start;
+      overflow: hidden;
+    }
+    /* Pill inside phase must fill width and clip overflow */
+    .tl-phase .planning-pill {
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    /* Duration row */
+    .tl-dur-row {
+      display: flex; align-items: center; justify-content: center;
+      gap: 0.4rem; margin-top: 0.3rem; width: 100%;
+    }
+    .tl-adj {
+      background: none; border: none; cursor: pointer;
+      color: #C4B5FD; font-size: 0.8rem; font-weight: 700;
+      padding: 0 3px; line-height: 1;
+      transition: color 0.15s; user-select: none;
+    }
+    .tl-adj:hover { color: var(--primary); }
+    .tl-dur-text { font-size: 0.72rem; color: #9CA3AF; white-space: nowrap; }
+
+    /* Draggable separator */
+    .tl-sep {
+      position: absolute;
+      width: 28px; transform: translateX(-14px);
+      cursor: col-resize; z-index: 10;
+      display: flex; justify-content: center;
+      user-select: none;
+    }
+    .tl-sep-line {
+      width: 0; height: 100%;
+      border-left: 2px dashed #DDD6FE;
+      pointer-events: none;
+      transition: border-color 0.15s;
+    }
+    .tl-sep:hover .tl-sep-line,
+    .tl-sep.is-dragging .tl-sep-line { border-color: var(--primary); opacity: 0.7; }
+  </style>
 </head>
 <body class="min-h-screen bg-gray-50 p-8">
 
@@ -20,49 +90,72 @@
       <div class="flex-1">
         <h2 class="text-2xl font-semibold text-gray-700 mb-8 text-center">Planning</h2>
 
-        <!-- Timeline -->
-        <div class="flex items-start justify-center gap-0 mb-8">
-          <div class="planning-step">
-            <div class="planning-pill active">Definitie fase | POM</div>
-            <div class="text-xs text-gray-400 mt-1">7 weken</div>
-          </div>
-          <div class="flex items-center pt-4 px-1"><span class="text-gray-300 text-lg">→</span></div>
-          <div class="planning-step">
-            <div class="planning-pill">Uitvraag</div>
-            <div class="text-xs text-gray-400 mt-1">2 maand</div>
-          </div>
-          <div class="flex items-center pt-4 px-1"><span class="text-gray-300 text-lg">→</span></div>
-          <div class="planning-step">
-            <div class="planning-pill">Uitwerking</div>
-            <div class="text-xs text-gray-400 mt-1">1 jaar</div>
-          </div>
-          <div class="flex items-center pt-4 px-1"><span class="text-gray-300 text-lg">→</span></div>
-          <div class="planning-step">
-            <div class="planning-pill">Oplevering</div>
-            <div class="text-xs text-gray-400 mt-1">2 jaar</div>
-          </div>
-          <div class="flex items-center pt-4 px-1"><span class="text-gray-300 text-lg">→</span></div>
-          <div class="planning-step">
-            <div class="planning-pill">Gebruik</div>
-            <div id="gebruiksduur" class="text-xs text-gray-400 mt-1">50 jaar</div>
-          </div>
-        </div>
+        <div class="card" style="padding:2rem;">
+          <!-- Canvas: all elements absolutely positioned by JS -->
+          <div id="tl-canvas">
 
-        <!-- Placeholder note -->
-        <div class="info-card max-w-lg mx-auto mb-8 text-center">
-          <p class="font-semibold text-violet-700 mb-1">Planning – Placeholder</p>
-          De detailplanning per fase wordt in een latere versie ingevuld.
-          U kunt nu de PVE afronden en doorgaan naar de volgende stap.
-        </div>
+            <!-- Startdatum milestone (contains the date picker) -->
+            <div class="tl-ms" id="ms-start">
+              <div class="tl-diamond"></div>
+              <div class="tl-ms-label">Startdatum</div>
+              <input type="date" id="inp-besluit" class="tl-date-input" oninput="onDateChange()"/>
+            </div>
 
-        <!-- Summary overview -->
-        <!-- <div class="card max-w-lg mx-auto mb-6">
-          <h3 class="font-semibold text-gray-700 mb-3">PVE Samenvatting</h3>
-          <div id="samenvatting" class="text-sm text-gray-600 flex flex-col gap-1"></div>
-        </div> -->
+            <!-- Aanbesteding -->
+            <div class="tl-phase" id="row-aanb">
+              <div class="planning-pill">Aanbesteding integraal bouwteam</div>
+              <div class="tl-dur-row">
+                <button class="tl-adj" onclick="adjAbs('aanb',-1)">−</button>
+                <span class="tl-dur-text"><span id="dur-aanb">6</span> mnd</span>
+                <button class="tl-adj" onclick="adjAbs('aanb',+1)">+</button>
+              </div>
+            </div>
+
+            <!-- Separator 1 (draggable: shifts months between aanb ↔ ontw) -->
+            <div class="tl-sep" id="sep1" onmousedown="startDrag(event,0)">
+              <div class="tl-sep-line"></div>
+            </div>
+
+            <!-- Ontwerpfase -->
+            <div class="tl-phase" id="row-ontw">
+              <div class="planning-pill">Ontwerpfase</div>
+              <div class="tl-dur-row">
+                <button class="tl-adj" onclick="adjAbs('ontw',-1)">−</button>
+                <span class="tl-dur-text"><span id="dur-ontw">12</span> mnd</span>
+                <button class="tl-adj" onclick="adjAbs('ontw',+1)">+</button>
+              </div>
+            </div>
+
+            <!-- Separator 2 (draggable: shifts months between ontw ↔ uitv) -->
+            <div class="tl-sep" id="sep2" onmousedown="startDrag(event,1)">
+              <div class="tl-sep-line"></div>
+            </div>
+
+            <!-- Uitvoeringsfase -->
+            <div class="tl-phase" id="row-uitv">
+              <div class="planning-pill">Uitvoeringsfase</div>
+              <div class="tl-dur-row">
+                <button class="tl-adj" onclick="adjAbs('uitv',-1)">−</button>
+                <span class="tl-dur-text"><span id="dur-uitv">12</span> mnd</span>
+                <button class="tl-adj" onclick="adjAbs('uitv',+1)">+</button>
+              </div>
+            </div>
+
+            <!-- Oplevering milestone -->
+            <div class="tl-ms" id="ms-end">
+              <div class="tl-diamond"></div>
+              <div class="tl-ms-label">Oplevering</div>
+              <div class="tl-ms-date" id="lbl-oplevering"></div>
+            </div>
+
+          </div>
+          <p style="font-size:0.7rem;color:#9CA3AF;text-align:center;margin-top:1.25rem;">
+            Versleep de verticale lijnen om de doorlooptijd te verdelen
+          </p>
+        </div>
 
         <!-- Bottom: dashboard + finalize -->
-        <div class="flex justify-between items-end max-w-lg mx-auto">
+        <div class="flex justify-between items-end max-w-lg mx-auto mt-8">
           <div id="dashboard-widget" class="dashboard-widget"></div>
           <button onclick="rondPVEAf()" class="btn-primary px-6 py-3 text-base">Rond PVE af</button>
         </div>
@@ -79,46 +172,195 @@
     if (!pveV) { window.location.href = 'pve-stap-1-invoer.html'; }
 
     document.getElementById('project-titel').textContent = project.naam;
-    document.getElementById('step-indicator').innerHTML = renderStepIndicator(4, 5, ['pve-stap-2-voorzieningen.html', 'pve-stap-4-ruimte.html', 'pve-stap-3-ambities.html']);
+    document.getElementById('step-indicator').innerHTML = renderStepIndicator(5, 5, [
+      'pve-stap-1-invoer.html', 'pve-stap-2-voorzieningen.html',
+      'pve-stap-3-ambities.html', 'pve-stap-4-ruimte.html'
+    ]);
     document.getElementById('nav-panel').innerHTML = renderNavPanel('pve', project);
     document.getElementById('dashboard-widget').innerHTML = renderDashboard(project);
 
-    // Build summary
-    const sam = document.getElementById('samenvatting');
-    if (pveV) {
-      const V = pveV.voorzieningen;
-      const { totalBVO, bouwkosten, tco } = POM_CALC.calcDashboard(V);
+    // ── Layout constants ──────────────────────────────────────────────────────
+    const MS_W    = 128;  // milestone column width (must fit date input ~120px)
+    const ROW_H   = 90;   // vertical step between cascade rows
+    const PHASE_TOP = [8, 8 + ROW_H, 8 + 2 * ROW_H];
+    const PILL_H  = 44;   // .planning-pill height
+    const DUR_H   = 24;   // duration row height
+    const CANVAS_H = PHASE_TOP[2] + PILL_H + DUR_H + 24;
 
-      const rows = [];
-      if (V.primairOnderwijs.actief) {
-        const bvo = V.primairOnderwijs.bvoHandmatig || POM_CALC.calcPrimairBVO(V.primairOnderwijs.leerlingen);
-        rows.push(`Primair onderwijs: ${V.primairOnderwijs.leerlingen} leerlingen – ${POM_CALC.formatM2(bvo)}`);
-      }
-      if (V.voorschoolseOpvang.actief) {
-        const bvo = V.voorschoolseOpvang.bvoHandmatig || POM_CALC.calcVoorschoolseBVO(V.voorschoolseOpvang.groepen);
-        rows.push(`Voorschoolse opvang: ${V.voorschoolseOpvang.groepen} groepen – ${POM_CALC.formatM2(bvo)}`);
-      }
-      if (V.sport.actief) {
-        const bvo = V.sport.bvoHandmatig || POM_CALC.calcSportBVO(V.sport.type);
-        rows.push(`Sport: ${V.sport.type} – ${POM_CALC.formatM2(bvo)}`);
-      }
-      rows.push('');
-      rows.push(`Totaal BVO: ${POM_CALC.formatM2(totalBVO)}`);
-      rows.push(`Bouwkosten (indicatief): ${POM_CALC.formatEuro(bouwkosten)}`);
-      rows.push(`TCO 50 jaar (indicatief): ${POM_CALC.formatEuro(tco)}`);
+    // ── State ─────────────────────────────────────────────────────────────────
+    const sv = (pveV && pveV.planning) || {};
+    const isFirstVisit = !sv.besluitvormingDatum;
 
-      rows.forEach(r => {
-        const el = document.createElement('div');
-        el.className = r ? '' : 'mt-2 pt-2 border-t border-gray-100';
-        el.textContent = r;
-        sam.appendChild(el);
+    function _defaultStartDate() {
+      const d = new Date();
+      d.setDate(d.getDate() + 49); // 7 weeks from today
+      return d.toISOString().slice(0, 10);
+    }
+
+    const state = {
+      besluitvormingDatum: sv.besluitvormingDatum || _defaultStartDate(),
+      aanb: sv.aanbestedingMaanden || 6,
+      ontw: sv.ontwerpMaanden      || 12,
+      uitv: sv.uitvoeringMaanden   || 12,
+    };
+    document.getElementById('inp-besluit').value = state.besluitvormingDatum;
+
+    // pxPM: pixels per month — set during render, read during drag
+    let pxPM = 1;
+
+    // ── Date helpers ──────────────────────────────────────────────────────────
+    function addMonths(s, m) {
+      const d = new Date(s + 'T00:00:00');
+      d.setMonth(d.getMonth() + m);
+      return d.toISOString().slice(0, 10);
+    }
+    function fmtDate(s) {
+      if (!s) return '';
+      return new Date(s + 'T00:00:00')
+        .toLocaleDateString('nl-NL', { month: 'short', year: 'numeric' });
+    }
+
+    // ── Render ────────────────────────────────────────────────────────────────
+    function render() {
+      const canvas = document.getElementById('tl-canvas');
+      const W = canvas.offsetWidth;
+      if (!W) return;
+
+      const PILL_AREA = W - 2 * MS_W;
+      const total = state.aanb + state.ontw + state.uitv;
+      pxPM = PILL_AREA / total;
+
+      const w0 = state.aanb * pxPM;
+      const w1 = state.ontw * pxPM;
+      const w2 = state.uitv * pxPM;
+      const x0 = MS_W;
+      const x1 = x0 + w0;   // sep1 / row-ontw left
+      const x2 = x1 + w1;   // sep2 / row-uitv left
+      const x3 = x2 + w2;   // oplevering left
+
+      // Phase rows
+      function pos(id, l, t, w) {
+        const el = document.getElementById(id);
+        el.style.left  = l + 'px';
+        el.style.top   = t + 'px';
+        el.style.width = w + 'px';
+      }
+      pos('row-aanb', x0, PHASE_TOP[0], w0);
+      pos('row-ontw', x1, PHASE_TOP[1], w1);
+      pos('row-uitv', x2, PHASE_TOP[2], w2);
+
+      // Milestones
+      const msS = document.getElementById('ms-start');
+      msS.style.left  = '0px';
+      msS.style.top   = PHASE_TOP[0] + 'px';
+      msS.style.width = MS_W + 'px';
+
+      const msE = document.getElementById('ms-end');
+      msE.style.left  = x3 + 'px';
+      msE.style.top   = PHASE_TOP[2] + 'px';
+      msE.style.width = MS_W + 'px';
+
+      // Separators — sep1 taller (starts higher), sep2 shorter
+      function posSep(id, x, topY) {
+        const el = document.getElementById(id);
+        el.style.left   = x + 'px';
+        el.style.top    = topY + 'px';
+        el.style.height = (CANVAS_H - topY - 8) + 'px';
+      }
+      posSep('sep1', x1, PHASE_TOP[0]);
+      posSep('sep2', x2, PHASE_TOP[1]);
+
+      // Canvas height
+      canvas.style.height = CANVAS_H + 'px';
+
+      // Duration labels
+      document.getElementById('dur-aanb').textContent = state.aanb;
+      document.getElementById('dur-ontw').textContent = state.ontw;
+      document.getElementById('dur-uitv').textContent = state.uitv;
+
+      // Milestone dates
+      const d = state.besluitvormingDatum;
+      if (d) {
+        const d4 = addMonths(addMonths(addMonths(d, state.aanb), state.ontw), state.uitv);
+        document.getElementById('lbl-oplevering').textContent = fmtDate(d4);
+      } else {
+        document.getElementById('lbl-oplevering').textContent = '';
+      }
+    }
+
+    // ── Drag ─────────────────────────────────────────────────────────────────
+    let drag = null;
+
+    function startDrag(e, idx) {
+      e.preventDefault();
+      document.getElementById('sep' + (idx + 1)).classList.add('is-dragging');
+      drag = {
+        idx,
+        startX:    e.clientX,
+        origAanb:  state.aanb,
+        origOntw:  state.ontw,
+        origUitv:  state.uitv,
+      };
+    }
+
+    document.addEventListener('mousemove', e => {
+      if (!drag) return;
+      const Δ = Math.round((e.clientX - drag.startX) / pxPM);
+      if (drag.idx === 0) {
+        // Shift boundary between aanb and ontw
+        const a = drag.origAanb + Δ, o = drag.origOntw - Δ;
+        if (a >= 1 && o >= 1) { state.aanb = a; state.ontw = o; }
+      } else {
+        // Shift boundary between ontw and uitv
+        const o = drag.origOntw + Δ, u = drag.origUitv - Δ;
+        if (o >= 1 && u >= 1) { state.ontw = o; state.uitv = u; }
+      }
+      render();
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (!drag) return;
+      document.getElementById('sep' + (drag.idx + 1)).classList.remove('is-dragging');
+      drag = null;
+      saveState();
+    });
+
+    // ── Interactions ──────────────────────────────────────────────────────────
+    function onDateChange() {
+      state.besluitvormingDatum = document.getElementById('inp-besluit').value;
+      render();
+      saveState();
+    }
+
+    // +/- buttons: adjust one phase freely (total duration may change)
+    function adjAbs(phase, delta) {
+      state[phase] = Math.max(1, state[phase] + delta);
+      render();
+      saveState();
+    }
+
+    function saveState() {
+      updateActivePveVariant({
+        planning: {
+          besluitvormingDatum: state.besluitvormingDatum,
+          aanbestedingMaanden: state.aanb,
+          ontwerpMaanden:      state.ontw,
+          uitvoeringMaanden:   state.uitv,
+        }
       });
     }
 
     function rondPVEAf() {
+      saveState();
       updateActivePveVariant({ planning: { afgerond: true, datum: new Date().toISOString() } });
       window.location.href = 'project-overzicht.html';
     }
+
+    window.addEventListener('resize', render);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      render();
+      if (isFirstVisit) triggerBot('planning_intro');
+    }));
   </script>
   <script src="js/dashboard-detail.js"></script>
   <script src="js/bot.js"></script>
