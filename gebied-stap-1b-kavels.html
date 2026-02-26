@@ -7,6 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <link rel="stylesheet" href="css/styles.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@geoman-io/leaflet-geoman-free@2/dist/leaflet-geoman.min.css"/>
   <style>
     #map { height: 480px; border-radius: 0.75rem; }
   </style>
@@ -41,7 +42,7 @@
             <input type="checkbox" id="kadaster-toggle" checked
                    onchange="toggleKadaster(this.checked)"
                    class="w-3.5 h-3.5 accent-violet-600"/>
-            <span class="text-xs text-gray-500">Kadastraal percelen overlay</span>
+            <span class="text-xs text-gray-500">KadastraaIl percelen overlay</span>
           </label>
         </div>
 
@@ -51,6 +52,10 @@
           <button id="selecteer-btn" onclick="toggleSelecteren()"
                   class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border border-violet-300 text-violet-600 hover:bg-violet-50 transition-all">
             Selecteer kavel(s)
+          </button>
+          <button id="merge-btn" onclick="mergeKavels()"
+                  class="hidden w-full text-xs font-medium py-1.5 px-3 rounded-lg border border-emerald-300 text-emerald-600 hover:bg-emerald-50 transition-all">
+            Samenvoegen tot één
           </button>
           <div id="kavels-list" class="flex flex-col gap-1.5"></div>
           <p id="kavels-empty" class="text-xs text-gray-300">Nog geen kavels geselecteerd</p>
@@ -69,6 +74,8 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@geoman-io/leaflet-geoman-free@2/dist/leaflet-geoman.min.js"></script>
   <script src="js/state.js"></script>
   <script>
     const project = getCurrentProject();
@@ -131,11 +138,14 @@
     });
 
     // ── Selected kavels state ─────────────────────────────────────────────────
-    let selectedKavels  = []; // { id, geo, opp, poly }
+    let selectedKavels  = []; // { id, kadastraleAanduiding, geo, opp, poly }
     let nextKavelId     = 1;
     let selecterenActief = false;
+    let isLoading = false;
+    let editingKavelId = null;
 
     function toggleSelecteren() {
+      if (editingKavelId !== null) stopEditKavel(editingKavelId);
       selecterenActief = !selecterenActief;
       const btn = document.getElementById('selecteer-btn');
       if (selecterenActief) {
@@ -164,23 +174,103 @@
       return Math.round(Math.abs(area / 2) * DEG_TO_M * DEG_TO_M * Math.cos(52 * Math.PI / 180));
     }
 
-    function addKavel(latlng) {
-      const dLat = 0.00045;
-      const dLng = 0.00073;
-      const geo = [
-        [latlng.lat + dLat, latlng.lng - dLng],
-        [latlng.lat + dLat, latlng.lng + dLng],
-        [latlng.lat - dLat, latlng.lng + dLng],
-        [latlng.lat - dLat, latlng.lng - dLng],
-      ];
-      const opp  = calcAreaM2(geo.map(c => ({ lat: c[0], lng: c[1] })));
-      const poly = L.polygon(geo, { color: '#7C3AED', fillColor: '#7C3AED', fillOpacity: 0.25, weight: 2 }).addTo(map);
-      const id   = nextKavelId++;
-      selectedKavels.push({ id, geo, opp, poly });
-      renderKavelsList();
+    function pointInGeoJsonPolygon(lat, lng, geoJsonCoords) {
+      const ring = geoJsonCoords[0];
+      let inside = false;
+      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const xi = ring[i][0], yi = ring[i][1];
+        const xj = ring[j][0], yj = ring[j][1];
+        if (((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi)) {
+          inside = !inside;
+        }
+      }
+      return inside;
+    }
+
+    async function addKavel(latlng) {
+      if (isLoading) return;
+      isLoading = true;
+      map.getContainer().style.cursor = 'wait';
+      const hint = document.getElementById('map-hint');
+      hint.textContent = 'Kavel ophalen…';
+
+      const { lat, lng } = latlng;
+      const margin = 0.001;
+      // WFS 2.0.0 + EPSG:4326 bbox axis order is lat,lng (not lng,lat)
+      const url = `https://service.pdok.nl/kadaster/kadastralekaart/wfs/v5_0?service=WFS&version=2.0.0&request=GetFeature&typeName=kadastralekaart:Perceel&outputFormat=application/json&srsName=EPSG:4326&bbox=${lat-margin},${lng-margin},${lat+margin},${lng+margin},EPSG:4326&count=20`;
+
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('WFS verzoek mislukt');
+        const data = await resp.json();
+        const features = data.features || [];
+
+        let found = null;
+        for (const feat of features) {
+          const geom = feat.geometry;
+          if (!geom) continue;
+          if (geom.type === 'Polygon') {
+            if (pointInGeoJsonPolygon(lat, lng, geom.coordinates)) { found = feat; break; }
+          } else if (geom.type === 'MultiPolygon') {
+            for (const poly of geom.coordinates) {
+              if (pointInGeoJsonPolygon(lat, lng, poly)) { found = feat; break; }
+            }
+            if (found) break;
+          }
+        }
+
+        if (!found) {
+          hint.textContent = 'Geen kavel gevonden op deze locatie';
+          return;
+        }
+
+        const featureId = found.id || found.properties.identificatie || '';
+        if (selectedKavels.some(k => k.featureId === featureId)) {
+          hint.textContent = 'Deze kavel is al geselecteerd';
+          return;
+        }
+
+        const geom = found.geometry;
+        let leafletRings;
+        if (geom.type === 'Polygon') {
+          leafletRings = geom.coordinates.map(ring => ring.map(c => [c[1], c[0]]));
+        } else {
+          leafletRings = geom.coordinates[0].map(ring => ring.map(c => [c[1], c[0]]));
+        }
+        const geo = leafletRings[0];
+
+        const props = found.properties || {};
+        const kadastraleAanduiding = props.kadastraleAanduiding
+          || (props.kadastraleGemeenteCode && props.sectie && props.perceelnummer
+              ? `${props.kadastraleGemeenteCode} ${props.sectie} ${props.perceelnummer}`
+              : null);
+        const opp = props.oppervlakte
+          ? Math.round(props.oppervlakte)
+          : calcAreaM2(geo.map(c => ({ lat: c[0], lng: c[1] })));
+
+        const poly = L.polygon(leafletRings, { color: '#7C3AED', fillColor: '#7C3AED', fillOpacity: 0.25, weight: 2 }).addTo(map);
+        const id = nextKavelId++;
+        selectedKavels.push({ id, featureId, kadastraleAanduiding, geo, opp, poly });
+        renderKavelsList();
+
+      } catch (err) {
+        console.error(err);
+        hint.textContent = 'Fout bij ophalen kavel, probeer opnieuw';
+      } finally {
+        isLoading = false;
+        map.getContainer().style.cursor = selecterenActief ? 'crosshair' : '';
+        if (selecterenActief && document.getElementById('map-hint').textContent === 'Kavel ophalen…') {
+          hint.textContent = 'Klik op de kaart om kavels toe te voegen';
+        }
+      }
     }
 
     function removeKavel(id) {
+      if (editingKavelId === id) {
+        const kavel = selectedKavels.find(k => k.id === id);
+        if (kavel) kavel.poly.pm.disable();
+        editingKavelId = null;
+      }
       const idx = selectedKavels.findIndex(k => k.id === id);
       if (idx === -1) return;
       map.removeLayer(selectedKavels[idx].poly);
@@ -188,26 +278,98 @@
       renderKavelsList();
     }
 
+    function startEditKavel(id) {
+      if (editingKavelId !== null) stopEditKavel(editingKavelId);
+      const kavel = selectedKavels.find(k => k.id === id);
+      if (!kavel || !(kavel.poly instanceof L.Polygon)) return;
+      editingKavelId = id;
+      kavel.poly.pm.enable({ allowSelfIntersection: false });
+      document.getElementById('map-hint').textContent = 'Sleep hoekpunten om het polygon aan te passen. Klik ✓ om op te slaan.';
+      renderKavelsList();
+    }
+
+    function stopEditKavel(id) {
+      const kavel = selectedKavels.find(k => k.id === id);
+      if (!kavel) { editingKavelId = null; return; }
+      kavel.poly.pm.disable();
+      const latlngs = kavel.poly.getLatLngs()[0];
+      kavel.geo = latlngs.map(ll => [ll.lat, ll.lng]);
+      kavel.opp = calcAreaM2(latlngs);
+      editingKavelId = null;
+      document.getElementById('map-hint').textContent = 'Zoek een locatie of druk op "Selecteer kavel(s)" om kavels toe te voegen';
+      renderKavelsList();
+    }
+
+    function mergeKavels() {
+      if (selectedKavels.length < 2) return;
+      if (editingKavelId !== null) stopEditKavel(editingKavelId);
+
+      // Build Turf polygon features (convert Leaflet [lat,lng] → GeoJSON [lng,lat])
+      const turfFeatures = selectedKavels.map(k => {
+        const ring = k.geo.map(c => [c[1], c[0]]);
+        ring.push(ring[0]); // close ring
+        return turf.polygon([ring]);
+      });
+
+      const unionResult = turf.union(turf.featureCollection(turfFeatures));
+      if (!unionResult) return;
+
+      selectedKavels.forEach(k => map.removeLayer(k.poly));
+
+      const polyStyle = { color: '#7C3AED', fillColor: '#7C3AED', fillOpacity: 0.25, weight: 2 };
+      let mergedPoly, mergedGeo;
+
+      if (unionResult.geometry.type === 'Polygon') {
+        const leafletRings = unionResult.geometry.coordinates.map(ring => ring.map(c => [c[1], c[0]]));
+        mergedPoly = L.polygon(leafletRings, polyStyle).addTo(map);
+        mergedGeo = leafletRings[0];
+      } else {
+        // MultiPolygon: parcels don't touch — group them
+        const group = L.featureGroup().addTo(map);
+        unionResult.geometry.coordinates.forEach(poly => {
+          L.polygon(poly.map(ring => ring.map(c => [c[1], c[0]])), polyStyle).addTo(group);
+        });
+        mergedPoly = group;
+        mergedGeo = unionResult.geometry.coordinates[0][0].map(c => [c[1], c[0]]);
+      }
+
+      const totalOpp = selectedKavels.reduce((s, k) => s + k.opp, 0);
+      const id = nextKavelId++;
+      selectedKavels = [{ id, featureId: 'merged-' + id, kadastraleAanduiding: 'Samengevoegd gebied', geo: mergedGeo, opp: totalOpp, poly: mergedPoly }];
+      renderKavelsList();
+    }
+
     function renderKavelsList() {
-      const list  = document.getElementById('kavels-list');
-      const empty = document.getElementById('kavels-empty');
+      const list     = document.getElementById('kavels-list');
+      const empty    = document.getElementById('kavels-empty');
+      const mergeBtn = document.getElementById('merge-btn');
       list.innerHTML = '';
 
       if (selectedKavels.length === 0) {
         empty.classList.remove('hidden');
+        mergeBtn.classList.add('hidden');
         document.getElementById('opp-display').textContent = '— m²';
         document.getElementById('volgende-btn').disabled = true;
         return;
       }
 
       empty.classList.add('hidden');
+      mergeBtn.classList.toggle('hidden', selectedKavels.length < 2 || editingKavelId !== null);
+
       selectedKavels.forEach((k, i) => {
         const row = document.createElement('div');
-        row.className = 'flex items-center justify-between text-xs';
+        row.className = 'flex items-center gap-1 text-xs';
+        const label     = k.kadastraleAanduiding || `Kavel ${i + 1}`;
+        const isEditing = editingKavelId === k.id;
+        const canEdit   = k.poly instanceof L.Polygon;
         row.innerHTML = `
-          <span class="text-gray-600">Kavel ${i + 1}</span>
-          <span class="text-gray-400">${k.opp.toLocaleString('nl-NL')} m²</span>
-          <button onclick="removeKavel(${k.id})" class="text-gray-300 hover:text-red-400 transition-colors leading-none ml-1">×</button>`;
+          <span class="text-gray-600 truncate flex-1" title="${label}">${label}</span>
+          <span class="text-gray-400 flex-shrink-0">${k.opp.toLocaleString('nl-NL')} m²</span>
+          ${canEdit ? `<button onclick="${isEditing ? 'stopEditKavel' : 'startEditKavel'}(${k.id})"
+            class="flex-shrink-0 leading-none transition-colors ${isEditing ? 'text-violet-500 hover:text-violet-700' : 'text-gray-300 hover:text-violet-400'}"
+            title="${isEditing ? 'Opslaan' : 'Bewerken'}">
+            ${isEditing ? '✓' : '✎'}</button>` : ''}
+          <button onclick="removeKavel(${k.id})" class="text-gray-300 hover:text-red-400 transition-colors leading-none flex-shrink-0" title="Verwijderen">×</button>`;
         list.appendChild(row);
       });
 
@@ -217,7 +379,7 @@
     }
 
     // ── Map click ────────────────────────────────────────────────────────────
-    map.on('click', e => { if (selecterenActief) addKavel(e.latlng); });
+    map.on('click', e => { if (selecterenActief && !isLoading && editingKavelId === null) addKavel(e.latlng); });
 
     // ── Navigate ─────────────────────────────────────────────────────────────
     function naarVolgende() {
