@@ -3,153 +3,646 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>POM – Ruimtestaat (begeleid)</title>
+  <title>POM – Ruimtestaat configureren</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="css/styles.css"/>
-</head>
-<body class="min-h-screen bg-gray-50 p-8">
+  <style>
+    /* ── Collapsed step card ───────────────────────────────────────────────── */
+    .step-pill {
+      width: 100%;
+      background: white;
+      border-radius: 1rem;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      border: 1.5px solid #E5E7EB;
+      padding: 0.85rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      color: #9CA3AF;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+    .step-pill:hover { border-color: #C4B5FD; color: var(--primary); }
+    .step-pill.done  { border-color: #D1FAE5; background: #F0FDF4; color: #16A34A; }
+    .step-pill.done:hover { border-color: #86EFAC; }
 
-  <div class="mx-auto">
+    /* ── Active (expanded) step card ───────────────────────────────────────── */
+    .step-card {
+      border: 2px solid #7C3AED !important;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .step-card > * {
+      width: 100%;
+      max-width: 520px;
+    }
+    .step-card-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #374151;
+      margin-bottom: 1.25rem;
+    }
+
+    /* ── Form rows inside a step card ─────────────────────────────────────── */
+    .qrow {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 0.75rem;
+    }
+    .qlabel {
+      font-size: 0.875rem;
+      color: #6B7280;
+      width: 11rem;
+      text-align: right;
+      flex-shrink: 0;
+      line-height: 1.35;
+    }
+    .num-field {
+      border: 1.5px solid #E5E7EB;
+      border-radius: 0.5rem;
+      padding: 0.45rem 0.65rem;
+      font-size: 0.875rem;
+      color: #374151;
+      width: 90px;
+      text-align: center;
+      background: white;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .num-field:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(124,58,237,0.08); }
+
+    /* ── Hint box ──────────────────────────────────────────────────────────── */
+    .hint-box {
+      background: #F5F3FF;
+      border-radius: 0.5rem;
+      padding: 0.55rem 0.85rem;
+      font-size: 0.75rem;
+      color: #6D28D9;
+      margin-bottom: 1rem;
+    }
+
+    /* ── Ruimtestaat preview: summary rows ─────────────────────────────────── */
+    .cl-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.35rem 0;
+      border-bottom: 1px solid #F3F4F6;
+    }
+    .cl-row:last-child { border-bottom: none; }
+    .cl-row-name  { font-size: 0.78rem; color: #4B5563; font-weight: 500; }
+    .cl-row-total { font-size: 0.78rem; font-weight: 700; color: var(--primary); flex-shrink: 0; margin-left: 0.5rem; }
+
+    /* ── Detail popup ──────────────────────────────────────────────────────── */
+    .rs-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.35);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .rs-overlay.open { display: flex; }
+    .rs-popup {
+      background: white;
+      border-radius: 1.25rem;
+      padding: 1.75rem;
+      width: 480px;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+    }
+    .rs-popup-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; }
+    .rs-popup-title  { font-size:1rem; font-weight:700; color:#374151; }
+    .rs-close { background:none; border:none; font-size:1.3rem; color:#9CA3AF; cursor:pointer; line-height:1; }
+    .rs-close:hover { color:#374151; }
+    .rs-cl-block { margin-bottom:1.1rem; }
+    .rs-cl-name  { font-size:0.8rem; font-weight:700; color:var(--primary); margin-bottom:0.35rem; }
+    .rs-room-row { display:flex; justify-content:space-between; align-items:baseline; padding:0.18rem 0.5rem; border-bottom:1px solid #F9FAFB; }
+    .rs-room-row:last-child { border-bottom:none; }
+    .rs-room-name { font-size:0.72rem; color:#6B7280; }
+    .rs-room-m2   { font-size:0.72rem; font-weight:500; color:#374151; flex-shrink:0; margin-left:0.5rem; }
+  </style>
+</head>
+<body class="bg-gray-50" style="min-height:100vh; padding: 2rem 2.5rem">
+
+  <div>
     <a href="pve-stap-4-ruimte.html" class="text-xs text-gray-400 hover:text-violet-600">← Ruimte definities</a>
     <h1 id="project-titel" class="text-xl font-semibold text-gray-700 mt-1 mb-2"></h1>
-    <div id="step-indicator" class="mb-6"></div>
+    <div id="step-indicator" class="mb-5"></div>
 
     <div class="flex gap-6">
-      <div id="nav-panel" class="nav-panel"></div>
+      <div id="nav-panel"></div>
 
-      <div class="flex-1 flex gap-6">
+      <div class="flex-1 flex gap-5 min-w-0">
 
-        <!-- Questions card -->
-        <div class="card flex-1 max-w-lg">
-          <h2 class="text-lg font-semibold text-gray-800 mb-2">Ruimtestaat</h2>
-          <p class="text-xs text-gray-400 mb-6">Beantwoord de onderstaande vragen om de ruimtestaat samen te stellen.</p>
+        <!-- ── Step list ───────────────────────────────────────────────────── -->
+        <div class="flex-1 flex flex-col gap-3 min-w-0" style="overflow-y:auto; max-height:calc(100vh - 200px);">
 
-          <!-- Onderwijs stijl -->
-          <div class="mb-6 pb-6 border-b border-gray-100">
-            <h3 class="text-sm font-semibold text-gray-600 mb-3">Onderwijs stijl</h3>
-            <div class="flex flex-col gap-3">
-              <!-- <div class="flex items-center gap-4">
-                <label class="text-sm text-gray-500 w-40 text-right flex-shrink-0">Onderwijs methode</label>
-                <select id="q-methode" class="select-field" onchange="saveVragen()">
-                  <option value="">Selecteer…</option>
-                  <option>Traditioneel klassikaal</option>
-                  <option>Montessori</option>
-                  <option>Jenaplan</option>
-                  <option>Dalton</option>
-                  <option>Ervaringsgericht</option>
-                  <option>Hybride</option>
-                </select>
-              </div> -->
-              <div class="flex items-center gap-4">
-                <label class="text-sm text-gray-500 w-40 text-right flex-shrink-0">Groepsindeling</label>
-                <select id="q-groepsindeling" class="select-field" onchange="saveVragen()">
-                  <option value="">Selecteer…</option>
-                  <option>Leeftijdsgroepen</option>
-                  <option>Jaarlagen</option>
-                  <option>Niveaugroepen</option>
-                  <option>Gemengde groepen</option>
-                </select>
-              </div>
-              <div class="flex items-center gap-4">
-                <label class="text-sm text-gray-500 w-40 text-right flex-shrink-0">Speelwijze</label>
-                <select id="q-speelwijze" class="select-field" onchange="saveVragen()">
-                  <option value="">Selecteer…</option>
-                  <option>Binnen gericht</option>
-                  <option>Buiten gericht</option>
-                  <option>Gemengd</option>
-                </select>
-              </div>
+          <!-- ═══ Step 1: Schoolbouw ══════════════════════════════════════════ -->
+          <button class="step-pill" id="pill-1" onclick="goToStep(1)" style="display:none">
+            <span>Schoolbouw</span>
+            <span id="pill-1-summary" style="font-size:0.75rem; opacity:0.8"></span>
+          </button>
+          <div class="card step-card" id="card-1" style="padding:1.5rem">
+            <div class="step-card-title">Schoolbouw</div>
+            <!-- <div class="qrow">
+              <label class="qlabel">Aantal leerlingen</label>
+              <input type="number" id="q-leerlingen" class="num-field"
+                     value="240" min="0" max="2000" oninput="recalculate()"/>
+            </div> -->
+            <div class="qrow">
+              <label class="qlabel">Onderwijsclusters</label>
+              <select id="q-clusters" class="select-field" style="max-width:230px" onchange="onClustersChange()">
+                <option value="1 cluster">1 cluster</option>
+                <option value="2 clusters OB+BB" selected>2 clusters (OB + BB)</option>
+                <option value="3 clusters OB+MB+BB">3 clusters (OB + MB + BB)</option>
+              </select>
+            </div>
+            <div class="qrow">
+              <label class="qlabel">Aantal FTE personeel</label>
+              <input type="number" id="q-fte" class="num-field"
+                     value="12" min="0" max="200" oninput="recalculate()"/>
+            </div>
+            <div class="flex justify-end mt-2">
+              <button class="btn-primary px-5 py-2 text-sm" onclick="completeAndNext(1)">Volgende →</button>
             </div>
           </div>
 
-          <!-- Ja/nee vragen (placeholder) -->
-          <div class="flex flex-col gap-4">
-            <h3 class="text-sm font-semibold text-gray-600 mb-1">Aanvullende vragen</h3>
-            <div id="ja-nee-vragen"></div>
+          <!-- ═══ Step 2: Lokalen ═════════════════════════════════════════════ -->
+          <button class="step-pill" id="pill-2" onclick="goToStep(2)">
+            <span>Lokalen</span>
+            <span id="pill-2-summary" style="font-size:0.75rem; opacity:0.8"></span>
+          </button>
+          <div class="card step-card" id="card-2" style="padding:1.5rem; display:none">
+            <div class="step-card-title">Lokalen</div>
+            <div class="hint-box" id="hint-lokalen">
+              Op basis van de leerlingenaantal worden de basisklassen berekend.
+            </div>
+            <div class="qrow">
+              <label class="qlabel">Extra lokalen</label>
+              <input type="number" id="q-extra-lokalen" class="num-field"
+                     value="0" min="0" max="20" oninput="recalculate(); updateLokalenHint()"/>
+            </div>
+            <div id="row-ob" class="qrow">
+              <label class="qlabel">Lokalen onderbouw</label>
+              <input type="number" id="q-ob-lokalen" class="num-field"
+                     value="4" min="0" max="30" oninput="recalculate()"/>
+            </div>
+            <div id="row-mb" class="qrow" style="display:none">
+              <label class="qlabel">Lokalen middenbouw</label>
+              <input type="number" id="q-mb-lokalen" class="num-field"
+                     value="4" min="0" max="30" oninput="recalculate()"/>
+            </div>
+            <div id="row-bb" class="qrow">
+              <label class="qlabel">Lokalen bovenbouw</label>
+              <input type="number" id="q-bb-lokalen" class="num-field"
+                     value="4" min="0" max="30" oninput="recalculate()"/>
+            </div>
+            <div class="flex justify-between mt-2">
+              <button class="btn-ghost px-4 py-2 text-sm" onclick="goToStep(1)">← Vorige</button>
+              <button class="btn-primary px-5 py-2 text-sm" onclick="completeAndNext(2)">Volgende →</button>
+            </div>
           </div>
+
+          <!-- ═══ Step 3: Hoofdruimtes ════════════════════════════════════════ -->
+          <button class="step-pill" id="pill-3" onclick="goToStep(3)">
+            <span>Hoofdruimtes</span>
+            <span id="pill-3-summary" style="font-size:0.75rem; opacity:0.8"></span>
+          </button>
+          <div class="card step-card" id="card-3" style="padding:1.5rem; display:none">
+            <div class="step-card-title">Hoofdruimtes</div>
+            <div class="qrow">
+              <label class="qlabel">Centrale ontmoetingsruimte</label>
+              <select id="q-cor" class="select-field" style="max-width:230px" onchange="recalculate()">
+                <option>Hele klas</option>
+                <option selected>Hele cluster</option>
+                <option>Hele school</option>
+              </select>
+            </div>
+            <div class="qrow">
+              <label class="qlabel">Leerplein % van cluster</label>
+              <select id="q-leerplein" class="select-field" style="max-width:230px" onchange="recalculate()">
+                <!-- filled in JS -->
+              </select>
+            </div>
+            <div class="qrow">
+              <label class="qlabel">Speellokaal</label>
+              <div class="flex gap-2">
+                <button class="sel-btn active" id="btn-speellokaal-ja"  onclick="setJN('speellokaal','ja',this)">Ja</button>
+                <button class="sel-btn"        id="btn-speellokaal-nee" onclick="setJN('speellokaal','nee',this)">Nee</button>
+              </div>
+            </div>
+            <div class="flex justify-between mt-2">
+              <button class="btn-ghost px-4 py-2 text-sm" onclick="goToStep(2)">← Vorige</button>
+              <button class="btn-primary px-5 py-2 text-sm" onclick="completeAndNext(3)">Volgende →</button>
+            </div>
+          </div>
+
+          <!-- ═══ Step 4: Overige ruimtes ═════════════════════════════════════ -->
+          <button class="step-pill" id="pill-4" onclick="goToStep(4)">
+            <span>Overige ruimtes</span>
+            <span id="pill-4-summary" style="font-size:0.75rem; opacity:0.8"></span>
+          </button>
+          <div class="card step-card" id="card-4" style="padding:1.5rem; display:none">
+            <div class="step-card-title">Overige ruimtes</div>
+            <div class="qrow">
+              <label class="qlabel">Bibliotheek/mediaruimte</label>
+              <div class="flex gap-2 items-center flex-wrap">
+                <button class="sel-btn"        id="btn-bibliotheek-ja"  onclick="setJN('bibliotheek','ja',this)">Ja</button>
+                <button class="sel-btn active" id="btn-bibliotheek-nee" onclick="setJN('bibliotheek','nee',this)">Nee</button>
+                <select id="q-biblio-grootte" class="select-field" style="max-width:160px; display:none" onchange="recalculate()">
+                  <option>Kwart klas</option>
+                  <option>Halve klas</option>
+                  <option>Hele klas</option>
+                </select>
+              </div>
+            </div>
+            <div class="qrow">
+              <label class="qlabel">Creatief/techniekruimte</label>
+              <div class="flex gap-2">
+                <button class="sel-btn"        id="btn-creatieftechniek-ja"  onclick="setJN('creatieftechniek','ja',this)">Ja</button>
+                <button class="sel-btn active" id="btn-creatieftechniek-nee" onclick="setJN('creatieftechniek','nee',this)">Nee</button>
+              </div>
+            </div>
+            <div class="qrow">
+              <label class="qlabel">Prikkelarme ruimten</label>
+              <div class="flex gap-2 items-center flex-wrap">
+                <input type="number" id="q-prikkelarm-aantal" class="num-field"
+                       value="1" min="0" max="5" oninput="recalculate()"/>
+                <select id="q-prikkelarm-grootte" class="select-field" style="max-width:185px" onchange="recalculate()">
+                  <option selected>8 m² (1-2 kinderen)</option>
+                  <option>16 m² (3-4 kinderen)</option>
+                  <option>32 m² (4-8 kinderen)</option>
+                </select>
+              </div>
+            </div>
+            <div class="qrow">
+              <label class="qlabel">Zorg/behandelruimte</label>
+              <div class="flex gap-2">
+                <button class="sel-btn"        id="btn-zorgbehandel-ja"  onclick="setJN('zorgbehandel','ja',this)">Ja</button>
+                <button class="sel-btn active" id="btn-zorgbehandel-nee" onclick="setJN('zorgbehandel','nee',this)">Nee</button>
+              </div>
+            </div>
+            <div class="qrow">
+              <label class="qlabel">Was/droogruimte</label>
+              <div class="flex gap-2">
+                <button class="sel-btn"        id="btn-wasdroog-ja"  onclick="setJN('wasdroog','ja',this)">Ja</button>
+                <button class="sel-btn active" id="btn-wasdroog-nee" onclick="setJN('wasdroog','nee',this)">Nee</button>
+              </div>
+            </div>
+            <div class="qrow">
+              <label class="qlabel">Kantoorruimten</label>
+              <select id="q-kantoor" class="select-field" style="max-width:230px" onchange="recalculate()">
+                <option selected>Basis (8m²)</option>
+                <option>Groot (16m²)</option>
+              </select>
+            </div>
+            <div class="qrow">
+              <label class="qlabel">Spreekruimten</label>
+              <select id="q-spreekruimte" class="select-field" style="max-width:230px" onchange="recalculate()">
+                <option selected>Basis (12m²)</option>
+                <option>Groot (24m²)</option>
+              </select>
+            </div>
+            <div class="qrow">
+              <label class="qlabel">Print/kopieerruimte</label>
+              <div class="flex gap-2">
+                <button class="sel-btn active" id="btn-printKopie-ja"  onclick="setJN('printKopie','ja',this)">Ja</button>
+                <button class="sel-btn"        id="btn-printKopie-nee" onclick="setJN('printKopie','nee',this)">Nee</button>
+              </div>
+            </div>
+            <div class="qrow">
+              <label class="qlabel">EHBO/kolf/rustruimte</label>
+              <div class="flex gap-2">
+                <button class="sel-btn active" id="btn-ehboKolfRust-ja"  onclick="setJN('ehboKolfRust','ja',this)">Ja</button>
+                <button class="sel-btn"        id="btn-ehboKolfRust-nee" onclick="setJN('ehboKolfRust','nee',this)">Nee</button>
+              </div>
+            </div>
+            <div class="qrow">
+              <label class="qlabel">Bergruimte formaat</label>
+              <select id="q-bergruimte" class="select-field" style="max-width:230px" onchange="recalculate()">
+                <option selected>Basis (3m²)</option>
+                <option>Middel (6m²)</option>
+                <option>Groot (12m²)</option>
+              </select>
+            </div>
+            <div class="flex justify-between mt-2">
+              <button class="btn-ghost px-4 py-2 text-sm" onclick="goToStep(3)">← Vorige</button>
+              <button class="btn-primary px-6 py-2 text-sm" onclick="volgendeStap()">Naar vlekkenplan →</button>
+            </div>
+          </div>
+
+        </div><!-- /step list -->
+
+        <!-- ── Live preview (unchanged) ────────────────────────────────────── -->
+        <div style="width:300px; flex-shrink:0; display:flex; flex-direction:column; gap:0.75rem; max-height:calc(100vh - 200px);">
+
+          <div class="card" style="padding:1rem; flex-shrink:0">
+            <div class="text-xs font-semibold text-gray-500 mb-2">Ruimtebudget</div>
+            <div id="preview-budget"></div>
+          </div>
+
+          <div class="card" style="padding:1rem; flex:1; overflow-y:auto; min-height:0; cursor:pointer;"
+               onclick="openRsPopup()" title="Klik voor details">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.6rem;">
+              <span class="text-xs font-semibold text-gray-500">Ruimtestaat</span>
+              <span style="font-size:0.65rem; color:#C4B5FD;">details →</span>
+            </div>
+            <div id="preview-clusters"></div>
+          </div>
+
+          <!-- Detail popup -->
+          <div class="rs-overlay" id="rs-overlay" onclick="if(event.target===this)closeRsPopup()">
+            <div class="rs-popup">
+              <div class="rs-popup-header">
+                <span class="rs-popup-title">Ruimtestaat — details</span>
+                <button class="rs-close" onclick="closeRsPopup()">×</button>
+              </div>
+              <div id="rs-popup-body"></div>
+            </div>
+          </div>
+
         </div>
 
-        <!-- Info + dashboard -->
-        <div class="flex flex-col gap-4 w-52 flex-shrink-0">
-          <div class="info-card">
-            Begeleid opstellen helpt bij het in kaart brengen van de benodigde ruimtes op basis van de gekozen onderwijsmethode.
-          </div>
-          <div id="dashboard-widget" class="dashboard-widget"></div>
-        </div>
-      </div>
-    </div>
+      </div><!-- /flex row -->
+    </div><!-- /flex gap-6 -->
 
-    <div class="flex justify-end mt-6 max-w-3xl">
-      <button onclick="volgendeStap()" class="btn-primary px-6 py-2">volgende stap</button>
-    </div>
   </div>
 
   <script src="js/state.js"></script>
   <script src="js/calculations.js"></script>
+  <script src="js/ruimtestaat-calc.js"></script>
   <script>
-    const JA_NEE = [
-      'Is er een ruimte nodig voor buitenschoolse opvang (BSO)?',
-      'Is een gymzaal in het gebouw gewenst?',
-      'Is een bibliotheekhoek of mediaruimte gewenst?',
-      'Zijn er ruimtes nodig voor logopedie / remedial teaching?',
-      'Is een personeelskantine gewenst?',
-    ];
-
+    // ── Init ──────────────────────────────────────────────────────────────────
     const project = getCurrentProject();
     if (!project) { window.location.href = 'index.html'; }
     const pveV = getActivePveVariant();
-    if (!pveV) { window.location.href = 'pve-stap-1-invoer.html'; }
+    if (!pveV)    { window.location.href = 'pve-stap-1-invoer.html'; }
 
     document.getElementById('project-titel').textContent = project.naam;
-    document.getElementById('step-indicator').innerHTML = renderStepIndicator(2, 5, ['pve-stap-2-voorzieningen.html']);
-    document.getElementById('nav-panel').innerHTML = renderNavPanel('pve', project);
-    document.getElementById('dashboard-widget').innerHTML = renderDashboard(project);
+    document.getElementById('step-indicator').innerHTML  = renderStepIndicator(2, 5, ['pve-stap-2-voorzieningen.html']);
+    document.getElementById('nav-panel').innerHTML       = renderNavPanel('pve', project);
 
-    const savedVragen = (pveV && pveV.ruimtestaat && pveV.ruimtestaat.vragen) || {};
+    // ── Leerplein percentage options (5% – 100%) ──────────────────────────────
+    (function () {
+      const sel = document.getElementById('q-leerplein');
+      for (let p = 5; p <= 100; p += 5) {
+        const o = document.createElement('option');
+        o.value = (p / 100).toFixed(2);
+        o.textContent = p + '%';
+        if (p === 30) o.selected = true;
+        sel.appendChild(o);
+      }
+    })();
 
-    // Render ja/nee questions
-    const container = document.getElementById('ja-nee-vragen');
-    JA_NEE.forEach((q, i) => {
-      const saved = savedVragen['jn_' + i] || '';
-      const row = document.createElement('div');
-      row.className = 'flex items-start gap-4';
-      row.innerHTML = `
-        <span class="text-sm text-gray-600 flex-1">${q}</span>
-        <div class="flex gap-2 flex-shrink-0">
-          <button class="sel-btn ${saved==='ja'?'active':''}" onclick="setJN(${i},'ja',this)">Ja</button>
-          <button class="sel-btn ${saved==='nee'?'active':''}" onclick="setJN(${i},'nee',this)">Nee</button>
-        </div>`;
-      container.appendChild(row);
-    });
+    // ── Step navigation ───────────────────────────────────────────────────────
+    const STEPS = [
+      { n: 1, label: 'Schoolbouw' },
+      { n: 2, label: 'Lokalen' },
+      { n: 3, label: 'Hoofdruimtes' },
+      { n: 4, label: 'Overige ruimtes' },
+    ];
+    const doneSteps = new Set();
+    let currentStep = 1;
 
-    // Restore dropdowns
-    if (savedVragen.methode)       document.getElementById('q-methode').value       = savedVragen.methode;
-    if (savedVragen.groepsindeling) document.getElementById('q-groepsindeling').value = savedVragen.groepsindeling;
-    if (savedVragen.speelwijze)    document.getElementById('q-speelwijze').value    = savedVragen.speelwijze;
-
-    function setJN(i, val, btn) {
-      btn.closest('.flex.gap-2').querySelectorAll('.sel-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      saveVragen();
+    function goToStep(n) {
+      STEPS.forEach(s => {
+        const pill = document.getElementById('pill-' + s.n);
+        const card = document.getElementById('card-' + s.n);
+        if (s.n === n) {
+          pill.style.display = 'none';
+          card.style.display = '';
+        } else {
+          card.style.display = 'none';
+          pill.style.display = '';
+          pill.className = 'step-pill' + (doneSteps.has(s.n) ? ' done' : '');
+          const sum = document.getElementById('pill-' + s.n + '-summary');
+          if (sum) sum.textContent = doneSteps.has(s.n) ? '✓' : '';
+        }
+      });
+      currentStep = n;
+      if (n === 2) updateLokalenHint();
     }
 
-    function saveVragen() {
-      const vragen = {
-        // methode:       document.getElementById('q-methode').value,
-        groepsindeling: document.getElementById('q-groepsindeling').value,
-        speelwijze:    document.getElementById('q-speelwijze').value,
+    function completeAndNext(n) {
+      doneSteps.add(n);
+      recalculate();
+      if (n < 4) goToStep(n + 1);
+    }
+
+    // ── Lokalen hint ──────────────────────────────────────────────────────────
+    function updateLokalenHint() {
+      const po         = (pveV && pveV.voorzieningen && pveV.voorzieningen.primairOnderwijs) || {};
+      const leerlingen = po.leerlingen || 0;
+      const extra      = parseInt(document.getElementById('q-extra-lokalen').value) || 0;
+      const base       = Math.ceil(leerlingen / 30);
+      const total      = base + extra;
+      const hint       = document.getElementById('hint-lokalen');
+      if (hint) hint.textContent =
+        `Op basis van ${leerlingen} leerlingen worden ${base} basisklassen berekend` +
+        (extra > 0 ? ` + ${extra} extra = ${total} totaal.` : ` (${total} totaal).`);
+    }
+
+    // ── Ja/Nee state ──────────────────────────────────────────────────────────
+    const JN = {
+      speellokaal:      'ja',
+      bibliotheek:      'nee',
+      creatieftechniek: 'nee',
+      zorgbehandel:     'nee',
+      wasdroog:         'nee',
+      printKopie:       'ja',
+      ehboKolfRust:     'ja',
+    };
+
+    function setJN(key, val, btn) {
+      JN[key] = val;
+      btn.closest('.flex.gap-2').querySelectorAll('.sel-btn')
+         .forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      if (key === 'bibliotheek') {
+        document.getElementById('q-biblio-grootte').style.display = val === 'ja' ? '' : 'none';
+      }
+      recalculate();
+    }
+
+    // ── Cluster row visibility ────────────────────────────────────────────────
+    function onClustersChange() {
+      const v      = document.getElementById('q-clusters').value;
+      const single = v === '1 cluster';
+      const triple = v === '3 clusters OB+MB+BB';
+      document.getElementById('row-ob').style.display = single ? 'none' : 'flex';
+      document.getElementById('row-mb').style.display = triple  ? 'flex' : 'none';
+      document.getElementById('row-bb').style.display = single  ? 'none' : 'flex';
+      recalculate();
+    }
+
+    // ── Collect inputs ────────────────────────────────────────────────────────
+    function getInputs() {
+      const po = (pveV && pveV.voorzieningen && pveV.voorzieningen.primairOnderwijs) || {};
+      const budget = window.POM_CALC ? window.POM_CALC.calcTotalBVO((pveV && pveV.voorzieningen) || {}) : 0;
+      return {
+        leerlingen:                po.leerlingen || 0,
+        budget,
+        fte:                       parseInt(document.getElementById('q-fte').value)               || 0,
+        clusters:                  document.getElementById('q-clusters').value,
+        extraLokalen:              parseInt(document.getElementById('q-extra-lokalen').value)      || 0,
+        aantalLokalenOB:           parseInt(document.getElementById('q-ob-lokalen').value)        || 0,
+        aantalLokalenMB:           parseInt(document.getElementById('q-mb-lokalen').value)        || 0,
+        aantalLokalenBB:           parseInt(document.getElementById('q-bb-lokalen').value)        || 0,
+        centraleOntmoetingsruimte: document.getElementById('q-cor').value,
+        leerpleinPercentage:       document.getElementById('q-leerplein').value,
+        speellokaal:               JN.speellokaal      === 'ja' ? 'Ja' : 'Nee',
+        bibliotheek:               JN.bibliotheek      === 'ja' ? 'Ja' : 'Nee',
+        bibliotheekGrootte:        document.getElementById('q-biblio-grootte').value,
+        creatiefTechniek:          JN.creatieftechniek === 'ja' ? 'Ja' : 'Nee',
+        kantoorFormaat:            document.getElementById('q-kantoor').value,
+        aantalPrikkelarm:          parseInt(document.getElementById('q-prikkelarm-aantal').value) || 0,
+        prikkelarmGrootte:         document.getElementById('q-prikkelarm-grootte').value,
+        zorgBehandel:              JN.zorgbehandel     === 'ja' ? 'Ja' : 'Nee',
+        wasDroog:                  JN.wasdroog         === 'ja' ? 'Ja' : 'Nee',
+        bergruimteFormaat:         document.getElementById('q-bergruimte').value,
+        printKopie:                JN.printKopie       === 'ja' ? 'Ja' : 'Nee',
+        ehboKolfRust:              JN.ehboKolfRust     === 'ja' ? 'Ja' : 'Nee',
+        spreekruimteFormaat:       document.getElementById('q-spreekruimte').value,
       };
-      JA_NEE.forEach((_, i) => {
-        const active = document.querySelectorAll(`#ja-nee-vragen .flex:nth-child(${i+1}) .sel-btn.active`)[0];
-        vragen['jn_' + i] = active ? active.textContent.trim().toLowerCase() : '';
+    }
+
+    // ── Recalculate + save + update preview ───────────────────────────────────
+    function recalculate() {
+      const inp    = getInputs();
+      const result = RUIMTESTAAT_CALC.compute(inp);
+      renderPreview(result);
+      updateActivePveVariant({
+        ruimtestaat: {
+          type:           'berekend',
+          vragen:         inp,
+          clusters:       result.clusters,
+          budget:         result.budget,
+          netBudget:      result.netBudget,
+          totaalGebruikt: result.totaalGebruikt,
+        }
       });
-      updateActivePveVariant({ ruimtestaat: { type: 'begeleid', vragen } });
+    }
+
+    // ── Render preview ────────────────────────────────────────────────────────
+    function renderPreview(result) {
+      const budgetEl   = document.getElementById('preview-budget');
+      const usedPct    = Math.min(100, Math.round((result.totaalGebruikt / result.budget) * 100));
+      const overBudget = result.totaalGebruikt > result.netBudget;
+      const barCol     = overBudget ? '#EF4444' : '#7C3AED';
+
+      budgetEl.innerHTML = `
+        <div style="display:flex;justify-content:space-between;font-size:0.68rem;color:#9CA3AF;margin-bottom:0.15rem">
+          <span>Totaal BVO</span><span>${result.budget.toLocaleString('nl-NL')} m²</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:0.68rem;color:#9CA3AF;margin-bottom:0.4rem">
+          <span>Beschikbaar voor ruimten (70%)</span><span>${result.netBudget.toLocaleString('nl-NL')} m²</span>
+        </div>
+        <div style="background:#F3F4F6;border-radius:99px;height:7px;overflow:hidden">
+          <div style="background:${barCol};width:${usedPct}%;height:100%;border-radius:99px;transition:width 0.3s"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:0.4rem;font-size:0.73rem;font-weight:600">
+          <span style="color:${barCol}">Ingedeeld: ${result.totaalGebruikt.toLocaleString('nl-NL')} m²</span>
+          <span style="color:#9CA3AF">${usedPct}%</span>
+        </div>
+        ${overBudget ? '<p style="font-size:0.67rem;color:#EF4444;margin-top:0.4rem">Meer m² dan beschikbaar. Verklein ruimten of pas het programma aan.</p>' : ''}
+      `;
+
+      // Summary: cluster name + total only
+      const clustersEl = document.getElementById('preview-clusters');
+      clustersEl.innerHTML = result.clusters.map(cl => {
+        const clTotal = cl.rooms.reduce((s, r) => s + parseFloat(r.aantal) * parseFloat(r.oppervlakte), 0);
+        return `<div class="cl-row">
+          <span class="cl-row-name">${cl.name}</span>
+          <span class="cl-row-total">${Math.round(clTotal).toLocaleString('nl-NL')} m²</span>
+        </div>`;
+      }).join('');
+
+      // Populate popup detail body (always kept in sync)
+      const popupBody = document.getElementById('rs-popup-body');
+      if (popupBody) {
+        popupBody.innerHTML = result.clusters.map(cl => {
+          const clTotal = cl.rooms.reduce((s, r) => s + parseFloat(r.aantal) * parseFloat(r.oppervlakte), 0);
+          const rows = cl.rooms.map(r => {
+            const tot   = parseFloat(r.aantal) * parseFloat(r.oppervlakte);
+            const label = parseFloat(r.aantal) > 1 ? `${r.name} ×${r.aantal}` : r.name;
+            return `<div class="rs-room-row">
+              <span class="rs-room-name">${label}</span>
+              <span class="rs-room-m2">${tot % 1 === 0 ? tot : tot.toLocaleString('nl-NL')} m²</span>
+            </div>`;
+          }).join('');
+          return `<div class="rs-cl-block">
+            <div class="rs-cl-name">${cl.name} — ${Math.round(clTotal).toLocaleString('nl-NL')} m²</div>
+            ${rows}
+          </div>`;
+        }).join('');
+      }
+    }
+
+    // ── Restore saved state ───────────────────────────────────────────────────
+    function restoreState() {
+      const saved = pveV && pveV.ruimtestaat && pveV.ruimtestaat.type === 'berekend'
+        ? pveV.ruimtestaat.vragen : null;
+
+      if (saved) {
+        const n = (id, val) => { if (val !== undefined && val !== null) document.getElementById(id).value = val; };
+        n('q-fte',                saved.fte);
+        n('q-clusters',           saved.clusters);
+        n('q-extra-lokalen',      saved.extraLokalen);
+        n('q-ob-lokalen',         saved.aantalLokalenOB);
+        n('q-mb-lokalen',         saved.aantalLokalenMB);
+        n('q-bb-lokalen',         saved.aantalLokalenBB);
+        n('q-cor',                saved.centraleOntmoetingsruimte);
+        n('q-leerplein',          saved.leerpleinPercentage);
+        n('q-kantoor',            saved.kantoorFormaat);
+        n('q-bergruimte',         saved.bergruimteFormaat);
+        n('q-biblio-grootte',     saved.bibliotheekGrootte);
+        n('q-prikkelarm-grootte', saved.prikkelarmGrootte);
+        n('q-prikkelarm-aantal',  saved.aantalPrikkelarm);
+        n('q-spreekruimte',       saved.spreekruimteFormaat);
+
+        const jnKeys = {
+          speellokaal:      'speellokaal',
+          bibliotheek:      'bibliotheek',
+          creatiefTechniek: 'creatieftechniek',
+          zorgBehandel:     'zorgbehandel',
+          wasDroog:         'wasdroog',
+          printKopie:       'printKopie',
+          ehboKolfRust:     'ehboKolfRust',
+        };
+        Object.entries(jnKeys).forEach(([savedKey, stateKey]) => {
+          if (!saved[savedKey]) return;
+          const isJa = saved[savedKey].toLowerCase() === 'ja';
+          JN[stateKey] = isJa ? 'ja' : 'nee';
+          document.getElementById(`btn-${stateKey}-ja`) ?.classList.toggle('active', isJa);
+          document.getElementById(`btn-${stateKey}-nee`)?.classList.toggle('active', !isJa);
+        });
+        if (JN.bibliotheek === 'ja') {
+          document.getElementById('q-biblio-grootte').style.display = '';
+        }
+      }
+
+      onClustersChange(); // sets row visibility + triggers recalculate
     }
 
     function volgendeStap() {
-      saveVragen();
+      recalculate();
       window.location.href = 'pve-stap-4c-vlekkenplan.html';
     }
+
+    // ── Ruimtestaat detail popup ──────────────────────────────────────────────
+    function openRsPopup()  { document.getElementById('rs-overlay').classList.add('open'); }
+    function closeRsPopup() { document.getElementById('rs-overlay').classList.remove('open'); }
+
+    // ── Boot ──────────────────────────────────────────────────────────────────
+    restoreState();
+    goToStep(1);
   </script>
   <script src="js/dashboard-detail.js"></script>
   <script src="js/bot.js"></script>

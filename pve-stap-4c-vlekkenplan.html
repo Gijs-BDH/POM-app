@@ -818,8 +818,10 @@
 
     // ── Init ───────────────────────────────────────────────────────────────
     if (clusters.length === 0) {
-      // No saved state — build from the embedded default data
-      const jsonClusters = RUIMTESTAAT_DEFAULT.clusters || [];
+      // Prefer clusters computed by pve-stap-4b (type 'berekend'), else fall back to embedded default
+      const calcClusters = pveV && pveV.ruimtestaat && pveV.ruimtestaat.type === 'berekend'
+        ? pveV.ruimtestaat.clusters : null;
+      const jsonClusters = (calcClusters && calcClusters.length) ? calcClusters : (RUIMTESTAAT_DEFAULT.clusters || []);
       clusters = jsonClusters
         .filter(c => c.name)
         .map(c => {
