@@ -103,7 +103,7 @@
                 <img id="detail-img-massstudy" src="" class="w-full h-full object-cover"/>
               </div>
               <div id="view-plattegrond" class="rounded-xl overflow-hidden" style="height:700px;">
-                <img src="src/assets/img_floorplans_Wide.png" class="w-full h-full object-cover"/>
+                <img id="detail-img-floorplan" src="" class="w-full h-full object-cover"/>
               </div>
               <div id="view-impressie" class="hidden rounded-xl overflow-hidden" style="height:700px;">
                 <img src="src/assets/img_impression.png" class="w-full h-full object-cover"/>
@@ -278,6 +278,7 @@
       document.getElementById('detail-naam').textContent          = detailOptie.naam;
       document.getElementById('detail-beschrijving').textContent  = detailOptie.beschrijving;
       document.getElementById('detail-img-massstudy').src         = detailOptie.afbeelding;
+      document.getElementById('detail-img-floorplan').src         = detailOptie.afbeelding_floorplan;
 
       // Eigenschappen
       document.getElementById('detail-eigenschappen').innerHTML =

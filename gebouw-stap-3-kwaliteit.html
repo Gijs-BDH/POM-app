@@ -38,7 +38,7 @@
               <iframe src="walkthrough.html" class="w-full h-full object-cover" style="height:700px;"></iframe>
             </div>
             <div id="visual-plat" class="flex-1 hidden rounded-xl overflow-hidden" >
-              <img src="src/assets/img_floorplans_narrow.png" style="max-height:700px;"/>
+              <img id="detail-img-floorplan" src="" style="max-height:700px;"/>
             </div>
             <div class="flex gap-2">
               <button onclick="setVisual('3d')"   id="vis-3d"   class="metric-pill active-vis" style="border-color:#7C3AED;color:#7C3AED;font-size:0.7rem;padding:0.2rem 0.5rem;border-radius:99px;border:1px solid #E5E7EB;cursor:pointer;">Walkthrough</button>
@@ -57,6 +57,7 @@
   </div>
 
   <script src="js/state.js"></script>
+  <script src="js/gebouw-opties.js"></script>
   <script>
     const params   = new URLSearchParams(window.location.search);
     const gebouwId = params.get('id');
@@ -66,9 +67,12 @@
     let variant = (project.gebouwVarianten || []).find(g => g.id === gebouwId);
     if (!variant) { window.location.href = 'gebouw-stap-1-uitgangspunten.html'; }
 
+    const detailOptie = window.getGebouwOptie ? window.getGebouwOptie(variant.geselecteerdeOptie) : null;
+
     document.getElementById('project-titel').textContent = project.naam;
     document.getElementById('step-indicator').innerHTML  = renderStepIndicator(3, 5, ['gebouw-stap-1-uitgangspunten.html', 'gebouw-stap-2-opties.html?id=' + gebouwId]);
     document.getElementById('nav-panel').innerHTML       = renderNavPanel('gebouw', project);
+    document.getElementById('detail-img-floorplan').src  = detailOptie.afbeelding_floorplan;
 
     // ── Categories ────────────────────────────────────────────────────────────
     const CATEGORIEEN = [
