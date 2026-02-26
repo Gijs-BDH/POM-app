@@ -131,6 +131,12 @@
       { key: 'obstakels',   label: 'Obstakels',   color: '#F59E0B' },
       { key: 'placeholder', label: 'Placeholder',  color: '#14B8A6' },
     ];
+    const OBSTAKEL_KEY = 'obstakels';
+    const OBSTAKEL_TYPES = [
+      { key: 'boom', label: 'Boom', icon: '🌳' },
+      { key: 'lamp', label: 'Lichtmast', icon: '💡' },
+      { key: 'bank', label: 'Bankje', icon: '🪑' },
+    ];
     TABS.forEach(t => { if (!variant[t.key]) variant[t.key] = { geo: [], opp: 0 }; });
 
     const layers = {};
@@ -152,6 +158,85 @@
           tabZones[t.key].push({ id: nextZoneId++, geo: z.geo, opp: z.opp || 0, poly });
         }
       });
+    });
+
+    // ── Obstakels als sleepbare objecten ─────────────────────────────────────
+    const obstacleItems = [];
+    let nextObstacleId = 1;
+
+    function getObstacleType(typeKey) {
+      return OBSTAKEL_TYPES.find(t => t.key === typeKey) || OBSTAKEL_TYPES[0];
+    }
+
+    function createObstacleMarker(item) {
+      const type = getObstacleType(item.type);
+      const icon = L.divIcon({
+        className: '',
+        html: `<div style="font-size:1.25rem;line-height:1;">${type.icon}</div>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+      const marker = L.marker([item.lat, item.lng], { icon, draggable: true }).addTo(layers[OBSTAKEL_KEY]);
+      marker.on('dragend', e => {
+        const p = e.target.getLatLng();
+        item.lat = p.lat;
+        item.lng = p.lng;
+        saveObstacleItems();
+      });
+      marker.bindTooltip(type.label, { direction: 'top', offset: [0, -8] });
+      return marker;
+    }
+
+    function saveObstacleItems() {
+      const objects = obstacleItems.map(o => ({ id: o.id, type: o.type, lat: o.lat, lng: o.lng }));
+      if (!variant[OBSTAKEL_KEY]) variant[OBSTAKEL_KEY] = {};
+      variant[OBSTAKEL_KEY].objects = objects;
+      variant[OBSTAKEL_KEY].zones = [];
+      variant[OBSTAKEL_KEY].geo = [];
+      variant[OBSTAKEL_KEY].opp = 0;
+      updateGebiedVariantById(gebiedId, {
+        [OBSTAKEL_KEY]: { objects, zones: [], geo: [], opp: 0 }
+      });
+      updateSummary();
+    }
+
+    function addObstacle(typeKey) {
+      const center = map.getCenter();
+      const item = {
+        id: nextObstacleId++,
+        type: typeKey,
+        lat: center.lat,
+        lng: center.lng,
+        marker: null
+      };
+      item.marker = createObstacleMarker(item);
+      obstacleItems.push(item);
+      saveObstacleItems();
+      renderTabs();
+    }
+
+    function removeObstacle(id) {
+      const idx = obstacleItems.findIndex(o => o.id === id);
+      if (idx === -1) return;
+      map.removeLayer(obstacleItems[idx].marker);
+      obstacleItems.splice(idx, 1);
+      saveObstacleItems();
+      renderTabs();
+    }
+
+    const storedObstacles = (variant[OBSTAKEL_KEY] && variant[OBSTAKEL_KEY].objects) || [];
+    storedObstacles.forEach(o => {
+      if (typeof o.lat !== 'number' || typeof o.lng !== 'number') return;
+      const item = {
+        id: o.id || nextObstacleId++,
+        type: o.type || OBSTAKEL_TYPES[0].key,
+        lat: o.lat,
+        lng: o.lng,
+        marker: null
+      };
+      nextObstacleId = Math.max(nextObstacleId, item.id + 1);
+      item.marker = createObstacleMarker(item);
+      obstacleItems.push(item);
     });
 
     // ── Drawing state ─────────────────────────────────────────────────────────
@@ -295,10 +380,61 @@
 
       TABS.forEach((tab, idx) => {
         const zones = tabZones[tab.key];
-        const isDone = zones.length > 0;
+        const isDone = tab.key === OBSTAKEL_KEY ? (obstacleItems.length > 0 || zones.length > 0) : zones.length > 0;
         const isActive = activeTab && activeTab.key === tab.key;
 
         if (isActive) {
+          if (tab.key === OBSTAKEL_KEY) {
+            const isDrawing = drawingMode;
+            const totalOpp = zones.reduce((s, z) => s + z.opp, 0);
+            const card = document.createElement('div');
+            card.className = 'card p-4 flex flex-col gap-3';
+            card.style.border = '2px solid #7C3AED';
+            const typeButtons = OBSTAKEL_TYPES.map(t =>
+              `<button onclick="addObstacle('${t.key}')" class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border border-violet-300 text-violet-600 hover:bg-violet-50 transition-all">${t.icon} ${t.label}</button>`
+            ).join('');
+            const zonesHtml = zones.map((z, i) => `
+              <div class="flex items-center gap-1 text-xs">
+                <span class="text-gray-600 flex-1">Vlak ${i + 1}</span>
+                <span class="text-gray-400 flex-shrink-0">${z.opp.toLocaleString('nl-NL')} m²</span>
+                <button onclick="removeZone('${tab.key}', ${z.id})"
+                  class="text-gray-300 hover:text-red-400 transition-colors leading-none flex-shrink-0"
+                  title="Verwijderen">×</button>
+              </div>`).join('');
+            const listHtml = obstacleItems.map((o, i) => {
+              const t = getObstacleType(o.type);
+              return `<div class="flex items-center gap-1 text-xs">
+                <span class="text-gray-600 flex-1">${t.icon} ${t.label} ${i + 1}</span>
+                <button onclick="removeObstacle(${o.id})"
+                  class="text-gray-300 hover:text-red-400 transition-colors leading-none flex-shrink-0"
+                  title="Verwijderen">×</button>
+              </div>`;
+            }).join('');
+            card.innerHTML = `
+              <h3 class="font-semibold text-sm text-gray-700">${tab.label}</h3>
+              <p class="text-xs text-gray-400">Voeg objecten toe en sleep ze naar de juiste positie op de kaart.</p>
+              <div class="flex flex-col gap-1">${typeButtons}</div>
+              <button onclick="toggleDrawing(TABS[${idx}])"
+                class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border transition-all ${isDrawing
+                  ? 'border-red-300 text-red-500 hover:bg-red-50'
+                  : 'border-violet-300 text-violet-600 hover:bg-violet-50'}">
+                ${isDrawing ? '✕ Stoppen met vlak tekenen' : '✏ Teken obstakelvlak'}
+              </button>
+              ${listHtml
+                ? `<div class="flex flex-col gap-1 pt-1 border-t border-gray-100">${listHtml}</div>`
+                : '<p class="text-xs text-gray-300">Nog geen objecten geplaatst</p>'}
+              ${zonesHtml
+                ? `<div class="flex flex-col gap-1 pt-1 border-t border-gray-100">${zonesHtml}</div>`
+                : '<p class="text-xs text-gray-300">Nog geen obstakelvlakken getekend</p>'}
+              <div class="flex items-center justify-between text-xs text-gray-500 pt-1 border-t border-gray-100">
+                <span>Vlakken totaal</span>
+                <span class="font-semibold text-violet-700">${totalOpp ? totalOpp.toLocaleString('nl-NL') + ' m²' : '— m²'}</span>
+              </div>
+              <button onclick="volgendeTab(${idx})" class="btn-primary w-full text-sm py-2">volgende</button>`;
+            container.appendChild(card);
+            return;
+          }
+
           const isDrawing = drawingMode;
           const totalOpp = zones.reduce((s, z) => s + z.opp, 0);
           const card = document.createElement('div');
