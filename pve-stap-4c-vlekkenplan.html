@@ -223,7 +223,7 @@
     function getClusterRadius(rooms) {
       if (!rooms || !rooms.length) return MIN_CLUSTER_R;
       const total = rooms.reduce((a, r) => a + (r.oppervlak || 0), 0);
-      return Math.max(Math.sqrt(total * 2.7) * AREA_SCALE, MIN_CLUSTER_R);
+      return Math.max(Math.sqrt(total * 1.7) * AREA_SCALE, MIN_CLUSTER_R);
     }
     function uid() {
       return 'x' + Date.now().toString(36) + Math.random().toString(36).slice(2);
