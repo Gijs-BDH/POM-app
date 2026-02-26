@@ -68,6 +68,13 @@ const BOT_SCRIPTS = {
     actions: [
       { id: "go_to_gebouw_nieuw", label: "Maak nieuwe variant" }
     ]
+  },
+
+  "planning_intro": {
+    message: "Welkom bij de planning! POM helpt je om in <strong style=\"color:var(--primary)\">7 weken</strong> van start naar uitvraag te gaan. Stel snel meerdere scenario's op en bespreek ze tweewekelijks met alle stakeholders. Zo werk je efficiënt toe naar de volgende stap en krijg je direct inzicht in de haalbaarheid van de businesscase.",
+    actions: [
+      { id: "close_bot", label: "Aan de slag" }
+    ]
   }
 
 };
@@ -298,7 +305,7 @@ function _appendBotMessage(text) {
   const log = document.getElementById('pom-bot-log');
   const el  = document.createElement('div');
   el.className     = 'pom-bot-msg-bot';
-  el.textContent   = text;
+  el.innerHTML     = text;
   log.appendChild(el);
   log.scrollTop    = log.scrollHeight;
 }
