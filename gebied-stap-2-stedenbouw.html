@@ -128,6 +128,7 @@
     // Layer group per tab + one for the computed buildable area
     const layers = {};
     TABS.forEach(t => { layers[t.key] = L.layerGroup().addTo(map); });
+    const parkingHandleLayer = L.layerGroup().addTo(map);
     const bouwbaarLayer = L.layerGroup().addTo(map);
 
     // ── Multi-zone state per tab ──────────────────────────────────────────────
@@ -143,7 +144,18 @@
         zonesData.forEach(z => {
           if (z.geo && z.geo.length >= 3) {
             const poly = L.polygon(z.geo, { color: t.color, fillColor: t.color, fillOpacity: 0.3, weight: 2 }).addTo(layers[t.key]);
-            tabZones[t.key].push({ id: nextZoneId++, geo: z.geo, opp: z.opp || 0, poly });
+            tabZones[t.key].push({
+              id: nextZoneId++,
+              geo: z.geo,
+              opp: z.opp || 0,
+              kind: z.kind || 'polygon',
+              center: z.center || null,
+              angle: typeof z.angle === 'number' ? z.angle : 0,
+              widthM: z.widthM,
+              lengthM: z.lengthM,
+              spots: z.spots || 1,
+              poly
+            });
           }
         });
       }
@@ -162,9 +174,12 @@
     // ── Drawing state ─────────────────────────────────────────────────────────
     let activeTab     = null;
     let drawingMode   = false;
+    let placingParkingCount = 0;
     let drawPoints    = [];
     let currentPoly   = null;
     let clickTimer    = null;
+    const PARKING_STANDARD = { widthM: 2.5, lengthM: 5 };
+    let lastParkingAngle = 0;
 
     function calcAreaM2(latlngs) {
       if (!latlngs || latlngs.length < 3) return 0;
@@ -179,7 +194,148 @@
       return Math.round(Math.abs(area / 2) * DEG_TO_M * DEG_TO_M * Math.cos(52 * Math.PI / 180));
     }
 
+    function calcGeoCenter(geo) {
+      if (!geo || !geo.length) return null;
+      const sum = geo.reduce((acc, p) => ({ lat: acc.lat + p[0], lng: acc.lng + p[1] }), { lat: 0, lng: 0 });
+      return { lat: sum.lat / geo.length, lng: sum.lng / geo.length };
+    }
+
+    function createParkingGeo(center, widthM, lengthM, angleDeg) {
+      const rad = angleDeg * Math.PI / 180;
+      const cos = Math.cos(rad);
+      const sin = Math.sin(rad);
+      const mToLat = 1 / 111320;
+      const mToLng = 1 / (111320 * Math.cos(center.lat * Math.PI / 180));
+      const halfW = widthM / 2;
+      const halfL = lengthM / 2;
+      const corners = [
+        { x: -halfL, y: -halfW },
+        { x:  halfL, y: -halfW },
+        { x:  halfL, y:  halfW },
+        { x: -halfL, y:  halfW },
+      ];
+      return corners.map(c => {
+        const rx = c.x * cos - c.y * sin;
+        const ry = c.x * sin + c.y * cos;
+        return [center.lat + ry * mToLat, center.lng + rx * mToLng];
+      });
+    }
+
+    function getParkingRotateHandleLatLng(zone) {
+      const dist = (zone.lengthM || PARKING_STANDARD.lengthM) / 2 + 2;
+      const rad = (zone.angle || 0) * Math.PI / 180;
+      const mToLat = 1 / 111320;
+      const mToLng = 1 / (111320 * Math.cos(zone.center.lat * Math.PI / 180));
+      return [
+        zone.center.lat + Math.sin(rad) * dist * mToLat,
+        zone.center.lng + Math.cos(rad) * dist * mToLng,
+      ];
+    }
+
+    function rebuildParkingZone(zone, persist = true) {
+      zone.geo = createParkingGeo(zone.center, zone.widthM, zone.lengthM, zone.angle || 0);
+      zone.opp = Math.round((zone.widthM || 0) * (zone.lengthM || 0));
+      if (zone.poly) map.removeLayer(zone.poly);
+      zone.poly = createZonePolygon('parkeren', zone);
+      if (zone.centerHandle) zone.centerHandle.setLatLng([zone.center.lat, zone.center.lng]);
+      if (zone.rotateHandle) zone.rotateHandle.setLatLng(getParkingRotateHandleLatLng(zone));
+      if (persist) {
+        saveTabZones('parkeren');
+        renderTabs();
+      }
+    }
+
+    function hideParkingHandles() {
+      parkingHandleLayer.clearLayers();
+      tabZones.parkeren.forEach(z => {
+        if (z.centerHandle) z.centerHandle = null;
+        if (z.rotateHandle) z.rotateHandle = null;
+      });
+    }
+
+    function showParkingHandles() {
+      hideParkingHandles();
+      tabZones.parkeren
+        .filter(z => z.kind === 'parkingSpot' || z.kind === 'parkingBlock')
+        .forEach(zone => {
+          const centerHandle = L.marker([zone.center.lat, zone.center.lng], {
+            draggable: true,
+            icon: L.divIcon({
+              className: '',
+              html: '<div style="width:10px;height:10px;border-radius:9999px;background:#3B82F6;border:1px solid #1D4ED8"></div>',
+              iconSize: [10, 10],
+              iconAnchor: [5, 5]
+            })
+          }).addTo(parkingHandleLayer);
+          centerHandle.on('drag', e => {
+            const p = e.target.getLatLng();
+            zone.center = { lat: p.lat, lng: p.lng };
+            rebuildParkingZone(zone, false);
+          });
+          centerHandle.on('dragend', () => { saveTabZones('parkeren'); renderTabs(); });
+
+          const rotateHandle = L.marker(getParkingRotateHandleLatLng(zone), {
+            draggable: true,
+            icon: L.divIcon({
+              className: '',
+              html: '<div style="width:10px;height:10px;border-radius:9999px;background:#A78BFA;border:1px solid #7C3AED"></div>',
+              iconSize: [10, 10],
+              iconAnchor: [5, 5]
+            })
+          }).addTo(parkingHandleLayer);
+          rotateHandle.on('drag', e => {
+            const p = e.target.getLatLng();
+            const dx = (p.lng - zone.center.lng) * 111320 * Math.cos(zone.center.lat * Math.PI / 180);
+            const dy = (p.lat - zone.center.lat) * 111320;
+            zone.angle = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;
+            rebuildParkingZone(zone, false);
+          });
+          rotateHandle.on('dragend', () => {
+            lastParkingAngle = zone.angle || 0;
+            saveTabZones('parkeren');
+            renderTabs();
+          });
+
+          zone.centerHandle = centerHandle;
+          zone.rotateHandle = rotateHandle;
+        });
+    }
+
+    function createZonePolygon(tabKey, zone) {
+      return L.polygon(zone.geo, {
+        color: TABS.find(t => t.key === tabKey).color,
+        fillColor: TABS.find(t => t.key === tabKey).color,
+        fillOpacity: 0.3,
+        weight: 2
+      }).addTo(layers[tabKey]);
+    }
+
     map.on('click', e => {
+      if (placingParkingCount > 0 && activeTab && activeTab.key === 'parkeren') {
+        const center = { lat: e.latlng.lat, lng: e.latlng.lng };
+        const spots = placingParkingCount;
+        const widthM = spots === 1 ? PARKING_STANDARD.widthM : PARKING_STANDARD.widthM * spots;
+        const lengthM = PARKING_STANDARD.lengthM;
+        const zone = {
+          id: nextZoneId++,
+          kind: spots === 1 ? 'parkingSpot' : 'parkingBlock',
+          spots,
+          center,
+          angle: lastParkingAngle,
+          widthM,
+          lengthM,
+          geo: createParkingGeo(center, widthM, lengthM, lastParkingAngle),
+          opp: Math.round(widthM * lengthM),
+          poly: null,
+        };
+        zone.poly = createZonePolygon('parkeren', zone);
+        tabZones.parkeren.push(zone);
+        saveTabZones('parkeren');
+        showParkingHandles();
+        renderTabs();
+        return;
+      }
+
       if (!drawingMode) return;
       clearTimeout(clickTimer);
       const latlng = e.latlng;
@@ -206,7 +362,7 @@
       const finalPoly = L.polygon(geo, {
         color: tab.color, fillColor: tab.color, fillOpacity: 0.3, weight: 2
       }).addTo(layers[tab.key]);
-      tabZones[tab.key].push({ id: nextZoneId++, geo, opp, poly: finalPoly });
+      tabZones[tab.key].push({ id: nextZoneId++, kind: 'polygon', geo, opp, poly: finalPoly });
       drawingMode = false;
       currentPoly = null;
       drawPoints  = [];
@@ -217,7 +373,24 @@
     });
 
     function saveTabZones(key) {
-      const zones    = tabZones[key].map(z => ({ geo: z.geo, opp: z.opp }));
+      const zones = tabZones[key].map(z => {
+        const base = { geo: z.geo, opp: z.opp, kind: z.kind || 'polygon' };
+        if (z.kind === 'parkingSpot') {
+          base.center = z.center;
+          base.angle = z.angle || 0;
+          base.widthM = z.widthM || PARKING_STANDARD.widthM;
+          base.lengthM = z.lengthM || PARKING_STANDARD.lengthM;
+          base.spots = z.spots || 1;
+        }
+        if (z.kind === 'parkingBlock') {
+          base.center = z.center;
+          base.angle = z.angle || 0;
+          base.widthM = z.widthM || (PARKING_STANDARD.widthM * (z.spots || 3));
+          base.lengthM = z.lengthM || PARKING_STANDARD.lengthM;
+          base.spots = z.spots || 3;
+        }
+        return base;
+      });
       const totalOpp = tabZones[key].reduce((s, z) => s + z.opp, 0);
       if (!variant[key]) variant[key] = {};
       variant[key].zones = zones;
@@ -233,8 +406,11 @@
       const idx = tabZones[key].findIndex(z => z.id === id);
       if (idx === -1) return;
       map.removeLayer(tabZones[key][idx].poly);
+      if (tabZones[key][idx].centerHandle) parkingHandleLayer.removeLayer(tabZones[key][idx].centerHandle);
+      if (tabZones[key][idx].rotateHandle) parkingHandleLayer.removeLayer(tabZones[key][idx].rotateHandle);
       tabZones[key].splice(idx, 1);
       saveTabZones(key);
+      if (key === 'parkeren' && activeTab && activeTab.key === 'parkeren') showParkingHandles();
       renderTabs();
     }
 
@@ -243,11 +419,13 @@
       if (currentPoly) { map.removeLayer(currentPoly); currentPoly = null; }
       drawingMode = false;
       drawPoints  = [];
+      placingParkingCount = 0;
       map.getContainer().style.cursor = '';
       document.getElementById('map-hint').classList.add('hidden');
     }
 
     function toggleDrawing(tab) {
+      if (placingParkingCount > 0) placingParkingCount = 0;
       if (drawingMode) {
         stopDrawing();
         renderTabs();
@@ -260,6 +438,31 @@
         document.getElementById('map-hint').classList.remove('hidden');
         renderTabs();
       }
+    }
+
+    function toggleParkingPlacement(spots) {
+      if (!activeTab || activeTab.key !== 'parkeren') return;
+      if (drawingMode) stopDrawing();
+      placingParkingCount = placingParkingCount === spots ? 0 : spots;
+      if (placingParkingCount > 0) {
+        map.getContainer().style.cursor = 'copy';
+        const hint = document.getElementById('map-hint');
+        hint.textContent = `Klik op de kaart om ${placingParkingCount} standaard parkeerplaats${placingParkingCount > 1 ? 'en' : ''} te plaatsen`;
+        hint.classList.remove('hidden');
+      } else {
+        map.getContainer().style.cursor = '';
+        document.getElementById('map-hint').classList.add('hidden');
+      }
+      renderTabs();
+    }
+
+    function rotateParkingZone(id, deltaDeg) {
+      const zone = tabZones.parkeren.find(z => z.id === id && (z.kind === 'parkingSpot' || z.kind === 'parkingBlock'));
+      if (!zone) return;
+      zone.angle = (zone.angle + deltaDeg + 360) % 360;
+      lastParkingAngle = zone.angle;
+      rebuildParkingZone(zone, true);
+      if (activeTab && activeTab.key === 'parkeren') showParkingHandles();
     }
 
     // ── Buildable-area overlay + summary ─────────────────────────────────────
@@ -330,14 +533,33 @@
           const card = document.createElement('div');
           card.className = 'card p-4 flex flex-col gap-3';
           card.style.border = '2px solid #7C3AED';
-          const zonesHtml = zones.map((z, i) => `
+          const zonesHtml = zones.map((z, i) => {
+            if (z.kind === 'parkingSpot' || z.kind === 'parkingBlock') {
+              const label = z.spots && z.spots > 1 ? `${z.spots} plekken` : `Plek ${i + 1}`;
+              return `
+              <div class="flex flex-col gap-1 text-xs">
+                <div class="flex items-center gap-1">
+                  <span class="text-gray-600 flex-1">${label}</span>
+                  <span class="text-gray-400 flex-shrink-0">${z.opp.toLocaleString('nl-NL')} m²</span>
+                  <button onclick="removeZone('${tab.key}', ${z.id})"
+                    class="text-gray-300 hover:text-red-400 transition-colors leading-none flex-shrink-0"
+                    title="Verwijderen">×</button>
+                </div>
+                <div class="flex gap-1">
+                  <button onclick="rotateParkingZone(${z.id}, -15)" class="px-1.5 py-0.5 rounded border border-gray-200 text-gray-500 hover:text-violet-700">↺</button>
+                  <button onclick="rotateParkingZone(${z.id}, 15)" class="px-1.5 py-0.5 rounded border border-gray-200 text-gray-500 hover:text-violet-700">↻</button>
+                </div>
+              </div>`;
+            }
+            return `
             <div class="flex items-center gap-1 text-xs">
               <span class="text-gray-600 flex-1">Zone ${i + 1}</span>
               <span class="text-gray-400 flex-shrink-0">${z.opp.toLocaleString('nl-NL')} m²</span>
               <button onclick="removeZone('${tab.key}', ${z.id})"
                 class="text-gray-300 hover:text-red-400 transition-colors leading-none flex-shrink-0"
                 title="Verwijderen">×</button>
-            </div>`).join('');
+            </div>`;
+          }).join('');
           card.innerHTML = `
             <h3 class="font-semibold text-sm text-gray-700">${tab.label}</h3>
             <button onclick="toggleDrawing(TABS[${idx}])"
@@ -346,6 +568,27 @@
                 : 'border-violet-300 text-violet-600 hover:bg-violet-50'}">
               ${isDrawing ? '✕ Stoppen met tekenen' : '✏ Teken zone'}
             </button>
+            ${tab.key === 'parkeren' ? `<div class="grid grid-cols-1 gap-1">
+              <button onclick="toggleParkingPlacement(1)"
+                class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border transition-all ${placingParkingCount === 1
+                  ? 'border-red-300 text-red-500 hover:bg-red-50'
+                  : 'border-sky-300 text-sky-600 hover:bg-sky-50'}">
+                ${placingParkingCount === 1 ? '✕ Stop 1 plek plaatsen' : '🅿 Plaats 1 parkeerplek'}
+              </button>
+              <button onclick="toggleParkingPlacement(3)"
+                class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border transition-all ${placingParkingCount === 3
+                  ? 'border-red-300 text-red-500 hover:bg-red-50'
+                  : 'border-sky-300 text-sky-600 hover:bg-sky-50'}">
+                ${placingParkingCount === 3 ? '✕ Stop 3 plekken plaatsen' : '🅿 Plaats 3 parkeerplekken'}
+              </button>
+              <button onclick="toggleParkingPlacement(4)"
+                class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border transition-all ${placingParkingCount === 4
+                  ? 'border-red-300 text-red-500 hover:bg-red-50'
+                  : 'border-sky-300 text-sky-600 hover:bg-sky-50'}">
+                ${placingParkingCount === 4 ? '✕ Stop 4 plekken plaatsen' : '🅿 Plaats 4 parkeerplekken'}
+              </button>
+              <p class="text-[11px] text-gray-400">Sleep blauwe punt = verplaatsen, paarse punt = roteren op kaart.</p>
+            </div>` : ''}
             ${zonesHtml
               ? `<div class="flex flex-col gap-1">${zonesHtml}</div>`
               : '<p class="text-xs text-gray-300">Nog geen zones getekend</p>'}
@@ -360,7 +603,7 @@
           const activeIdx = TABS.findIndex(t => activeTab && t.key === activeTab.key);
           pill.className = 'tab-pill ' + (isDone ? 'done' : idx > activeIdx ? 'pending' : '');
           pill.textContent = (isDone ? '✓ ' : '') + tab.label;
-          pill.onclick = () => { stopDrawing(); activeTab = tab; renderTabs(); };
+          pill.onclick = () => { stopDrawing(); activeTab = tab; if (tab.key === 'parkeren') showParkingHandles(); else hideParkingHandles(); renderTabs(); };
           container.appendChild(pill);
         }
       });
@@ -368,8 +611,10 @@
 
     function volgendeTab(currentIdx) {
       stopDrawing();
+      hideParkingHandles();
       if (currentIdx + 1 < TABS.length) {
         activeTab = TABS[currentIdx + 1];
+        if (activeTab.key === 'parkeren') showParkingHandles();
         renderTabs();
       } else {
         window.location.href = 'gebied-stap-3-programma.html?id=' + gebiedId;
@@ -378,6 +623,26 @@
 
     // Start with first tab active
     activeTab = TABS[0];
+
+    // Normalize previously saved parkeer-zones (incl. standaard parkeerplaatsen)
+    tabZones.parkeren = tabZones.parkeren.map(z => {
+      const zone = { ...z };
+      if (!zone.kind) zone.kind = 'polygon';
+      if (zone.kind === 'parkingSpot' || zone.kind === 'parkingBlock') {
+        zone.spots = zone.spots || (zone.kind === 'parkingBlock' ? 3 : 1);
+        zone.widthM = zone.widthM || PARKING_STANDARD.widthM * zone.spots;
+        zone.lengthM = zone.lengthM || PARKING_STANDARD.lengthM;
+        zone.center = zone.center || calcGeoCenter(zone.geo) || { lat: map.getCenter().lat, lng: map.getCenter().lng };
+        zone.angle = typeof zone.angle === 'number' ? zone.angle : 0;
+        zone.opp = zone.opp || Math.round(zone.widthM * zone.lengthM);
+        rebuildParkingZone(zone, false);
+        lastParkingAngle = zone.angle || 0;
+      }
+      return zone;
+    });
+
+    if (activeTab.key === 'parkeren') showParkingHandles();
+
     renderTabs();
     updateBouwbaarDisplay();
   </script>
