@@ -195,6 +195,7 @@
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="js/state.js"></script>
   <script src="js/calculations.js"></script>
+  <script src="js/ruimtestaat-default.js"></script>
   <script>
     // ── Bootstrap ──────────────────────────────────────────────────────────
     const project = getCurrentProject();
@@ -452,7 +453,8 @@
         baseFontSize: 16, fontSize: 16, fontStyle: 'bold',
         fill: '#1F2937', align: 'center',
         width: c.radius * 2, x: -c.radius,
-        y: -c.radius + 22
+        y: -c.radius + 22,
+        wrap: 'none', ellipsis: true
       }));
 
       // Summary
@@ -461,7 +463,8 @@
         text: `${c.rooms.length} ruimtes · ${totalArea} m²`,
         baseFontSize: 11, fontSize: 11, fill: '#9CA3AF', align: 'center',
         width: c.radius * 2, x: -c.radius,
-        y: -c.radius + 40
+        y: -c.radius + 40,
+        wrap: 'none', ellipsis: true
       }));
 
       // Room groups
@@ -537,14 +540,16 @@
         baseFontSize: 12, fontSize: 12, fontStyle: 'bold',
         fill: '#1F2937', align: 'center',
         width: r.radius * 2, x: -r.radius,
-        y: r.oppervlak ? -11 : -5
+        y: r.oppervlak ? -11 : -5,
+        wrap: 'none', ellipsis: true
       }));
 
       if (r.oppervlak) {
         rg.add(new Konva.Text({
           text: r.oppervlak + ' m²',
           baseFontSize: 10, fontSize: 10, fill: '#9CA3AF', align: 'center',
-          width: r.radius * 2, x: -r.radius, y: 4
+          width: r.radius * 2, x: -r.radius, y: 4,
+          wrap: 'none', ellipsis: true
         }));
       }
 
@@ -812,6 +817,83 @@
     });
 
     // ── Init ───────────────────────────────────────────────────────────────
+    if (clusters.length === 0) {
+      // No saved state — build from the embedded default data
+      const jsonClusters = RUIMTESTAAT_DEFAULT.clusters || [];
+      clusters = jsonClusters
+        .filter(c => c.name)
+        .map(c => {
+          const rooms = [];
+          (c.rooms || []).forEach(r => {
+            const opp = parseFloat(r.oppervlakte);
+            if (!r.name || isNaN(opp) || opp <= 0) return;
+            const aantal = Math.max(1, parseInt(r.aantal) || 1);
+            for (let i = 0; i < aantal; i++) {
+              rooms.push({
+                id: uid(),
+                naam: r.name,
+                x: (Math.random() - 0.5) * 30,
+                y: (Math.random() - 0.5) * 30,
+                oppervlak: opp,
+                radius: getRoomRadius(opp)
+              });
+            }
+          });
+          return {
+            id: uid(),
+            naam: c.name,
+            x: undefined,
+            y: undefined,
+            is_begane_grond: !!c.verdiepingrestrictie,
+            rooms,
+            radius: getClusterRadius(rooms)
+          };
+        });
+
+      // Position clusters based on relations: hub at center,
+      // connected clusters around it, isolated ones further out.
+      (function applyRelationLayout() {
+        const cx = STAGE_W / 2, cy = STAGE_H / 2;
+
+        // Build name → relations map
+        const adj = {};
+        jsonClusters.forEach(jc => {
+          adj[jc.name] = (jc.relations || []).map(r => r.connection);
+        });
+
+        // Find hub (most outgoing connections)
+        let hubName = null, maxC = 0;
+        Object.entries(adj).forEach(([n, conns]) => {
+          if (conns.length > maxC) { maxC = conns.length; hubName = n; }
+        });
+
+        const placed = new Set();
+
+        // Hub → center
+        const hub = clusters.find(c => c.naam === hubName);
+        if (hub) { hub.x = cx; hub.y = cy; placed.add(hubName); }
+
+        // Hub's direct neighbors → evenly spaced ring
+        const neighborNames = adj[hubName] || [];
+        neighborNames.forEach((name, i) => {
+          const cl = clusters.find(c => c.naam === name);
+          if (!cl) return;
+          const angle = (i / neighborNames.length) * Math.PI * 2 - Math.PI / 2;
+          const dist  = hub ? (hub.radius + cl.radius) * 0.55 : 350;
+          cl.x = cx + Math.cos(angle) * dist;
+          cl.y = cy + Math.sin(angle) * dist;
+          placed.add(name);
+        });
+
+        // Remaining (no relations) → wide ring outside the main group
+        const remaining = clusters.filter(c => !placed.has(c.naam));
+        remaining.forEach((cl, i) => {
+          const angle = (i / Math.max(remaining.length, 1)) * Math.PI * 2 + Math.PI * 0.25;
+          cl.x = cx + Math.cos(angle) * STAGE_W * 0.55;
+          cl.y = cy + Math.sin(angle) * STAGE_H * 0.55;
+        });
+      })();
+    }
     rebuildAndRestartSims();
   </script>
   <script src="js/bot.js"></script>
