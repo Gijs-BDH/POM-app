@@ -19,7 +19,7 @@
 </head>
 <body class="min-h-screen bg-gray-50 p-8">
 
-  <div class="max-w-5xl mx-auto">
+  <div class="mx-auto">
     <a href="project-overzicht.html" class="breadcrumb">← Project overzicht</a>
     <h1 id="project-titel" class="page-title"></h1>
     <div id="step-indicator" class="mb-6"></div>
@@ -32,13 +32,13 @@
         <!-- Left: visual placeholder -->
         <div class="flex-1 flex flex-col gap-3">
           <h2 class="text-xl font-semibold text-gray-700">Kwaliteit beoordeling</h2>
-          <div id="visual-area" class="card p-4 flex flex-col gap-3" style="min-height:380px;">
+          <div id="visual-area" class="card p-4 flex flex-col gap-3">
             <!-- Alternates between 3D view and floor plan based on category -->
-            <div id="visual-3d" class="flex-1 rounded-xl overflow-hidden" style="min-height:200px;">              
-              <iframe src="walkthrough.html" class="w-full h-full object-cover"></iframe>
+            <div id="visual-3d" class="flex-1 rounded-xl overflow-hidden" >              
+              <iframe src="walkthrough.html" class="w-full h-full object-cover" style="height:700px;"></iframe>
             </div>
-            <div id="visual-plat" class="flex-1 hidden rounded-xl overflow-hidden" style="min-height:200px;">
-              <img src="src/assets/img_floorplans_narrow.png" class="w-full h-full object-cover"/>
+            <div id="visual-plat" class="flex-1 hidden rounded-xl overflow-hidden" >
+              <img src="src/assets/img_floorplans_narrow.png" style="max-height:700px;"/>
             </div>
             <div class="flex gap-2">
               <button onclick="setVisual('3d')"   id="vis-3d"   class="metric-pill active-vis" style="border-color:#7C3AED;color:#7C3AED;font-size:0.7rem;padding:0.2rem 0.5rem;border-radius:99px;border:1px solid #E5E7EB;cursor:pointer;">Walkthrough</button>
