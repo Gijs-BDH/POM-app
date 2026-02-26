@@ -34,23 +34,24 @@
         </p>
       </div>
       
-      <!-- Right: bebouwbaar gebied panel -->
+      <!-- Right: oppervlakte summary -->
       <div class="w-52 flex-shrink-0">
-        <div class="card p-4 flex flex-col gap-4 h-full" style="border: 2px solid #7C3AED;">
-          <h3 class="font-semibold text-sm text-gray-700">Bebouwbaar Gebied</h3>
-
-          <div class="flex items-center gap-2 text-sm text-gray-600">
-            <label class="text-sm text-gray-500 block mb-1">In de tekening is het bebouwbaar gebied te zien.</label>
-            
-
+        <div class="card p-4 flex flex-col gap-2 h-full" style="border: 2px solid #7C3AED;">
+          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Oppervlak</h3>
+          <div class="flex justify-between text-xs text-gray-500">
+            <span>Bouwvlak</span>
+            <span id="opp-summary-bouwvlak">— m²</span>
           </div>
+          <div class="flex justify-between text-xs" style="color:#F97316"><span>· Onbebouwd</span><span id="opp-summary-onbebouwdGebied">— m²</span></div>
+          <div class="flex justify-between text-xs" style="color:#EF4444"><span>· Uitsluiting</span><span id="opp-summary-uitsluiting">— m²</span></div>
+          <div class="flex justify-between text-xs" style="color:#3B82F6"><span>· Parkeren</span><span id="opp-summary-parkeren">— m²</span></div>
+          <div class="flex justify-between text-xs" style="color:#22C55E"><span>· Onderbouwplein</span><span id="opp-summary-onderbouwplein">— m²</span></div>
+          <div class="flex justify-between text-xs" style="color:#0EA5E9"><span>· Bovenbouwplein</span><span id="opp-summary-bovenbouwPlein">— m²</span></div>
+          <div class="flex justify-between text-xs" style="color:#A855F7"><span>· Fietsenstalling</span><span id="opp-summary-fietsenstalling">— m²</span></div>
+          <div class="flex justify-between text-xs" style="color:#F59E0B"><span>· Obstakels</span><span id="opp-summary-obstakels">— m²</span></div>
+          <div class="flex justify-between text-xs" style="color:#14B8A6"><span>· Placeholder</span><span id="opp-summary-placeholder">— m²</span></div>
 
-          <div class="flex items-center gap-2 text-sm text-gray-600">
-            <span>Oppervlak:</span>
-            <span> 3000 m2</span>
-          </div>
-
-          <div class="mt-auto flex flex-col gap-2">
+          <div class="mt-auto border-t border-gray-100 pt-2 flex flex-col gap-2">
             <button id="btn-walkthrough" onclick="toggleWalkthrough()" class="btn-secondary w-full text-sm py-2">Walkthrough</button>
             <button onclick="afronden()" class="btn-primary w-full text-sm py-2">volgende</button>
           </div>
@@ -103,7 +104,7 @@
 
     // Context layers from previous steps
     const CTX = [
-      { key: 'bouwbaarGebied', color: '#F97316' },
+      { key: 'onbebouwdGebied', color: '#F97316' },
       { key: 'uitsluiting',    color: '#EF4444' },
       { key: 'parkeren',       color: '#3B82F6' },
       { key: 'onderbouwplein', color: '#22C55E' },
@@ -114,16 +115,39 @@
     ];
     let hasBounds = false;
     CTX.forEach(c => {
-      const geo = variant[c.key] && variant[c.key].geo;
-      if (geo && geo.length >= 3) {
-        const poly = L.polygon(geo, { color: c.color, fillColor: c.color, fillOpacity: 0.2, weight: 1.5, dashArray: '4 4' }).addTo(map);
+      const data = variant[c.key];
+      if (!data) return;
+      const toRender = (data.zones && data.zones.length > 0)
+        ? data.zones.filter(z => z.geo && z.geo.length >= 3)
+        : (data.geo && data.geo.length >= 3 ? [{ geo: data.geo }] : []);
+      toRender.forEach(z => {
+        const poly = L.polygon(z.geo, { color: c.color, fillColor: c.color, fillOpacity: 0.2, weight: 1.5, dashArray: '4 4' }).addTo(map);
         if (!hasBounds && !savedView) { map.fitBounds(poly.getBounds(), { padding: [40, 40] }); hasBounds = true; }
-      }
+      });
     });
     if (!hasBounds && !savedView && variant.geo && variant.geo.length >= 3) {
       map.fitBounds(L.polygon(variant.geo).getBounds(), { padding: [40, 40] });
       hasBounds = true;
     }
+
+    function layerOpp(key) {
+      const data = variant[key];
+      if (!data) return 0;
+      if (data.zones && data.zones.length) return data.zones.reduce((sum, z) => sum + (z.opp || 0), 0);
+      return data.opp || 0;
+    }
+
+    function updateSummary() {
+      const bouwvlakOpp = (variant.bouwbaarGebied && variant.bouwbaarGebied.opp) || variant.opp || 0;
+      document.getElementById('opp-summary-bouwvlak').textContent = bouwvlakOpp ? bouwvlakOpp.toLocaleString('nl-NL') + ' m²' : '— m²';
+      ['onbebouwdGebied', 'uitsluiting', 'parkeren', 'onderbouwplein', 'bovenbouwPlein', 'fietsenstalling', 'obstakels', 'placeholder'].forEach(key => {
+        const el = document.getElementById('opp-summary-' + key);
+        if (!el) return;
+        const opp = layerOpp(key);
+        el.textContent = opp ? opp.toLocaleString('nl-NL') + ' m²' : '— m²';
+      });
+    }
+    updateSummary();
 
     // Tree markers
     const bomenLayer = L.layerGroup().addTo(map);

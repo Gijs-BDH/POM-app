@@ -253,6 +253,7 @@ function defaultGebied() {
   return {
     stedenbouwbeleid: { mode: 'simpel', goedgekeurd: false },
     bouwbaarGebied:   { geo: [], opp: 0 },
+    onbebouwdGebied:  { geo: [], opp: 0 },
     uitsluiting:      { geo: [], opp: 0 },
     parkeren:         { geo: [], opp: 0 },
     onderbouwplein:   { geo: [], opp: 0 },
