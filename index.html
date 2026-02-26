@@ -10,14 +10,53 @@
 <body class="flex items-center justify-center min-h-screen bg-gray-50">
 
   <!-- Welkom scherm -->
-  <div id="welkom" class="flex flex-col items-center gap-10 text-center">
-    <h1 class="text-5xl font-light text-gray-700 tracking-wide">Welkom</h1>
+  <div id="welkom" class="flex flex-col items-center gap-10 text-center max-w-2xl px-6">
+
+    <div class="flex flex-col items-center gap-3">
+      <div class="text-xs font-semibold tracking-widest text-violet-400 uppercase">Eenvoudig een goede scholenbouw uitvraag</div>
+      <h1 class="text-5xl font-light text-gray-700 tracking-wide">Ontwerp jouw schoolgebouw</h1>
+      <br/>
+
+      
+
+      <p class="text-base text-gray-400 leading-relaxed max-w-lg">
+        POM (Parametrisch Onderwijshuisvesting Model) begeleidt u stap voor stap door het planningsproces van een vastgoedontwikkeling —
+        van programma van eisen tot gebouwvarianten en haalbaarheidsberekeningen.
+      </p>
+    </div>
+
     <div class="flex gap-6">
-      <a href="nieuw-project-1.html">
+      <a href="project-stap-1-gegevens.html">
         <button class="btn-primary text-base px-8 py-3 rounded-xl">Nieuw Project</button>
       </a>
       <button onclick="showProjects()" class="btn-secondary text-base px-8 py-3 rounded-xl">Bestaand Project</button>
     </div>
+
+    <!-- Feature pills -->
+    <div class="flex gap-4 flex-wrap justify-center">
+      <div class="flex items-center gap-2 bg-white border border-gray-200 rounded-full px-4 py-2 text-xs text-gray-500 shadow-sm">
+        <span class="w-2 h-2 rounded-full bg-violet-400 flex-shrink-0"></span>
+        Programma van Eisen
+      </div>
+      <div class="flex items-center gap-2 bg-white border border-gray-200 rounded-full px-4 py-2 text-xs text-gray-500 shadow-sm">
+        <span class="w-2 h-2 rounded-full bg-orange-400 flex-shrink-0"></span>
+        Gebiedselectie &amp; kavels
+      </div>
+      <div class="flex items-center gap-2 bg-white border border-gray-200 rounded-full px-4 py-2 text-xs text-gray-500 shadow-sm">
+        <span class="w-2 h-2 rounded-full bg-teal-400 flex-shrink-0"></span>
+        Gebouwvarianten &amp; kwaliteit
+      </div>
+      <div class="flex items-center gap-2 bg-white border border-gray-200 rounded-full px-4 py-2 text-xs text-gray-500 shadow-sm">
+        <span class="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0"></span>
+        Haalbaarheidsanalyse
+      </div>
+      <div class="flex items-center gap-2 bg-white border border-gray-200 rounded-full px-4 py-2 text-xs text-gray-500 shadow-sm">
+        <span class="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0"></span>
+        Uitvraagdocument
+      </div>
+    </div>
+
+
   </div>
 
   <!-- Bestaande projecten overlay -->

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>POM – Ambitiekaders</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body class="min-h-screen bg-gray-50 p-8">
+
+  <div class="max-w-6xl mx-auto">
+    <a href="project-overzicht.html" class="text-xs text-gray-400 hover:text-violet-600">← Project overzicht</a>
+    <h1 id="project-titel" class="text-xl font-semibold text-gray-700 mt-1 mb-2"></h1>
+    <div id="step-indicator" class="mb-6"></div>
+
+    <div class="flex gap-6">
+      <div id="nav-panel" class="nav-panel"></div>
+
+      <div class="flex-1">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">Ambitiekaders</h2>
+
+        <div class="flex gap-6 items-start">
+
+          <!-- Radar chart card -->
+          <div class="card flex-1 max-w-lg">
+            <canvas id="radar-chart" style="max-height:380px;"></canvas>
+
+            <!-- Legend -->
+            <div class="flex gap-6 justify-center mt-4 text-xs text-gray-500">
+              <span class="flex items-center gap-1">
+                <span class="inline-block w-3 h-3 rounded-sm bg-blue-400 opacity-70"></span>Gestelde ambities
+              </span>
+              <span class="flex items-center gap-1">
+                <span class="inline-block w-3 h-3 rounded-sm bg-orange-400 opacity-70"></span>Gemiddelde ambities
+              </span>
+              <span class="flex items-center gap-1">
+                <span class="inline-block w-4 h-4 rounded-full border-2 border-gray-400"></span>Geselecteerde dimensie
+              </span>
+            </div>
+
+            <!-- Clickable dimension labels -->
+            <div class="flex flex-wrap gap-2 justify-center mt-4">
+              <button onclick="selectDimensie('gezondSchool')"     id="dim-gezondSchool"     class="dim-lbl">Gezonde school</button>
+              <button onclick="selectDimensie('duurzameSchool')"   id="dim-duurzameSchool"   class="dim-lbl">Duurzame school</button>
+              <!-- <button onclick="selectDimensie('adaptieveSchool')"  id="dim-adaptieveSchool"  class="dim-lbl">Adaptieve school</button> -->
+              <button onclick="selectDimensie('veiligSchool')"     id="dim-veiligSchool"     class="dim-lbl">Veilige school</button>
+              <button onclick="selectDimensie('digitaleSchool')"   id="dim-digitaleSchool"   class="dim-lbl">Digitale school</button>
+            </div>
+          </div>
+
+          <!-- Ambitieinstelling card -->
+          <div class="card w-96 flex-shrink-0">
+            <h3 id="ambitie-titel" class="text-base font-semibold text-gray-700 mb-4 capitalize"></h3>
+            <div id="ambitie-lijst" class="flex flex-col gap-3"></div>
+          </div>
+        </div>
+
+        <!-- Bottom row: dashboard + next -->
+        <div class="flex justify-between items-end mt-6 max-w-3xl">
+          <div id="dashboard-widget" class="dashboard-widget"></div>
+          <button onclick="volgendeStap()" class="btn-primary px-6 py-2">volgende stap</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .dim-lbl {
+      font-size:0.7rem; padding:0.25rem 0.6rem; border-radius:99px;
+      border:1.5px solid #D1D5DB; background:white; color:#6B7280;
+      cursor:pointer; transition:all 0.15s;
+    }
+    .dim-lbl.active { background:#7C3AED; color:white; border-color:#7C3AED; }
+    .dim-lbl:hover:not(.active) { border-color:#7C3AED; color:#7C3AED; }
+  </style>
+
+  <script src="js/state.js"></script>
+  <script src="js/calculations.js"></script>
+  <script>
+    const project = getCurrentProject();
+    if (!project) { window.location.href = 'index.html'; }
+    const pveV = getActivePveVariant();
+    if (!pveV) { window.location.href = 'pve-stap-1-invoer.html'; }
+
+    document.getElementById('project-titel').textContent = project.naam;
+    document.getElementById('step-indicator').innerHTML = renderStepIndicator(3, 5, ['pve-stap-2-voorzieningen.html', 'pve-stap-4-ruimte.html']);
+    document.getElementById('nav-panel').innerHTML = renderNavPanel('pve', project);
+    document.getElementById('dashboard-widget').innerHTML = renderDashboard(project);
+
+    // const DIMS = ['gezondSchool','duurzameSchool','adaptieveSchool','veiligSchool','digitaleSchool'];
+    const DIMS = ['gezondSchool','duurzameSchool','veiligSchool','digitaleSchool'];
+    const DIM_LABELS = {
+      gezondSchool:    'Gezonde school',
+      duurzameSchool:  'Duurzame school',
+      // adaptieveSchool: 'Adaptieve school',
+      veiligSchool:    'Veilige school',
+      digitaleSchool:  'Digitale school',
+    };
+
+    // Sub-items per dimension
+    const DIM_ITEMS = {
+      gezondSchool: [
+        { key:'geluid',              label:'Geluid',                        opts:['C','B','A'] },
+        { key:'temperatuur',         label:'Temperatuur',                   opts:['C','B','A'] },
+        { key:'licht',               label:'Licht',                        opts:['C','B','A'] },
+        { key:'lucht',               label:'Lucht',                        opts:['C','B','A'] },
+        { key:'kwaliteitsborging',   label:'Kwaliteitsborging',             opts:['C','B','A'] },
+        { key:'comfortNietOnderwijs',label:'Comfort niet-onderwijsruimten', opts:['BBL','C','B','A'] },
+      ],
+      duurzameSchool: [
+        { key:'energiegebruik',      label:'Energiegebruik',        opts:['BENG','C','B','A','ENG','E-neutraal'] },
+        { key:'materiaalgebruik',    label:'Gebruik van duurzame materialen',      opts:['15%','25%','35%'] },
+        { key:'meteriaalhergebruik',    label:'Herbruikbaarheid van materialen',      opts:['30%','40%','50%'] },
+        { key:'Subbemetering',        label:'Subbemetering',          opts:['Geen','Wel'] },
+        { key:'afvalwater hergebruik',        label:'afvalwater hergebruik',          opts:['Geen','Wel'] },
+        { key:'grijswatersysteem',        label:'grijswatersysteem',          opts:['Geen','Wel'] },
+        { key:'natuurInclusiviteit', label:'Groendak',  opts:['Geen','Wel'] },
+        { key:'klimaatAdaptie',      label:'Waterretentie systeem',       opts:['Geen','Wel'] },
+      ],
+      // adaptieveSchool: [
+      //   { key:'adaptievePlattegrond',label:'Adaptieve plattegrond', opts:['Goed','Beter','Beste'] },
+      //   { key:'adaptieveTechniek',   label:'Adaptieve techniek',    opts:['Goed','Beter','Beste'] },
+      // ],
+      veiligSchool: [
+        { key:'bouwkundigInbraak',    label:'Bouwkundige beveiligingsmaatregelen',    opts:['Geen','Wel'] },
+        { key:'technischInbraak',     label:'togangscontrole systeem',    opts:['Geen','Wel'] },
+        { key:'bouwkundigVandalisme', label:'Camera systeem', opts:['Geen','Wel'] },
+        { key:'technischVandalisme',  label:'vandalismebestendigheidmaatregelen binnen', opts:['Geen','Wel'] },
+      ],
+      digitaleSchool: [
+        { key:'technischeIntegratie', label:'Slim gebouw', opts:['Geen','Wel'] },
+      ],
+    };
+
+    let ambities = pveV ? pveV.ambities : defaultPve().ambities;
+    let selectedDim = 'gezondSchool';
+    const viewedDims = new Set(['gezondSchool']);
+    let volgendeStapCooldown = false;
+
+    // ── Chart ─────────────────────────────────────────────────────────────────
+    const ctx = document.getElementById('radar-chart').getContext('2d');
+    let radarChart;
+
+    function getScores() {
+      return DIMS.map(d => {
+        const items = DIM_ITEMS[d];
+        const vals  = items.map(it => POM_CALC.selectionScore(ambities[d][it.key]));
+        return Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
+      });
+    }
+
+    function buildChart() {
+      const scores = getScores();
+      const gemiddeld = DIMS.map(d => POM_CALC.GEMIDDELDE_AMBITIES[d]);
+
+      radarChart = new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: DIMS.map(d => DIM_LABELS[d]),
+          datasets: [
+            {
+              label: 'Gestelde ambities',
+              data: scores,
+              backgroundColor: 'rgba(96,165,250,0.3)',
+              borderColor: 'rgba(96,165,250,0.9)',
+              borderWidth: 2,
+              pointBackgroundColor: 'rgba(96,165,250,0.9)',
+              pointRadius: 4,
+            },
+            {
+              label: 'Gemiddelde ambities',
+              data: gemiddeld,
+              backgroundColor: 'rgba(251,146,60,0.25)',
+              borderColor: 'rgba(251,146,60,0.8)',
+              borderWidth: 2,
+              borderDash: [5,3],
+              pointBackgroundColor: 'rgba(251,146,60,0.8)',
+              pointRadius: 3,
+            }
+          ]
+        },
+        options: {
+          scales: { r: { min:0, max:100, ticks:{ stepSize:25, font:{size:9} }, pointLabels:{ font:{size:11} } } },
+          plugins: { legend:{ display:false } },
+          animation: { duration: 200 }
+        }
+      });
+    }
+
+    function updateChart() {
+      radarChart.data.datasets[0].data = getScores();
+      radarChart.update();
+    }
+
+    // ── Ambitieinstelling panel ───────────────────────────────────────────────
+    function selectDimensie(dim) {
+      selectedDim = dim;
+      viewedDims.add(dim);
+      document.querySelectorAll('.dim-lbl').forEach(el => el.classList.remove('active'));
+      document.getElementById('dim-' + dim).classList.add('active');
+      renderAmbitiePanel();
+    }
+
+    function renderAmbitiePanel() {
+      document.getElementById('ambitie-titel').textContent = DIM_LABELS[selectedDim];
+      const lijst = document.getElementById('ambitie-lijst');
+      lijst.innerHTML = '';
+
+      DIM_ITEMS[selectedDim].forEach(item => {
+        const current = ambities[selectedDim][item.key];
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2 text-sm';
+        row.innerHTML = `
+          <span class="text-gray-600 flex-1 text-sm">${item.label}</span>
+          <div class="flex gap-1">
+            ${item.opts.map(o => `
+              <button class="sel-btn ${current===o?'active':''}"
+                      onclick="setAmbitie('${selectedDim}','${item.key}','${o}',this)">
+                ${o}
+              </button>`).join('')}
+          </div>`;
+        lijst.appendChild(row);
+      });
+    }
+
+    function setAmbitie(dim, key, val, btn) {
+      ambities[dim][key] = val;
+      // Update button states in panel
+      btn.closest('.flex.gap-1').querySelectorAll('.sel-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      // Save and update chart
+      updateActivePveVariant({ ambities });
+      updateChart();
+    }
+
+    function volgendeStap() {
+      const otherDims = ['duurzameSchool', 'veiligSchool', 'digitaleSchool'];
+      const hasViewedOther = otherDims.some(d => viewedDims.has(d));
+
+      if (!hasViewedOther && !volgendeStapCooldown) {
+        triggerBot('ambitie_dimensies_niet_bekeken');
+        volgendeStapCooldown = true;
+        const btn = document.querySelector('button[onclick="volgendeStap()"]');
+        btn.disabled = true;
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+        setTimeout(() => {
+          volgendeStapCooldown = true; // keep flag set so next click goes through
+          btn.disabled = false;
+          btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }, 1200);
+        return;
+      }
+
+      window.location.href = 'pve-stap-5-planning.html';
+    }
+
+    // Init
+    buildChart();
+    selectDimensie('gezondSchool');
+  </script>
+  <script src="js/dashboard-detail.js"></script>
+  <script src="js/bot.js"></script>
+</body>
+</html>

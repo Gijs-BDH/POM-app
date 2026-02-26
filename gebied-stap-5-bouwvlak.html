@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>POM – Gebied Stap 5</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <style>
+    #map { height: 520px; border-radius: 0.75rem; }
+    #walkthrough-view { height: 520px; border-radius: 0.75rem; overflow: hidden; display: none; background: #f3f4f6; }
+    #walkthrough-view img { width: 100%; height: 100%; object-fit: contain; }
+  </style>
+</head>
+<body class="min-h-screen bg-gray-50 p-8">
+
+  <div class="max-w-7xl mx-auto">
+    <a href="project-overzicht.html" class="breadcrumb">← Project overzicht</a>
+    <h1 id="project-titel" class="page-title"></h1>
+    <div id="step-indicator" class="mb-6"></div>
+
+    <div class="flex gap-5">
+      <div id="nav-panel" class="nav-panel"></div>
+
+      <!-- Map -->
+      <div class="flex-1">
+        <div id="map"></div>
+        <div id="walkthrough-view">
+          <img src="src/assets/img_walkthrough.png" alt="Walkthrough"/>
+        </div>
+        <p id="map-hint" class="text-xs text-gray-400 mt-2 text-center hidden">
+          Klik op de kaart om bomen te plaatsen &nbsp;·&nbsp; dubbelklik om te stoppen
+        </p>
+      </div>
+      
+      <!-- Right: bebouwbaar gebied panel -->
+      <div class="w-52 flex-shrink-0">
+        <div class="card p-4 flex flex-col gap-4 h-full" style="border: 2px solid #7C3AED;">
+          <h3 class="font-semibold text-sm text-gray-700">Bebouwbaar Gebied</h3>
+
+          <div class="flex items-center gap-2 text-sm text-gray-600">
+            <label class="text-sm text-gray-500 block mb-1">In de tekening is het bebouwbaar gebied te zien.</label>
+            
+
+          </div>
+
+          <div class="flex items-center gap-2 text-sm text-gray-600">
+            <span>Oppervlak:</span>
+            <span> 3000 m2</span>
+          </div>
+
+          <div class="mt-auto flex flex-col gap-2">
+            <button id="btn-walkthrough" onclick="toggleWalkthrough()" class="btn-secondary w-full text-sm py-2">Walkthrough</button>
+            <button onclick="afronden()" class="btn-primary w-full text-sm py-2">volgende</button>
+          </div>
+        </div>
+
+
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/state.js"></script>
+  <script>
+    const params   = new URLSearchParams(window.location.search);
+    const gebiedId = params.get('id');
+    const project  = getCurrentProject();
+    if (!project) { window.location.href = 'index.html'; }
+
+    let variant = (project.gebiedVarianten || []).find(g => g.id === gebiedId);
+    if (!variant) { window.location.href = 'project-overzicht.html'; }
+
+    document.getElementById('project-titel').textContent = project.naam;
+    document.getElementById('step-indicator').innerHTML  = renderStepIndicator(5, 5, ['gebied-stap-1b-kavels.html', 'gebied-stap-2-stedenbouw.html?id=' + gebiedId, 'gebied-stap-3-programma.html?id=' + gebiedId, 'gebied-stap-4-bebouwing.html?id=' + gebiedId]);
+    document.getElementById('nav-panel').innerHTML       = renderNavPanel('gebied', project);
+
+    // Pre-fill aantal
+    // document.getElementById('bomen-aantal').value = (variant.bomen) || '';
+
+    // ── Map ───────────────────────────────────────────────────────────────────
+    const MAP_VIEW_KEY = 'pom_map_view_gebied_' + project.id;
+    const savedView = JSON.parse(localStorage.getItem(MAP_VIEW_KEY) || 'null');
+    const map = L.map('map').setView(
+      savedView ? [savedView.lat, savedView.lng] : [52.2, 5.3],
+      savedView ? savedView.zoom : 8
+    );
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19
+    }).addTo(map);
+    map.on('moveend', () => {
+      const c = map.getCenter();
+      localStorage.setItem(MAP_VIEW_KEY, JSON.stringify({ lat: c.lat, lng: c.lng, zoom: map.getZoom() }));
+    });
+
+    // Stap-1 reference kavel (read-only dashed boundary)
+    if (variant.geo && variant.geo.length >= 3) {
+      L.polygon(variant.geo, { color: '#7C3AED', fillColor: '#7C3AED',
+        fillOpacity: 0.06, weight: 2, dashArray: '6 4' }).addTo(map);
+    }
+
+    // Context layers from previous steps
+    const CTX = [
+      { key: 'bouwbaarGebied', color: '#F97316' },
+      { key: 'uitsluiting',    color: '#EF4444' },
+      { key: 'parkeren',       color: '#3B82F6' },
+      { key: 'onderbouwplein', color: '#22C55E' },
+      { key: 'bovenbouwPlein', color: '#0EA5E9' },
+      { key: 'fietsenstalling',color: '#A855F7' },
+      { key: 'obstakels',      color: '#F59E0B' },
+      { key: 'placeholder',    color: '#14B8A6' },
+    ];
+    let hasBounds = false;
+    CTX.forEach(c => {
+      const geo = variant[c.key] && variant[c.key].geo;
+      if (geo && geo.length >= 3) {
+        const poly = L.polygon(geo, { color: c.color, fillColor: c.color, fillOpacity: 0.2, weight: 1.5, dashArray: '4 4' }).addTo(map);
+        if (!hasBounds && !savedView) { map.fitBounds(poly.getBounds(), { padding: [40, 40] }); hasBounds = true; }
+      }
+    });
+    if (!hasBounds && !savedView && variant.geo && variant.geo.length >= 3) {
+      map.fitBounds(L.polygon(variant.geo).getBounds(), { padding: [40, 40] });
+      hasBounds = true;
+    }
+
+    // Tree markers
+    const bomenLayer = L.layerGroup().addTo(map);
+    let tekenMode = false;
+    let bomenCount = (variant.bomen && variant.bomen.aantal) || 0;
+
+    const boomIcon = L.divIcon({
+      className: '',
+      html: '<div style="font-size:1.4rem;line-height:1;">🌳</div>',
+      iconSize: [24, 24],
+      iconAnchor: [12, 12]
+    });
+
+    map.on('click', e => {
+      if (!tekenMode) return;
+      L.marker([e.latlng.lat, e.latlng.lng], { icon: boomIcon }).addTo(bomenLayer);
+      bomenCount++;
+      // document.getElementById('bomen-aantal').value = bomenCount;
+    });
+
+    map.on('dblclick', () => {
+      if (!tekenMode) return;
+      tekenMode = false;
+      map.getContainer().style.cursor = '';
+      document.getElementById('map-hint').classList.add('hidden');
+    });
+
+    function startTekenModus() {
+      tekenMode = true;
+      map.getContainer().style.cursor = 'crosshair';
+      document.getElementById('map-hint').classList.remove('hidden');
+    }
+
+    // function updateAantal() {
+    //   bomenCount = parseInt(document.getElementById('bomen-aantal').value) || 0;
+    // }
+
+    let walkthroughActive = false;
+    function toggleWalkthrough() {
+      walkthroughActive = !walkthroughActive;
+      document.getElementById('map').style.display            = walkthroughActive ? 'none' : '';
+      document.getElementById('walkthrough-view').style.display = walkthroughActive ? 'block' : 'none';
+      document.getElementById('btn-walkthrough').textContent  = walkthroughActive ? 'Kaart' : 'Walkthrough';
+    }
+
+    function afronden() {
+      // const aantal = parseInt(document.getElementById('bomen-aantal').value) || bomenCount;
+      // updateGebiedVariantById(gebiedId, { bomen: { aantal } });
+
+      // Also update the top-level opp from bouwbaarGebied
+      const fresh = getCurrentProject();
+      const v = (fresh.gebiedVarianten || []).find(g => g.id === gebiedId);
+      const opp = (v && v.bouwbaarGebied && v.bouwbaarGebied.opp) || 0;
+      if (opp > 0) updateGebiedVariantById(gebiedId, { opp });
+
+      window.location.href = 'project-overzicht.html';
+    }
+  </script>
+  <script src="js/bot.js"></script>
+</body>
+</html>

@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>POM – Vlekkenplan</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <style>
+    #stage-container {
+      width: 100%;
+      height: 420px;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      background: #F9FAFB;
+      cursor: default;
+      /* subtle dot grid */
+      background-image: radial-gradient(circle, #D1D5DB 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+    /* ensure Konva canvas fills container */
+    #stage-container canvas { display: block; }
+
+    /* ── Zoom controls overlay ─────────────────────────────────────────── */
+    #zoom-controls {
+      position: absolute;
+      bottom: 14px;
+      right: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      z-index: 20;
+    }
+    .zoom-btn {
+      width: 30px; height: 30px;
+      border-radius: 8px;
+      border: 1.5px solid #E5E7EB;
+      background: white;
+      color: #6B7280;
+      font-size: 1rem; line-height: 1;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+      user-select: none;
+    }
+    .zoom-btn:hover { border-color: #7C3AED; color: #7C3AED; background: #F5F3FF; }
+    .zoom-btn:active { background: #EDE9FE; }
+
+    /* zoom-level badge */
+    #zoom-level {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      font-size: 0.7rem;
+      color: #9CA3AF;
+      background: white;
+      border: 1.5px solid #E5E7EB;
+      border-radius: 6px;
+      padding: 3px 7px;
+      z-index: 20;
+      pointer-events: none;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+
+    /* canvas FAB: add cluster */
+    #canvas-add-fab {
+      position: absolute;
+      bottom: 14px;
+      left: 14px;
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      border: 2.5px solid #7C3AED;
+      background: white;
+      color: #7C3AED;
+      font-size: 1.4rem;
+      line-height: 1;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 8px rgba(124,58,237,0.18);
+      z-index: 20;
+      transition: background 0.15s, color 0.15s;
+      user-select: none;
+    }
+    #canvas-add-fab:hover { background: #7C3AED; color: white; }
+  </style>
+</head>
+<body class="min-h-screen bg-gray-50 p-8">
+
+  <div class="max-w-5xl mx-auto">
+    <a href="pve-stap-4-ruimte.html" class="text-xs text-gray-400 hover:text-violet-600">← Ruimte definities</a>
+    <h1 id="project-titel" class="page-title"></h1>
+    <div id="step-indicator" class="mb-6"></div>
+
+    <div class="flex gap-6">
+      <div id="nav-panel" class="nav-panel"></div>
+
+      <div class="flex-1 min-w-0">
+
+        <!-- Header row -->
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h2 class="text-base font-semibold text-gray-700">Ruimteschema – Vlekkenplan</h2>
+            <p class="text-xs text-gray-400 mt-0.5">Sleep clusters. Dubbelklik om te hernoemen. Klik <strong>+</strong> voor ruimtes.</p>
+          </div>
+          <button onclick="openNieuwCluster()" class="btn-primary text-sm px-4 py-2">+ Nieuw cluster</button>
+        </div>
+
+        <!-- Konva canvas card -->
+        <div class="card p-3">
+          <div style="position: relative;">
+            <div id="stage-container"></div>
+            <!-- Zoom controls -->
+            <div id="zoom-controls">
+              <button class="zoom-btn" onclick="zoomIn()" title="Inzoomen">+</button>
+              <button class="zoom-btn" onclick="resetZoom()" title="Zoom terugzetten" style="font-size:0.75rem;">⊡</button>
+              <button class="zoom-btn" onclick="zoomOut()" title="Uitzoomen">−</button>
+            </div>
+            <div id="zoom-level">100%</div>
+            <button id="canvas-add-fab" onclick="openNieuwCluster()" title="Nieuw cluster">+</button>
+          </div>
+        </div>
+
+        <!-- Bottom bar -->
+        <div class="flex items-center justify-between mt-4">
+          <div class="text-xs text-gray-400 flex items-center gap-4">
+            <span id="summary-clusters">0 clusters</span>
+            <span>·</span>
+            <span id="summary-rooms">0 ruimtes</span>
+            <span>·</span>
+            <span id="summary-area">0 m²</span>
+          </div>
+          <button onclick="volgendeStap()" class="btn-primary px-6 py-2">Volgende stap →</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal: Cluster ──────────────────────────────────────────────────── -->
+  <div id="modal-cluster" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+    <div class="card w-80 p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h3 id="modal-cluster-title" class="text-base font-semibold text-gray-700">Nieuw cluster</h3>
+        <button onclick="closeModal('modal-cluster')" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+      </div>
+      <div class="flex flex-col gap-3">
+        <div>
+          <label class="text-xs font-semibold text-gray-400 uppercase tracking-widest block mb-1.5">Naam</label>
+          <input id="cluster-naam" type="text" class="input-field" placeholder="Bijv. Onderbouw, Centraal…"/>
+        </div>
+        <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors select-none">
+          <input id="cluster-bg" type="checkbox" class="w-4 h-4 accent-violet-600"/>
+          <span class="text-sm text-gray-600 font-medium">Begane grond</span>
+        </label>
+      </div>
+      <div class="flex gap-2 mt-5">
+        <button onclick="closeModal('modal-cluster')" class="btn-ghost flex-1">Annuleer</button>
+        <button id="cluster-submit-btn" onclick="submitCluster()" class="btn-primary flex-1">Maak</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal: Ruimte ──────────────────────────────────────────────────── -->
+  <div id="modal-ruimte" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+    <div class="card w-80 p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h3 id="modal-ruimte-title" class="text-base font-semibold text-gray-700">Nieuwe ruimte</h3>
+        <button onclick="closeModal('modal-ruimte')" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+      </div>
+      <input type="hidden" id="ruimte-cluster-id"/>
+      <input type="hidden" id="ruimte-room-id"/>
+      <div class="flex flex-col gap-3">
+        <div>
+          <label class="text-xs font-semibold text-gray-400 uppercase tracking-widest block mb-1.5">Naam</label>
+          <input id="ruimte-naam" type="text" class="input-field" placeholder="Bijv. Lokaal, Aula…"/>
+        </div>
+        <div id="ruimte-aantal-row">
+          <label class="text-xs font-semibold text-gray-400 uppercase tracking-widest block mb-1.5">Aantal</label>
+          <input id="ruimte-aantal" type="number" min="1" class="input-field" value="1"/>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-gray-400 uppercase tracking-widest block mb-1.5">Oppervlak (m²)</label>
+          <input id="ruimte-opp" type="number" min="0" step="0.5" class="input-field" placeholder="10"/>
+        </div>
+      </div>
+      <div class="flex gap-2 mt-5">
+        <button onclick="closeModal('modal-ruimte')" class="btn-ghost flex-1">Annuleer</button>
+        <button id="ruimte-submit-btn" onclick="submitRuimte()" class="btn-primary flex-1">Maak</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/calculations.js"></script>
+  <script>
+    // ── Bootstrap ──────────────────────────────────────────────────────────
+    const project = getCurrentProject();
+    if (!project) window.location.href = 'index.html';
+    const pveV = getActivePveVariant();
+    if (!pveV) window.location.href = 'pve-stap-1-invoer.html';
+
+    document.getElementById('project-titel').textContent = project.naam;
+    document.getElementById('step-indicator').innerHTML = renderStepIndicator(2, 5, ['pve-stap-2-voorzieningen.html']);
+    document.getElementById('nav-panel').innerHTML = renderNavPanel('pve', project);
+
+    // ── Constants ──────────────────────────────────────────────────────────
+    const PRIMARY       = '#7C3AED';
+    const PRIMARY_LIGHT = '#EDE9FE';
+    const DANGER        = '#EF4444';
+    const DANGER_LIGHT  = '#FEE2E2';
+    const MIN_AREA      = 2;
+    const AREA_SCALE    = 12;
+    const STAGE_H       = 420;
+    const MIN_CLUSTER_R = 70;
+
+    function getRoomRadius(area) {
+      return Math.sqrt(Math.max(area || MIN_AREA, MIN_AREA)) * AREA_SCALE;
+    }
+    function getClusterRadius(rooms) {
+      if (!rooms || !rooms.length) return MIN_CLUSTER_R;
+      const total = rooms.reduce((a, r) => a + (r.oppervlak || 0), 0);
+      return Math.max(Math.sqrt(total * 2.7) * AREA_SCALE, MIN_CLUSTER_R);
+    }
+    function uid() {
+      return 'x' + Date.now().toString(36) + Math.random().toString(36).slice(2);
+    }
+
+    // ── State: cluster array ───────────────────────────────────────────────
+    let clusters = [];
+
+    // Load + migrate from saved state
+    const savedRS = pveV && pveV.ruimtestaat && pveV.ruimtestaat.data;
+    if (savedRS && savedRS.clusters && savedRS.clusters.length) {
+      clusters = savedRS.clusters.map((c, i) => {
+        if (!c.id) {
+          // Migrate old format {naam, ruimtes:[{naam,aantal}]} → new format
+          const rooms = (c.ruimtes || []).flatMap((r, ri) =>
+            Array.from({ length: r.aantal || 1 }, (_, n) => ({
+              id: uid(),
+              naam: r.naam || 'ruimte',
+              x: (Math.random() - 0.5) * 40,
+              y: (Math.random() - 0.5) * 40,
+              oppervlak: r.oppervlak || 10,
+              radius: getRoomRadius(r.oppervlak || 10)
+            }))
+          );
+          return {
+            id: uid(),
+            naam: c.naam || 'Cluster',
+            x: undefined, // D3 will place it
+            y: undefined,
+            is_begane_grond: false,
+            rooms,
+            radius: getClusterRadius(rooms)
+          };
+        }
+        return {
+          ...c,
+          rooms: (c.rooms || []).map(r => ({
+            ...r,
+            radius: r.radius || getRoomRadius(r.oppervlak)
+          }))
+        };
+      });
+    }
+
+    // ── Konva Stage ────────────────────────────────────────────────────────
+    const containerEl = document.getElementById('stage-container');
+    let STAGE_W = containerEl.offsetWidth || 800;
+
+    const stage = new Konva.Stage({
+      container: 'stage-container',
+      width: STAGE_W,
+      height: STAGE_H
+    });
+    const layer = new Konva.Layer();
+    stage.add(layer);
+
+    // ── Zoom & Pan ─────────────────────────────────────────────────────────
+    const MIN_ZOOM  = 0.25;
+    const MAX_ZOOM  = 4;
+    const ZOOM_STEP = 1.14;
+
+    function applyZoom(newScale, pivotX, pivotY) {
+      newScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newScale));
+      const oldScale = stage.scaleX();
+      const stageX   = stage.x();
+      const stageY   = stage.y();
+      // Point in un-scaled canvas space
+      const pointTo  = {
+        x: (pivotX - stageX) / oldScale,
+        y: (pivotY - stageY) / oldScale
+      };
+      stage.scale({ x: newScale, y: newScale });
+      stage.position({
+        x: pivotX - pointTo.x * newScale,
+        y: pivotY - pointTo.y * newScale
+      });
+      stage.batchDraw();
+      updateTextSizes(newScale);
+      document.getElementById('zoom-level').textContent = Math.round(newScale * 100) + '%';
+    }
+
+    function zoomIn()    { applyZoom(stage.scaleX() * ZOOM_STEP,       STAGE_W / 2, STAGE_H / 2); }
+    function zoomOut()   { applyZoom(stage.scaleX() / ZOOM_STEP,       STAGE_W / 2, STAGE_H / 2); }
+    function resetZoom() {
+      stage.scale({ x: 1, y: 1 });
+      stage.position({ x: 0, y: 0 });
+      stage.batchDraw();
+      updateTextSizes(1);
+      document.getElementById('zoom-level').textContent = '100%';
+    }
+
+    // Mouse-wheel zoom centred on cursor
+    containerEl.addEventListener('wheel', e => {
+      e.preventDefault();
+      const ptr = stage.getPointerPosition();
+      if (!ptr) return;
+      const dir = e.deltaY < 0 ? 1 : -1;
+      applyZoom(stage.scaleX() * (dir > 0 ? ZOOM_STEP : 1 / ZOOM_STEP), ptr.x, ptr.y);
+    }, { passive: false });
+
+    // Touch pinch-to-zoom
+    let lastPinchDist = 0;
+    containerEl.addEventListener('touchmove', e => {
+      if (e.touches.length !== 2) return;
+      e.preventDefault();
+      const [t1, t2] = e.touches;
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      if (lastPinchDist > 0) {
+        const rect    = containerEl.getBoundingClientRect();
+        const centerX = (t1.clientX + t2.clientX) / 2 - rect.left;
+        const centerY = (t1.clientY + t2.clientY) / 2 - rect.top;
+        applyZoom(stage.scaleX() * (dist / lastPinchDist), centerX, centerY);
+      }
+      lastPinchDist = dist;
+    }, { passive: false });
+    containerEl.addEventListener('touchend', () => { lastPinchDist = 0; });
+
+    // Stage pan (drag on empty canvas area; Konva gives priority to child drags)
+    stage.draggable(true);
+    stage.on('dragstart', e => {
+      if (e.target === stage) stage.container().style.cursor = 'grabbing';
+    });
+    stage.on('dragend', () => { stage.container().style.cursor = 'default'; });
+
+    // ── D3 Simulations ─────────────────────────────────────────────────────
+    let clusterSim = null;
+    const roomSims  = {};
+
+    function setupClusterSim() {
+      if (clusterSim) clusterSim.stop();
+      clusterSim = d3.forceSimulation(clusters)
+        .force('collide', d3.forceCollide().radius(d => d.radius + 24).iterations(3))
+        .force('charge',  d3.forceManyBody().strength(60))
+        .force('center',  d3.forceCenter(STAGE_W / 2, STAGE_H / 2).strength(0.005))
+        .alphaDecay(0.1)
+        .velocityDecay(0.6)
+        .on('tick', onClusterTick);
+    }
+
+    function setupRoomSim(cluster) {
+      if (roomSims[cluster.id]) roomSims[cluster.id].stop();
+      roomSims[cluster.id] = d3.forceSimulation(cluster.rooms)
+        .force('collide', d3.forceCollide().radius(d => d.radius + 5))
+        .force('center',  d3.forceCenter(0, 0).strength(0.1))
+        .alphaDecay(0.1)
+        .velocityDecay(0.5)
+        .on('tick', () => onRoomTick(cluster.id));
+    }
+
+    function onClusterTick() {
+      clusters.forEach(c => {
+        const g = layer.findOne('#' + c.id);
+        if (g) { g.x(c.x); g.y(c.y); }
+      });
+      layer.batchDraw();
+    }
+
+    function onRoomTick(clusterId) {
+      const c = clusters.find(cl => cl.id === clusterId);
+      if (!c) return;
+      c.rooms.forEach(r => {
+        // Constrain room inside cluster circle
+        const dist = Math.sqrt(r.x * r.x + r.y * r.y);
+        const maxDist = c.radius - r.radius - 8;
+        if (dist > maxDist && dist > 0) {
+          const ang = Math.atan2(r.y, r.x);
+          r.x = Math.cos(ang) * maxDist;
+          r.y = Math.sin(ang) * maxDist;
+        }
+        const rg = layer.findOne('#' + r.id);
+        if (rg) { rg.x(r.x); rg.y(r.y); }
+      });
+      layer.batchDraw();
+    }
+
+    // ── Build Konva nodes ──────────────────────────────────────────────────
+    function rebuildLayer() {
+      layer.destroyChildren();
+
+      // Per-cluster groups
+      clusters.forEach(c => layer.add(buildClusterGroup(c)));
+
+      layer.batchDraw();
+      updateTextSizes(stage.scaleX());
+      updateSummary();
+    }
+
+    // Keep label text at a constant visual size when zooming in;
+    // let it shrink naturally when zooming out (prevents overflow into circle).
+    function updateTextSizes(scale) {
+      layer.find('Text').forEach(node => {
+        const base = node.getAttr('baseFontSize');
+        if (base) node.fontSize(base / scale);
+      });
+      layer.batchDraw();
+    }
+
+    function buildClusterGroup(c) {
+      const g = new Konva.Group({ id: c.id, x: c.x || STAGE_W / 2, y: c.y || STAGE_H / 2, draggable: true });
+
+      // Main circle
+      const circ = new Konva.Circle({
+        radius: c.radius,
+        fill: 'white',
+        stroke: c.is_begane_grond ? PRIMARY : '#374151',
+        strokeWidth: c.is_begane_grond ? 3 : 1.5,
+        shadowBlur: 28,
+        shadowColor: 'rgba(0,0,0,0.07)',
+        shadowOpacity: 1
+      });
+      g.add(circ);
+
+      // BG badge
+      if (c.is_begane_grond) {
+        const badge = new Konva.Group({ y: -c.radius - 16 });
+        badge.add(new Konva.Circle({ radius: 12, fill: PRIMARY }));
+        badge.add(new Konva.Text({
+          text: 'BG', fontSize: 7, fontStyle: 'bold', fill: 'white',
+          align: 'center', width: 24, x: -12, y: -4
+        }));
+        g.add(badge);
+      }
+
+      // Cluster name
+      g.add(new Konva.Text({
+        text: c.naam,
+        baseFontSize: 16, fontSize: 16, fontStyle: 'bold',
+        fill: '#1F2937', align: 'center',
+        width: c.radius * 2, x: -c.radius,
+        y: -c.radius + 22
+      }));
+
+      // Summary
+      const totalArea = c.rooms.reduce((a, r) => a + (r.oppervlak || 0), 0);
+      g.add(new Konva.Text({
+        text: `${c.rooms.length} ruimtes · ${totalArea} m²`,
+        baseFontSize: 11, fontSize: 11, fill: '#9CA3AF', align: 'center',
+        width: c.radius * 2, x: -c.radius,
+        y: -c.radius + 40
+      }));
+
+      // Room groups
+      c.rooms.forEach(r => g.add(buildRoomGroup(c, r)));
+
+      // Add room button (bottom-right of cluster)
+      const ab = new Konva.Group({ x: c.radius * 0.64, y: c.radius * 0.64 });
+      ab.add(new Konva.Circle({
+        radius: 18, fill: 'white',
+        stroke: PRIMARY, strokeWidth: 2,
+        shadowBlur: 6, shadowColor: 'rgba(124,58,237,0.15)', shadowOpacity: 1
+      }));
+      ab.add(new Konva.Line({ points: [-8, 0, 8, 0], stroke: PRIMARY, strokeWidth: 2, lineCap: 'round' }));
+      ab.add(new Konva.Line({ points: [0, -8, 0, 8], stroke: PRIMARY, strokeWidth: 2, lineCap: 'round' }));
+      ab.on('click tap', (e) => { e.cancelBubble = true; openNieuweRuimte(c.id); });
+      ab.on('mouseenter', () => { stage.container().style.cursor = 'pointer'; });
+      ab.on('mouseleave', () => { stage.container().style.cursor = 'default'; });
+      g.add(ab);
+
+      // Delete cluster button (bottom-left of cluster)
+      const db = new Konva.Group({ x: -c.radius * 0.64, y: c.radius * 0.64 });
+      db.add(new Konva.Circle({ radius: 15, fill: DANGER_LIGHT }));
+      db.add(new Konva.Text({ text: '✕', fontSize: 11, fill: DANGER, x: -5, y: -6 }));
+      db.on('click tap', (e) => { e.cancelBubble = true; deleteCluster(c.id); });
+      db.on('mouseenter', () => { stage.container().style.cursor = 'pointer'; });
+      db.on('mouseleave', () => { stage.container().style.cursor = 'default'; });
+      g.add(db);
+
+      // Cluster drag — pin node while dragging so physics reacts
+      g.on('dragstart', () => {
+        const sn = clusterSim.nodes().find(n => n.id === c.id);
+        if (sn) { sn.fx = g.x(); sn.fy = g.y(); }
+      });
+      g.on('dragmove', () => {
+        const sn = clusterSim.nodes().find(n => n.id === c.id);
+        if (sn) { sn.fx = g.x(); sn.fy = g.y(); }
+        const cd = clusters.find(cl => cl.id === c.id);
+        if (cd) { cd.x = g.x(); cd.y = g.y(); }
+        clusterSim.alpha(0.1).restart();
+      });
+      g.on('dragend', () => {
+        const sn = clusterSim.nodes().find(n => n.id === c.id);
+        if (sn) { delete sn.fx; delete sn.fy; }
+        clusterSim.alpha(0.3).restart();
+      });
+      g.on('mouseenter', (e) => {
+        if (e.target === circ) stage.container().style.cursor = 'move';
+      });
+      g.on('mouseleave', () => { stage.container().style.cursor = 'default'; });
+      g.on('dblclick', (e) => {
+        if (e.target === circ) openEditCluster(c.id);
+      });
+
+      return g;
+    }
+
+    function buildRoomGroup(c, r) {
+      const rg = new Konva.Group({ id: r.id, x: r.x || 0, y: r.y || 0, draggable: true });
+
+      const roomCirc = new Konva.Circle({
+        radius: r.radius,
+        fill: 'white',
+        stroke: '#374151',
+        strokeWidth: 1.5,
+        shadowBlur: 8,
+        shadowColor: 'rgba(0,0,0,0.05)',
+        shadowOpacity: 1
+      });
+      rg.add(roomCirc);
+
+      rg.add(new Konva.Text({
+        text: r.naam,
+        baseFontSize: 12, fontSize: 12, fontStyle: 'bold',
+        fill: '#1F2937', align: 'center',
+        width: r.radius * 2, x: -r.radius,
+        y: r.oppervlak ? -11 : -5
+      }));
+
+      if (r.oppervlak) {
+        rg.add(new Konva.Text({
+          text: r.oppervlak + ' m²',
+          baseFontSize: 10, fontSize: 10, fill: '#9CA3AF', align: 'center',
+          width: r.radius * 2, x: -r.radius, y: 4
+        }));
+      }
+
+      // Delete room ×
+      const dr = new Konva.Group({ x: r.radius - 7, y: -r.radius + 7 });
+      dr.add(new Konva.Circle({ radius: 8, fill: DANGER_LIGHT }));
+      dr.add(new Konva.Text({ text: '×', fontSize: 12, fill: DANGER, x: -4, y: -7 }));
+      dr.on('click tap', (e) => { e.cancelBubble = true; deleteRoom(c.id, r.id); });
+      dr.on('mouseenter', () => { stage.container().style.cursor = 'pointer'; });
+      dr.on('mouseleave', () => { stage.container().style.cursor = 'default'; });
+      rg.add(dr);
+
+      // Room drag — constrained to parent cluster circle
+      rg.on('dragstart', (e) => { e.cancelBubble = true; });
+      rg.on('dragmove', (e) => {
+        e.cancelBubble = true;
+        const cData = clusters.find(cl => cl.id === c.id);
+        if (!cData) return;
+        const lx = rg.x(), ly = rg.y();
+        const dist = Math.sqrt(lx * lx + ly * ly);
+        const maxDist = cData.radius - r.radius - 6;
+        if (dist > maxDist && dist > 0) {
+          const ang = Math.atan2(ly, lx);
+          rg.x(Math.cos(ang) * maxDist);
+          rg.y(Math.sin(ang) * maxDist);
+        }
+        // Sync back to data
+        const rData = cData.rooms.find(rm => rm.id === r.id);
+        if (rData) { rData.x = rg.x(); rData.y = rg.y(); }
+        // Pin room in simulation
+        const sim = roomSims[c.id];
+        if (sim) {
+          const sn = sim.nodes().find(n => n.id === r.id);
+          if (sn) { sn.fx = rg.x(); sn.fy = rg.y(); }
+          sim.alpha(0.1).restart();
+        }
+      });
+      rg.on('dragend', (e) => {
+        e.cancelBubble = true;
+        const sim = roomSims[c.id];
+        if (sim) {
+          const sn = sim.nodes().find(n => n.id === r.id);
+          if (sn) { delete sn.fx; delete sn.fy; }
+          sim.alpha(0.3).restart();
+        }
+      });
+      rg.on('dblclick', (e) => { e.cancelBubble = true; openEditRoom(c.id, r.id); });
+      rg.on('mouseenter', () => { stage.container().style.cursor = 'move'; });
+      rg.on('mouseleave', () => { stage.container().style.cursor = 'default'; });
+
+      return rg;
+    }
+
+    // ── Rebuild + restart all sims ─────────────────────────────────────────
+    function rebuildAndRestartSims() {
+      if (clusterSim) clusterSim.stop();
+      Object.values(roomSims).forEach(s => s.stop());
+
+      rebuildLayer();
+
+      setupClusterSim();
+      clusters.forEach(c => setupRoomSim(c));
+
+      clusterSim.alpha(0.5).restart();
+      clusters.forEach(c => {
+        if (roomSims[c.id]) roomSims[c.id].alpha(0.5).restart();
+      });
+    }
+
+    // ── Summary bar ────────────────────────────────────────────────────────
+    function updateSummary() {
+      const nRooms = clusters.reduce((a, c) => a + c.rooms.length, 0);
+      const nArea  = clusters.reduce((a, c) => a + c.rooms.reduce((b, r) => b + (r.oppervlak || 0), 0), 0);
+      document.getElementById('summary-clusters').textContent = clusters.length + ' cluster' + (clusters.length !== 1 ? 's' : '');
+      document.getElementById('summary-rooms').textContent    = nRooms + ' ruimte' + (nRooms !== 1 ? 's' : '');
+      document.getElementById('summary-area').textContent     = nArea + ' m²';
+    }
+
+    // ── Modal state ────────────────────────────────────────────────────────
+    let modalState = null;
+
+    function openNieuwCluster() {
+      modalState = { type: 'cluster' };
+      document.getElementById('modal-cluster-title').textContent = 'Nieuw cluster';
+      document.getElementById('cluster-submit-btn').textContent  = 'Maak';
+      document.getElementById('cluster-naam').value = '';
+      document.getElementById('cluster-bg').checked = false;
+      document.getElementById('modal-cluster').classList.remove('hidden');
+      setTimeout(() => document.getElementById('cluster-naam').focus(), 50);
+    }
+
+    function openEditCluster(clusterId) {
+      const c = clusters.find(cl => cl.id === clusterId);
+      if (!c) return;
+      modalState = { type: 'cluster', editId: clusterId };
+      document.getElementById('modal-cluster-title').textContent = 'Cluster bewerken';
+      document.getElementById('cluster-submit-btn').textContent  = 'Opslaan';
+      document.getElementById('cluster-naam').value = c.naam;
+      document.getElementById('cluster-bg').checked = !!c.is_begane_grond;
+      document.getElementById('modal-cluster').classList.remove('hidden');
+      setTimeout(() => document.getElementById('cluster-naam').focus(), 50);
+    }
+
+    function submitCluster() {
+      const naam = document.getElementById('cluster-naam').value.trim() || 'Cluster';
+      const isBG = document.getElementById('cluster-bg').checked;
+
+      if (modalState && modalState.editId) {
+        const c = clusters.find(cl => cl.id === modalState.editId);
+        if (c) { c.naam = naam; c.is_begane_grond = isBG; }
+      } else {
+        clusters.push({
+          id: uid(), naam,
+          x: STAGE_W / 2 + (Math.random() - 0.5) * 200,
+          y: STAGE_H / 2 + (Math.random() - 0.5) * 200,
+          radius: MIN_CLUSTER_R,
+          is_begane_grond: isBG,
+          rooms: []
+        });
+      }
+      closeModal('modal-cluster');
+      rebuildAndRestartSims();
+      saveData();
+    }
+
+    function openNieuweRuimte(clusterId) {
+      modalState = { type: 'room', clusterId };
+      document.getElementById('modal-ruimte-title').textContent = 'Nieuwe ruimte';
+      document.getElementById('ruimte-submit-btn').textContent  = 'Maak';
+      document.getElementById('ruimte-cluster-id').value = clusterId;
+      document.getElementById('ruimte-room-id').value    = '';
+      document.getElementById('ruimte-naam').value       = 'lokaal';
+      document.getElementById('ruimte-aantal').value     = '1';
+      document.getElementById('ruimte-opp').value        = '';
+      document.getElementById('ruimte-aantal-row').style.display = '';
+      document.getElementById('modal-ruimte').classList.remove('hidden');
+      setTimeout(() => document.getElementById('ruimte-naam').focus(), 50);
+    }
+
+    function openEditRoom(clusterId, roomId) {
+      const c = clusters.find(cl => cl.id === clusterId);
+      const r = c && c.rooms.find(rm => rm.id === roomId);
+      if (!r) return;
+      modalState = { type: 'room', clusterId, editId: roomId };
+      document.getElementById('modal-ruimte-title').textContent = 'Ruimte bewerken';
+      document.getElementById('ruimte-submit-btn').textContent  = 'Opslaan';
+      document.getElementById('ruimte-cluster-id').value = clusterId;
+      document.getElementById('ruimte-room-id').value    = roomId;
+      document.getElementById('ruimte-naam').value       = r.naam;
+      document.getElementById('ruimte-opp').value        = r.oppervlak || '';
+      document.getElementById('ruimte-aantal-row').style.display = 'none';
+      document.getElementById('modal-ruimte').classList.remove('hidden');
+      setTimeout(() => document.getElementById('ruimte-naam').focus(), 50);
+    }
+
+    function submitRuimte() {
+      const clusterId = document.getElementById('ruimte-cluster-id').value;
+      const naam  = document.getElementById('ruimte-naam').value.trim() || 'ruimte';
+      const opp   = parseFloat(document.getElementById('ruimte-opp').value) || 10;
+      const radius = getRoomRadius(opp);
+      const c = clusters.find(cl => cl.id === clusterId);
+      if (!c) { closeModal('modal-ruimte'); return; }
+
+      if (modalState && modalState.editId) {
+        const r = c.rooms.find(rm => rm.id === modalState.editId);
+        if (r) { r.naam = naam; r.oppervlak = opp; r.radius = radius; }
+      } else {
+        const aantal = Math.max(1, parseInt(document.getElementById('ruimte-aantal').value) || 1);
+        for (let i = 0; i < aantal; i++) {
+          c.rooms.push({
+            id: uid(), naam,
+            x: (Math.random() - 0.5) * 30,
+            y: (Math.random() - 0.5) * 30,
+            oppervlak: opp, radius
+          });
+        }
+      }
+      c.radius = getClusterRadius(c.rooms);
+
+      closeModal('modal-ruimte');
+      rebuildAndRestartSims();
+      saveData();
+    }
+
+    function deleteCluster(clusterId) {
+      pomConfirm('Cluster verwijderen?', 'Alle ruimtes in dit cluster worden ook verwijderd.', () => {
+        if (roomSims[clusterId]) { roomSims[clusterId].stop(); delete roomSims[clusterId]; }
+        clusters = clusters.filter(c => c.id !== clusterId);
+        rebuildAndRestartSims();
+        saveData();
+      });
+    }
+
+    function deleteRoom(clusterId, roomId) {
+      const c = clusters.find(cl => cl.id === clusterId);
+      if (!c) return;
+      c.rooms = c.rooms.filter(r => r.id !== roomId);
+      c.radius = getClusterRadius(c.rooms);
+      rebuildAndRestartSims();
+      saveData();
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+      modalState = null;
+    }
+
+    // ── Save ───────────────────────────────────────────────────────────────
+    function saveData() {
+      const currentPveV = getActivePveVariant();
+      const rs = (currentPveV && currentPveV.ruimtestaat) || { type: 'handmatig', vragen: {} };
+      // Include legacy ruimtes[] for backward compat with other pages
+      const saveableClusters = clusters.map(c => ({
+        ...c,
+        ruimtes: c.rooms.map(r => ({ naam: r.naam, aantal: 1, oppervlak: r.oppervlak }))
+      }));
+      updateActivePveVariant({ ruimtestaat: { ...rs, data: { clusters: saveableClusters } } });
+      updateSummary();
+    }
+
+    function volgendeStap() {
+      saveData();
+      window.location.href = 'pve-stap-3-ambities.html';
+    }
+
+    // ── Custom confirm dialog ──────────────────────────────────────────────
+    function pomConfirm(title, body, onConfirm) {
+      const overlay = document.createElement('div');
+      overlay.className = 'pom-confirm-overlay';
+      overlay.innerHTML = `
+        <div class="pom-confirm-dialog">
+          <div class="pom-confirm-title">${title}</div>
+          <p class="pom-confirm-body">${body}</p>
+          <div class="pom-confirm-actions">
+            <button class="btn-ghost" onclick="this.closest('.pom-confirm-overlay').remove()">Annuleer</button>
+            <button class="btn-danger" id="pom-confirm-ok">Verwijder</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      overlay.querySelector('#pom-confirm-ok').onclick = () => { overlay.remove(); onConfirm(); };
+    }
+
+    // ── Keyboard shortcuts ─────────────────────────────────────────────────
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        closeModal('modal-cluster');
+        closeModal('modal-ruimte');
+      }
+      if (e.key === 'Enter') {
+        const mc = document.getElementById('modal-cluster');
+        const mr = document.getElementById('modal-ruimte');
+        if (!mc.classList.contains('hidden')) submitCluster();
+        else if (!mr.classList.contains('hidden')) submitRuimte();
+      }
+    });
+
+    // ── Window resize ──────────────────────────────────────────────────────
+    window.addEventListener('resize', () => {
+      STAGE_W = containerEl.offsetWidth;
+      stage.width(STAGE_W);
+      if (clusterSim) {
+        clusterSim.force('center', d3.forceCenter(STAGE_W / 2, STAGE_H / 2).strength(0.005));
+        clusterSim.alpha(0.2).restart();
+      }
+    });
+
+    // ── Init ───────────────────────────────────────────────────────────────
+    rebuildAndRestartSims();
+  </script>
+  <script src="js/bot.js"></script>
+</body>
+</html>

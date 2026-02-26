@@ -30,6 +30,11 @@
       border: 1.5px solid #E5E7EB; border-radius: 1rem;
       overflow: hidden; background: white; flex: 1; min-width: 0;
     }
+    .eigenschap-tag {
+      display: inline-block; font-size: 0.62rem; font-weight: 600;
+      padding: 0.1rem 0.4rem; border-radius: 99px;
+      background: #F5F3FF; color: #7C3AED; border: 1px solid #DDD6FE;
+    }
     .cmp-row {
       display: grid; align-items: center;
       border-bottom: 1px solid #F3F4F6; padding: 0.4rem 1rem;
@@ -81,9 +86,9 @@
             <button class="view-pill"        id="pill-kosten"    onclick="setView('kosten')">kosten</button>
           </div>
           <div class="flex flex-col gap-2 items-end">
-            <button class="dl-btn">Download besluit-document</button>
+            <a href="besluit-rapport.html" class="dl-btn">Download besluit-document</a>
             <button class="dl-btn">Download aanvraag documenten</button>
-            <a href="nieuw-project-3.html" class="dl-btn text-center">Wegingen instellen</a>
+            <a href="project-stap-3-beoordeling.html" class="dl-btn text-center">Wegingen instellen</a>
           </div>
         </div>
 
@@ -113,6 +118,7 @@
 
   <script src="js/state.js"></script>
   <script src="js/calculations.js"></script>
+  <script src="js/gebouw-opties.js"></script>
   <script>
     const project = getCurrentProject();
     if (!project) { window.location.href = 'index.html'; }
@@ -122,16 +128,7 @@
     const variants = project.gebouwVarianten || [];
     const CARD_W = 220; // fixed column width (px) per option — drives cards + table alignment
 
-    // Same catalog as gebouw-stap-2
-    const OPTIES = [
-      { id: 'compact',  naam: 'Compact type',   bvo: 2500, bouwkosten: 6250000, tco: 13750000 },
-      { id: 'lineair',  naam: 'Lineair type',   bvo: 2800, bouwkosten: 7000000, tco: 15400000 },
-      { id: 'cluster',  naam: 'Cluster type',   bvo: 3100, bouwkosten: 7750000, tco: 17050000 },
-      { id: 'hof',      naam: 'Hof type',       bvo: 3400, bouwkosten: 8500000, tco: 18700000 },
-      { id: 'toren',    naam: 'Toren type',     bvo: 2200, bouwkosten: 5500000, tco: 12100000 },
-      { id: 'paviljon', naam: 'Paviljoen type', bvo: 3600, bouwkosten: 9000000, tco: 19800000 },
-    ];
-    const getOptie = id => OPTIES.find(o => o.id === id) || null;
+    const getOptie = id => window.getGebouwOptie(id);
 
     // ── Score helpers ───────────────────────────────────────────────────────────
     function scoreColor(s) {
@@ -165,7 +162,7 @@
     function renderCards() {
       const el = document.getElementById('optie-cards');
       if (!variants.length) {
-        el.innerHTML = '<p class="text-sm text-gray-400 py-2">Nog geen gebouw varianten. Ga naar <a href="gebouw.html" class="text-violet-600 hover:underline">Gebouw</a> om te beginnen.</p>';
+        el.innerHTML = '<p class="text-sm text-gray-400 py-2">Nog geen gebouw varianten. Ga naar <a href="gebouw-stap-1-uitgangspunten.html" class="text-violet-600 hover:underline">Gebouw</a> om te beginnen.</p>';
         return;
       }
       const n = variants.length;
@@ -174,31 +171,43 @@
       // Spacer matching the 14rem label column
       el.appendChild(document.createElement('div'));
       variants.forEach((v, i) => {
-        const optie = getOptie(v.geselecteerdeOptie);
+        const optie        = getOptie(v.geselecteerdeOptie);
+        const linkedPve    = (project.pveVarianten    || []).find(p => p.id === v.pveId);
+        const linkedGebied = (project.gebiedVarianten || []).find(g => g.id === v.gebiedId);
+        const missingLinks = !linkedPve || !linkedGebied;
+
         const card = document.createElement('div');
         card.className = 'optie-card-besluit';
         card.style.margin = '0 0.5rem';
+        if (missingLinks) card.style.cssText += 'opacity:0.45;filter:grayscale(0.4);';
+
         card.innerHTML = `
           <div class="p-3 border-b border-gray-100 flex items-start justify-between gap-1">
             <div class="min-w-0">
-              <div class="text-xs text-gray-400">Gebouw Optie #${i + 1}</div>
-              <div class="text-sm font-semibold text-gray-700 truncate">${v.naam}</div>
+              <div class="text-xs text-gray-400">${v.naam}</div>
             </div>
           </div>
-          <div class="p-3">
-            <div class="rounded-lg overflow-hidden" style="height:80px;">
-              <img src="src/assets/img_massstudy.png" class="w-full h-full object-cover"/>
+          <div class="p-2">
+            <div class="rounded-lg overflow-hidden" style="height:80px;background:#F5F3FF;">
+              ${optie ? `<img src="${optie.afbeelding}" class="w-full h-full object-cover"
+                             onerror="this.parentElement.style.background='#F5F3FF';this.style.display='none'"/>` : ''}
             </div>
           </div>
-          <div class="px-3 pb-3">
-            <a href="gebouw-stap-3.html?id=${v.id}"
-               class="btn-primary block w-full text-center"
-               style="font-size:0.72rem;padding:0.35rem 0.5rem;">[zie details]</a>
+          <div class="px-3 pb-2 flex flex-col gap-1" style="font-size:0.72rem;color:#9CA3AF;">
+            <div>PVE: <span style="color:${linkedPve ? '#374151' : '#F87171'};font-weight:500">${linkedPve ? linkedPve.naam : 'niet gekoppeld'}</span></div>
+            <div>Gebied: <span style="color:${linkedGebied ? '#374151' : '#F87171'};font-weight:500">${linkedGebied ? linkedGebied.naam : 'niet gekoppeld'}</span></div>
           </div>
           ${optie ? `
-          <div class="px-3 pb-3 pt-2 border-t border-gray-100 flex gap-1 flex-wrap">
+          <div class="px-3 pb-2 flex gap-1 flex-wrap">
             <span class="metric-pill">${POM_CALC.formatM2(optie.bvo)}</span>
             <span class="metric-pill" style="color:#7C3AED;border-color:#DDD6FE;">${POM_CALC.formatEuro(optie.bouwkosten)}</span>
+          </div>` : `
+          <div class="px-3 pb-2 text-xs text-gray-300">Nog geen optie geselecteerd</div>`}
+          ${!missingLinks && optie ? `
+          <div class="px-3 pb-3">
+            <a href="gebouw-stap-2-opties.html?id=${v.id}&detail=1"
+               class="btn-primary block w-full text-center"
+               style="font-size:0.72rem;padding:0.35rem 0.5rem;">Bekijk details →</a>
           </div>` : ''}`;
         // Delete button (appended so it can reference the variant id via closure)
         const delBtn = document.createElement('button');
@@ -398,6 +407,44 @@
     renderCards();
     renderKwalTable();
     renderKostTable();
+
+    // ── Bot check (called after bot.js loads) ───────────────────────────────────
+    function checkBesluitVarianten() {
+      if (variants.length > 2) return;
+
+      const pveVarianten    = project.pveVarianten    || [];
+      const gebiedVarianten = project.gebiedVarianten || [];
+
+      const usedPveIds    = new Set(variants.map(v => v.pveId).filter(Boolean));
+      const usedGebiedIds = new Set(variants.map(v => v.gebiedId).filter(Boolean));
+
+      const missingPve    = pveVarianten.filter(p => !usedPveIds.has(p.id));
+      const missingGebied = gebiedVarianten.filter(g => !usedGebiedIds.has(g.id));
+
+      if (missingPve.length === 0 && missingGebied.length === 0) {
+        triggerBot('besluit_weinig_varianten_alle_gekoppeld');
+        return;
+      }
+
+      // Build a specific message naming the unrepresented variants
+      const parts = [];
+      if (missingPve.length)
+        parts.push('PVE-variant' + (missingPve.length > 1 ? 'en' : '') + ': ' +
+          missingPve.map(p => '\u201C' + p.naam + '\u201D').join(', '));
+      if (missingGebied.length)
+        parts.push('gebiedsvariant' + (missingGebied.length > 1 ? 'en' : '') + ': ' +
+          missingGebied.map(g => '\u201C' + g.naam + '\u201D').join(', '));
+
+      const n   = variants.length;
+      const nStr = n === 0 ? 'geen' : String(n);
+      const msg = `Je hebt momenteel ${nStr} gebouwvariant${n === 1 ? '' : 'en'}. ` +
+        `De volgende varianten zijn nog niet meegenomen in een gebouwoptie: ${parts.join(' en ')}. ` +
+        `Overweeg een nieuwe gebouwvariant aan te maken om alle scenario\u2019s te vergelijken.`;
+
+      triggerBotMessage(msg, [{ id: 'go_to_gebouw_nieuw', label: 'Maak nieuwe variant' }]);
+    }
   </script>
+  <script src="js/bot.js"></script>
+  <script>checkBesluitVarianten();</script>
 </body>
 </html>

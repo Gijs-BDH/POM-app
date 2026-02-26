@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>POM – Project Planning</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body class="min-h-screen bg-gray-50 p-8">
+
+  <div class="max-w-5xl mx-auto">
+    <a href="project-overzicht.html" class="text-xs text-gray-400 hover:text-violet-600">← Project overzicht</a>
+    <h1 id="project-titel" class="text-xl font-semibold text-gray-700 mt-1 mb-2"></h1>
+    <div id="step-indicator" class="mb-6"></div>
+
+    <div class="flex gap-6">
+      <div id="nav-panel" class="nav-panel"></div>
+
+      <div class="flex-1">
+        <h2 class="text-2xl font-semibold text-gray-700 mb-8 text-center">Planning</h2>
+
+        <!-- Timeline -->
+        <div class="flex items-start justify-center gap-0 mb-8">
+          <div class="planning-step">
+            <div class="planning-pill active">Definitie fase | POM</div>
+            <div class="text-xs text-gray-400 mt-1">7 weken</div>
+          </div>
+          <div class="flex items-center pt-4 px-1"><span class="text-gray-300 text-lg">→</span></div>
+          <div class="planning-step">
+            <div class="planning-pill">Uitvraag</div>
+            <div class="text-xs text-gray-400 mt-1">2 maand</div>
+          </div>
+          <div class="flex items-center pt-4 px-1"><span class="text-gray-300 text-lg">→</span></div>
+          <div class="planning-step">
+            <div class="planning-pill">Uitwerking</div>
+            <div class="text-xs text-gray-400 mt-1">1 jaar</div>
+          </div>
+          <div class="flex items-center pt-4 px-1"><span class="text-gray-300 text-lg">→</span></div>
+          <div class="planning-step">
+            <div class="planning-pill">Oplevering</div>
+            <div class="text-xs text-gray-400 mt-1">2 jaar</div>
+          </div>
+          <div class="flex items-center pt-4 px-1"><span class="text-gray-300 text-lg">→</span></div>
+          <div class="planning-step">
+            <div class="planning-pill">Gebruik</div>
+            <div id="gebruiksduur" class="text-xs text-gray-400 mt-1">50 jaar</div>
+          </div>
+        </div>
+
+        <!-- Placeholder note -->
+        <div class="info-card max-w-lg mx-auto mb-8 text-center">
+          <p class="font-semibold text-violet-700 mb-1">Planning – Placeholder</p>
+          De detailplanning per fase wordt in een latere versie ingevuld.
+          U kunt nu de PVE afronden en doorgaan naar de volgende stap.
+        </div>
+
+        <!-- Summary overview -->
+        <!-- <div class="card max-w-lg mx-auto mb-6">
+          <h3 class="font-semibold text-gray-700 mb-3">PVE Samenvatting</h3>
+          <div id="samenvatting" class="text-sm text-gray-600 flex flex-col gap-1"></div>
+        </div> -->
+
+        <!-- Bottom: dashboard + finalize -->
+        <div class="flex justify-between items-end max-w-lg mx-auto">
+          <div id="dashboard-widget" class="dashboard-widget"></div>
+          <button onclick="rondPVEAf()" class="btn-primary px-6 py-3 text-base">Rond PVE af</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/state.js"></script>
+  <script src="js/calculations.js"></script>
+  <script>
+    const project = getCurrentProject();
+    if (!project) { window.location.href = 'index.html'; }
+    const pveV = getActivePveVariant();
+    if (!pveV) { window.location.href = 'pve-stap-1-invoer.html'; }
+
+    document.getElementById('project-titel').textContent = project.naam;
+    document.getElementById('step-indicator').innerHTML = renderStepIndicator(4, 5, ['pve-stap-2-voorzieningen.html', 'pve-stap-4-ruimte.html', 'pve-stap-3-ambities.html']);
+    document.getElementById('nav-panel').innerHTML = renderNavPanel('pve', project);
+    document.getElementById('dashboard-widget').innerHTML = renderDashboard(project);
+
+    // Build summary
+    const sam = document.getElementById('samenvatting');
+    if (pveV) {
+      const V = pveV.voorzieningen;
+      const { totalBVO, bouwkosten, tco } = POM_CALC.calcDashboard(V);
+
+      const rows = [];
+      if (V.primairOnderwijs.actief) {
+        const bvo = V.primairOnderwijs.bvoHandmatig || POM_CALC.calcPrimairBVO(V.primairOnderwijs.leerlingen);
+        rows.push(`Primair onderwijs: ${V.primairOnderwijs.leerlingen} leerlingen – ${POM_CALC.formatM2(bvo)}`);
+      }
+      if (V.voorschoolseOpvang.actief) {
+        const bvo = V.voorschoolseOpvang.bvoHandmatig || POM_CALC.calcVoorschoolseBVO(V.voorschoolseOpvang.groepen);
+        rows.push(`Voorschoolse opvang: ${V.voorschoolseOpvang.groepen} groepen – ${POM_CALC.formatM2(bvo)}`);
+      }
+      if (V.sport.actief) {
+        const bvo = V.sport.bvoHandmatig || POM_CALC.calcSportBVO(V.sport.type);
+        rows.push(`Sport: ${V.sport.type} – ${POM_CALC.formatM2(bvo)}`);
+      }
+      rows.push('');
+      rows.push(`Totaal BVO: ${POM_CALC.formatM2(totalBVO)}`);
+      rows.push(`Bouwkosten (indicatief): ${POM_CALC.formatEuro(bouwkosten)}`);
+      rows.push(`TCO 50 jaar (indicatief): ${POM_CALC.formatEuro(tco)}`);
+
+      rows.forEach(r => {
+        const el = document.createElement('div');
+        el.className = r ? '' : 'mt-2 pt-2 border-t border-gray-100';
+        el.textContent = r;
+        sam.appendChild(el);
+      });
+    }
+
+    function rondPVEAf() {
+      updateActivePveVariant({ planning: { afgerond: true, datum: new Date().toISOString() } });
+      window.location.href = 'project-overzicht.html';
+    }
+  </script>
+  <script src="js/dashboard-detail.js"></script>
+  <script src="js/bot.js"></script>
+</body>
+</html>

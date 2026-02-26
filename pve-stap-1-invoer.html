@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>POM – PVE Uploaden</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body class="min-h-screen bg-gray-50 p-8">
+
+  <div class="max-w-5xl mx-auto">
+    <!-- Breadcrumb -->
+    <a href="project-overzicht.html" class="text-xs text-gray-400 hover:text-violet-600">← Project overzicht</a>
+    <h1 id="project-titel" class="text-xl font-semibold text-gray-700 mt-1 mb-6"></h1>
+
+    <div class="flex gap-6">
+      <!-- Nav panel -->
+      <div id="nav-panel" class="nav-panel"></div>
+
+      <!-- Content -->
+      <div class="flex-1 flex flex-col gap-6">
+
+        <!-- Upload card -->
+        <div class="card max-w-2xl">
+          <h2 class="text-2xl font-bold text-gray-800 mb-1">Upload PVE</h2>
+          <p class="text-sm text-gray-500 mb-6">
+            Upload hier het Programma van Eisen (PVE) document met de gewenste specificaties voor de school.
+          </p>
+
+          <!-- Drop zone + Briefbuilder side by side -->
+          <div class="flex gap-4 mb-4 items-stretch">
+
+            <!-- <div class="upload-zone flex-1" onclick="document.getElementById('file-input').click()">
+              <div class="flex flex-col items-center gap-3">
+                <div class="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center">
+                  <svg class="w-7 h-7 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                  </svg>
+                </div>
+                <p class="font-semibold text-gray-700">Klik om bestanden te uploaden</p>
+                <p class="text-xs text-gray-400">PDF, DOC, DOCX of TXT (meerdere bestanden mogelijk)</p>
+              </div>
+            </div> -->
+
+            <div class="upload-zone flex-1" onclick="koppelBriefbuilder()">
+              <div class="flex flex-col items-center gap-3">
+                <div class="w-14 h-14 rounded-full bg-violet-50 flex items-center justify-center">
+                  <svg class="w-7 h-7 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                  </svg>
+                </div>
+                <p class="font-semibold text-gray-700">Koppel Briefbuilder</p>
+                <p class="text-xs text-gray-400">Importeer PVE vanuit Briefbuilder</p>
+              </div>
+            </div>
+
+          </div>
+          <input id="file-input" type="file" class="hidden" multiple accept=".pdf,.doc,.docx,.txt"
+                 onchange="onFileSelect(this)"/>
+          <div id="file-list" class="text-xs text-gray-500 mb-4"></div>
+
+          <!-- Divider -->
+          <div class="flex items-center gap-4 mb-4">
+            <div class="flex-1 border-t border-gray-200"></div>
+            <span class="text-sm text-gray-400">of</span>
+            <div class="flex-1 border-t border-gray-200"></div>
+          </div>
+
+          <!-- PVE tool button -->
+          <button onclick="gebruikPveTool()" class="btn-secondary w-full py-3 text-base">
+            Gebruik PVE tool
+          </button>
+
+          <!-- Note -->
+          <div class="mt-4 bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700">
+            <strong>Let op:</strong> Het PVE document bevat belangrijke specificaties zoals ruimtelijke eisen,
+            kwaliteitsnormen en technische vereisten. Deze informatie helpt ons bij het maken van passende ontwerpkeuzes.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="js/state.js"></script>
+  <script src="js/calculations.js"></script>
+  <script>
+    const project = getCurrentProject();
+    if (!project) { window.location.href = 'index.html'; }
+
+    document.getElementById('project-titel').textContent = project.naam;
+    document.getElementById('nav-panel').innerHTML = renderNavPanel('pve', project);
+
+    function onFileSelect(input) {
+      const names = Array.from(input.files).map(f => f.name).join(', ');
+      document.getElementById('file-list').textContent = names
+        ? '📎 ' + names + ' (upload simulatie – niet functioneel)'
+        : '';
+    }
+
+    const BB_PROJECTS = [
+      { id: 'pr1', naam: 'PR1 placeholdername' },
+      { id: 'pr2', naam: 'PR2 placeholder name' },
+      { id: 'pr3', naam: 'PR3 placeholder name' },
+    ];
+
+    function koppelBriefbuilder() {
+      let overlay = document.getElementById('bb-overlay');
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'bb-overlay';
+        overlay.className = 'pom-confirm-overlay';
+        overlay.style.display = 'none';
+        overlay.innerHTML = `
+          <div class="pom-confirm-dialog" style="max-width:26rem;width:90%;">
+
+            <!-- Login panel -->
+            <div id="bb-login-panel">
+              <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.25rem;">
+                <div style="width:28px;height:28px;border-radius:6px;background:#7C3AED;display:flex;align-items:center;justify-content:center;">
+                  <svg width="16" height="16" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                  </svg>
+                </div>
+                <div class="pom-confirm-title" style="margin:0;">Inloggen bij Briefbuilder</div>
+              </div>
+              <p class="pom-confirm-body">Log in met uw Briefbuilder account om een project te koppelen.</p>
+              <div style="display:flex;flex-direction:column;gap:0.5rem;margin-top:0.25rem;">
+                <input id="bb-email"    type="email"    class="input-field" placeholder="E-mailadres"/>
+                <input id="bb-password" type="password" class="input-field" placeholder="Wachtwoord"/>
+              </div>
+              <div class="pom-confirm-actions" style="margin-top:1rem;">
+                <button id="bb-cancel" class="btn-ghost">Annuleren</button>
+                <button id="bb-login"  class="btn-primary">Inloggen</button>
+              </div>
+            </div>
+
+            <!-- Project select panel -->
+            <div id="bb-project-panel" style="display:none;">
+              <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.25rem;">
+                <div style="width:28px;height:28px;border-radius:6px;background:#7C3AED;display:flex;align-items:center;justify-content:center;">
+                  <svg width="16" height="16" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                  </svg>
+                </div>
+                <div class="pom-confirm-title" style="margin:0;">Kies een Briefbuilder project</div>
+              </div>
+              <p class="pom-confirm-body">Selecteer het project dat u wilt koppelen aan dit POM project.</p>
+              <div id="bb-project-list" style="display:flex;flex-direction:column;gap:0.4rem;margin-top:0.5rem;"></div>
+              <div class="pom-confirm-actions" style="margin-top:1rem;">
+                <button id="bb-back"   class="btn-ghost">← Terug</button>
+                <button id="bb-koppel" class="btn-primary" disabled>Koppelen</button>
+              </div>
+            </div>
+
+          </div>`;
+        document.body.appendChild(overlay);
+
+        // Close on backdrop click
+        overlay.addEventListener('click', e => { if (e.target === overlay) sluitBbOverlay(); });
+
+        // Cancel
+        document.getElementById('bb-cancel').onclick = sluitBbOverlay;
+
+        // Login → projects
+        document.getElementById('bb-login').onclick = () => {
+          const email = document.getElementById('bb-email').value.trim();
+          const pass  = document.getElementById('bb-password').value.trim();
+          if (!email || !pass) {
+            ['bb-email','bb-password'].forEach(id => {
+              const el = document.getElementById(id);
+              el.classList.toggle('border-red-400', !el.value.trim());
+            });
+            return;
+          }
+          // Simulate login → show project panel
+          document.getElementById('bb-login-panel').style.display   = 'none';
+          document.getElementById('bb-project-panel').style.display = '';
+          renderBbProjects();
+        };
+        ['bb-email','bb-password'].forEach(id =>
+          document.getElementById(id).addEventListener('input', function() { this.classList.remove('border-red-400'); })
+        );
+
+        // Back → login
+        document.getElementById('bb-back').onclick = () => {
+          document.getElementById('bb-project-panel').style.display = 'none';
+          document.getElementById('bb-login-panel').style.display   = '';
+          selectedBbProject = null;
+          document.getElementById('bb-koppel').disabled = true;
+        };
+
+        // Koppelen
+        document.getElementById('bb-koppel').onclick = () => {
+          sluitBbOverlay();
+          const variant = createNewPveVariant();
+          if (variant) updatePveVariantById(variant.id, { naam: selectedBbProject });
+          window.location.href = 'project-overzicht.html';
+        };
+      }
+
+      // Reset to login panel each open
+      selectedBbProject = null;
+      document.getElementById('bb-login-panel').style.display   = '';
+      document.getElementById('bb-project-panel').style.display = 'none';
+      document.getElementById('bb-email').value    = '';
+      document.getElementById('bb-password').value = '';
+      document.getElementById('bb-koppel').disabled = true;
+      overlay.style.display = 'flex';
+      setTimeout(() => document.getElementById('bb-email').focus(), 50);
+    }
+
+    let selectedBbProject = null;
+
+    function renderBbProjects() {
+      const list = document.getElementById('bb-project-list');
+      list.innerHTML = '';
+      BB_PROJECTS.forEach(p => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:0.6rem;padding:0.55rem 0.75rem;border:1.5px solid #E5E7EB;border-radius:0.6rem;cursor:pointer;transition:border-color 0.12s,background 0.12s;';
+        row.innerHTML = `
+          <div id="bb-radio-${p.id}" style="width:16px;height:16px;border-radius:50%;border:2px solid #D1D5DB;flex-shrink:0;transition:border-color 0.12s,background 0.12s;"></div>
+          <span style="font-size:0.85rem;color:#374151;">${p.naam}</span>`;
+        row.addEventListener('click', () => {
+          selectedBbProject = p.naam;
+          document.getElementById('bb-koppel').disabled = false;
+          document.querySelectorAll('#bb-project-list > div').forEach(r => {
+            r.style.borderColor = '#E5E7EB';
+            r.style.background  = '';
+          });
+          document.querySelectorAll('[id^="bb-radio-"]').forEach(r => {
+            r.style.borderColor = '#D1D5DB';
+            r.style.background  = '';
+          });
+          row.style.borderColor = '#7C3AED';
+          row.style.background  = '#F5F3FF';
+          document.getElementById('bb-radio-' + p.id).style.borderColor = '#7C3AED';
+          document.getElementById('bb-radio-' + p.id).style.background  = '#7C3AED';
+        });
+        list.appendChild(row);
+      });
+    }
+
+    function sluitBbOverlay() {
+      document.getElementById('bb-overlay').style.display = 'none';
+    }
+
+    function gebruikPveTool() {
+      createNewPveVariant();
+      window.location.href = 'pve-stap-1b-gebruiksduur.html';
+    }
+  </script>
+  <script src="js/bot.js"></script>
+</body>
+</html>

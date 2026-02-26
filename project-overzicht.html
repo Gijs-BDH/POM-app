@@ -30,7 +30,7 @@
     <div class="overview-grid">
 
       <!-- ── PVE row ── -->
-      <a id="nav-pve" href="pve-stap-1.html" class="nav-btn">
+      <a id="nav-pve" href="pve-stap-1-invoer.html" class="nav-btn">
         <span>PVE</span>
         <span id="pve-overzicht-sub" class="hidden" style="font-size:0.65rem;font-weight:400;opacity:0.85;margin-top:0.2rem">overzicht →</span>
       </a>
@@ -45,7 +45,7 @@
         <div id="next-pve" class="card max-w-xl hidden">
           <div class="flex gap-4 items-start">
             <div id="next-pve-text" class="text-sm text-gray-500 flex-1"></div>
-            <button onclick="gaNaarVolgendeStap('pve-stap-1.html')"
+            <button onclick="gaNaarVolgendeStap('pve-stap-1-invoer.html')"
                     class="btn-primary px-6 py-4 text-base rounded-xl min-w-[120px]">Volgende<br>Stap</button>
           </div>
         </div>
@@ -55,7 +55,7 @@
       <div id="dashboard-widget" class="dashboard-widget"></div>
 
       <!-- ── Gebied row ── -->
-      <a id="nav-gebied" href="gebied.html" class="nav-btn">
+      <a id="nav-gebied" href="gebied-stap-1b-kavels.html" class="nav-btn">
         <span>Gebied</span>
         <span id="gebied-overzicht-sub" class="hidden" style="font-size:0.65rem;font-weight:400;opacity:0.85;margin-top:0.2rem">overzicht →</span>
       </a>
@@ -70,31 +70,28 @@
         <div id="next-gebied" class="card max-w-xl hidden">
           <div class="flex gap-4 items-start">
             <div id="next-gebied-text" class="text-sm text-gray-500 flex-1"></div>
-            <button onclick="gaNaarVolgendeStap('nieuw-gebied.html')"
+            <button onclick="gaNaarVolgendeStap('gebied-stap-1-locatie.html')"
                     class="btn-primary px-6 py-4 text-base rounded-xl min-w-[120px]">Volgende<br>Stap</button>
           </div>
         </div>
       </div>
 
       <!-- ── Gebouw row ── -->
-      <a id="nav-gebouw" href="gebouw.html" class="nav-btn">
+      <a id="nav-gebouw" href="gebouw-stap-1-uitgangspunten.html" class="nav-btn">
         <span>Gebouw</span>
         <span id="gebouw-overzicht-sub" class="hidden" style="font-size:0.65rem;font-weight:400;opacity:0.85;margin-top:0.2rem">overzicht →</span>
       </a>
 
       <div class="flex flex-col gap-4">
-        <!-- Gebouw summary card + add button (shown when variants exist) -->
+        <!-- Gebouw variant cards (shown when variants exist) -->
         <div id="gebouw-summary-section" class="hidden">
-          <div class="flex gap-4 items-stretch">
-            <div id="gebouw-summary-card" class="pve-variant-card"></div>
-            <a href="gebouw.html" class="pve-new-btn" title="Nieuw gebouw">+</a>
-          </div>
+          <div id="gebouw-variant-row" class="flex gap-4 items-stretch"></div>
         </div>
 
         <div id="next-gebouw" class="card max-w-xl hidden">
           <div class="flex gap-4 items-start">
             <div id="next-gebouw-text" class="text-sm text-gray-500 flex-1"></div>
-            <button onclick="gaNaarVolgendeStap('gebouw.html')"
+            <button onclick="gaNaarVolgendeStap('gebouw-stap-1-uitgangspunten.html')"
                     class="btn-primary px-6 py-4 text-base rounded-xl min-w-[120px]">Volgende<br>Stap</button>
           </div>
         </div>
@@ -119,6 +116,7 @@
 
   <script src="js/state.js"></script>
   <script src="js/calculations.js"></script>
+  <script src="js/gebouw-opties.js"></script>
   <script>
     const project = getCurrentProject();
     if (!project) { window.location.href = 'index.html'; }
@@ -167,7 +165,7 @@
       navGebied.style.alignItems = 'flex-start';
       document.getElementById('gebied-overzicht-sub').classList.remove('hidden');
     } else {
-      document.getElementById('nav-gebied').href = 'nieuw-gebied.html';
+      document.getElementById('nav-gebied').href = 'gebied-stap-1-locatie.html';
     }
 
     // Gebouw nav: link to overview when variants exist
@@ -205,19 +203,10 @@
       renderPVEVariants();
     }
 
-    // Gebouw summary card
+    // Gebouw variant cards
     if (hasGebouw) {
       document.getElementById('gebouw-summary-section').classList.remove('hidden');
-      const n = project.gebouwVarianten.length;
-      const card = document.getElementById('gebouw-summary-card');
-      card.innerHTML = `
-        <div class="pve-variant-card-header">${n} gebouw optie${n !== 1 ? 's' : ''}</div>
-        <div class="pve-variant-card-body">
-          <div class="text-xs text-gray-500">
-            ${project.gebouwVarianten.map(gv => `<div class="truncate">· ${gv.naam}</div>`).join('')}
-          </div>
-        </div>`;
-      card.addEventListener('click', () => window.location.href = 'besluit.html');
+      renderGebouwVariants();
     }
 
     // Gebied variants (content column of Gebied row)
@@ -293,7 +282,65 @@
       addBtn.className = 'pve-new-btn';
       addBtn.title = 'Nieuw gebied';
       addBtn.textContent = '+';
-      addBtn.addEventListener('click', () => window.location.href = 'nieuw-gebied.html');
+      addBtn.addEventListener('click', () => window.location.href = 'gebied-stap-1-locatie.html');
+      row.appendChild(addBtn);
+    }
+
+    function renderGebouwVariants() {
+      const row = document.getElementById('gebouw-variant-row');
+      row.innerHTML = '';
+      project.gebouwVarianten.forEach(v => {
+        const optie       = window.getGebouwOptie ? window.getGebouwOptie(v.geselecteerdeOptie) : null;
+        const linkedPve   = (project.pveVarianten    || []).find(p => p.id === v.pveId);
+        const linkedGebied = (project.gebiedVarianten || []).find(g => g.id === v.gebiedId);
+
+        const missingLinks = !linkedPve || !linkedGebied;
+
+        const card = document.createElement('div');
+        card.className = 'pve-variant-card';
+        if (missingLinks) {
+          card.style.cssText += 'opacity:0.45;filter:grayscale(0.4);cursor:default;';
+        }
+
+        card.innerHTML = `
+          ${optie ? `
+          <div style="height:80px;overflow:hidden;">
+            <img src="${optie.afbeelding}" style="width:100%;height:100%;object-fit:cover;"
+                 onerror="this.parentElement.style.background='#F5F3FF';this.style.display='none'"/>
+          </div>` : ''}
+          <div class="pve-variant-card-header">${v.naam}</div>
+          <div class="pve-variant-card-body">
+            <div class="text-xs text-gray-500 flex flex-col gap-1">
+              <div>PVE: <span class="font-medium ${linkedPve ? 'text-gray-700' : 'text-red-400'}">${linkedPve ? linkedPve.naam : 'niet gekoppeld'}</span></div>
+              <div>Gebied: <span class="font-medium ${linkedGebied ? 'text-gray-700' : 'text-red-400'}">${linkedGebied ? linkedGebied.naam : 'niet gekoppeld'}</span></div>
+              ${optie ? `
+              <div>Kosten: <span class="font-medium text-violet-600">${POM_CALC.formatEuro(optie.bouwkosten)}</span></div>
+              <div>TCO: <span class="font-medium text-green-600">${POM_CALC.formatEuro(optie.tco)}</span></div>` : ''}
+            </div>
+          </div>`;
+
+        if (!missingLinks && optie) {
+          card.addEventListener('click', () => window.location.href = 'gebouw-stap-2-opties.html?id=' + v.id + '&detail=1');
+        }
+        card.appendChild(makeCopyBtn(() => {
+          const copy = { ...JSON.parse(JSON.stringify(v)), id: crypto.randomUUID(), naam: v.naam + ' (kopie)' };
+          const p = getCurrentProject();
+          saveProject({ ...p, gebouwVarianten: [...p.gebouwVarianten, copy] });
+          window.location.href = 'gebouw-stap-2-opties.html?id=' + copy.id;
+        }));
+        card.appendChild(makeDeleteBtn(() => {
+          const p = getCurrentProject();
+          updateCurrentProject({ gebouwVarianten: p.gebouwVarianten.filter(gv => gv.id !== v.id) });
+          window.location.reload();
+        }));
+        row.appendChild(card);
+      });
+
+      const addBtn = document.createElement('a');
+      addBtn.href = 'gebouw-stap-1-uitgangspunten.html';
+      addBtn.className = 'pve-new-btn';
+      addBtn.title = 'Nieuw gebouw';
+      addBtn.textContent = '+';
       row.appendChild(addBtn);
     }
 
@@ -329,7 +376,7 @@
         row.appendChild(card);
       });
       const addBtn = document.createElement('a');
-      addBtn.href = 'pve-stap-1.html';
+      addBtn.href = 'pve-stap-1-invoer.html';
       addBtn.className = 'pve-new-btn';
       addBtn.title = 'Nieuwe PVE variant';
       addBtn.textContent = '+';
@@ -338,5 +385,7 @@
 
   </script>
 
+  <script src="js/dashboard-detail.js"></script>
+  <script src="js/bot.js"></script>
 </body>
 </html>
