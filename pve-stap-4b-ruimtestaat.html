@@ -151,11 +151,11 @@
           </button>
           <div class="card step-card" id="card-1" style="padding:1.5rem">
             <div class="step-card-title">Schoolbouw</div>
-            <div class="qrow">
+            <!-- <div class="qrow">
               <label class="qlabel">Aantal leerlingen</label>
               <input type="number" id="q-leerlingen" class="num-field"
                      value="240" min="0" max="2000" oninput="recalculate()"/>
-            </div>
+            </div> -->
             <div class="qrow">
               <label class="qlabel">Onderwijsclusters</label>
               <select id="q-clusters" class="select-field" style="max-width:230px" onchange="onClustersChange()">
@@ -438,7 +438,8 @@
 
     // ── Lokalen hint ──────────────────────────────────────────────────────────
     function updateLokalenHint() {
-      const leerlingen = parseInt(document.getElementById('q-leerlingen').value) || 0;
+      const po         = (pveV && pveV.voorzieningen && pveV.voorzieningen.primairOnderwijs) || {};
+      const leerlingen = po.leerlingen || 0;
       const extra      = parseInt(document.getElementById('q-extra-lokalen').value) || 0;
       const base       = Math.ceil(leerlingen / 30);
       const total      = base + extra;
@@ -483,8 +484,11 @@
 
     // ── Collect inputs ────────────────────────────────────────────────────────
     function getInputs() {
+      const po = (pveV && pveV.voorzieningen && pveV.voorzieningen.primairOnderwijs) || {};
+      const budget = window.POM_CALC ? window.POM_CALC.calcTotalBVO((pveV && pveV.voorzieningen) || {}) : 0;
       return {
-        leerlingen:                parseInt(document.getElementById('q-leerlingen').value)        || 0,
+        leerlingen:                po.leerlingen || 0,
+        budget,
         fte:                       parseInt(document.getElementById('q-fte').value)               || 0,
         clusters:                  document.getElementById('q-clusters').value,
         extraLokalen:              parseInt(document.getElementById('q-extra-lokalen').value)      || 0,
@@ -588,7 +592,6 @@
 
       if (saved) {
         const n = (id, val) => { if (val !== undefined && val !== null) document.getElementById(id).value = val; };
-        n('q-leerlingen',         saved.leerlingen);
         n('q-fte',                saved.fte);
         n('q-clusters',           saved.clusters);
         n('q-extra-lokalen',      saved.extraLokalen);

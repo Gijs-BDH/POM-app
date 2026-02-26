@@ -16,8 +16,6 @@ const RUIMTESTAAT_CALC = (function () {
 
   // Fixed constants from "Rekenmodel (achterkant)" sheet
   const K = {
-    bvoPerStudent:    5.03,   // C4 — m² BVO per leerling
-    bvoBase:          200,    // C5 — vaste voet BVO
     studentsPerClass: 30,     // C11
     m2PerStudent:     2,      // C17 — m² per leerling in lokaal/leerplein
     m2PerTeacher:     4,      // C18 — m² per leerkracht
@@ -61,8 +59,8 @@ const RUIMTESTAAT_CALC = (function () {
     const ehboKolfRust    = inp.ehboKolfRust              || 'Ja';
     const spreekruimteFormaat = inp.spreekruimteFormaat   || 'Basis (12m²)';
 
-    // ── Space budget (C7/C8/I4–I8) ──────────────────────────────────────────
-    const budget    = leerlingen * K.bvoPerStudent + K.bvoBase;       // C7
+    // ── Space budget (from pve-stap-2 via POM_CALC.calcTotalBVO) ─────────────
+    const budget    = parseInt(inp.budget) || 0;
     const netBudget = budget * (1 - K.trafficPct - K.constructionPct); // I8
 
     // ── Classrooms (C11–C20) ─────────────────────────────────────────────────
