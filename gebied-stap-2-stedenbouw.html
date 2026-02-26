@@ -122,7 +122,8 @@
     if (variant.geo && variant.geo.length >= 3) {
       L.polygon(variant.geo, { color: '#7C3AED', fillColor: '#7C3AED',
         fillOpacity: 0.06, weight: 2, dashArray: '6 4' }).addTo(map);
-    }
+      }
+      
 
     // Layer group per tab + one for the computed buildable area
     const layers = {};
