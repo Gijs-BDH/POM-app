@@ -105,14 +105,14 @@
     }
 
     // ── Existing variants as context ─────────────────────────────────────────
-    (project.gebiedVarianten || []).forEach(g => {
-      const geo = (g.bouwbaarGebied && g.bouwbaarGebied.geo && g.bouwbaarGebied.geo.length >= 3)
-                  ? g.bouwbaarGebied.geo
-                  : (g.geo && g.geo.length >= 3 ? g.geo : null);
-      if (geo) {
-        L.polygon(geo, { color: '#F97316', fillColor: '#F97316', fillOpacity: 0.2, weight: 1.5 }).addTo(map);
-      }
-    });
+    //(project.gebiedVarianten || []).forEach(g => {
+    //  const geo = (g.bouwbaarGebied && g.bouwbaarGebied.geo && g.bouwbaarGebied.geo.length >= 3)
+    //              ? g.bouwbaarGebied.geo
+    //              : (g.geo && g.geo.length >= 3 ? g.geo : null);
+    //  if (geo) {
+    //    L.polygon(geo, { color: '#F97316', fillColor: '#F97316', fillOpacity: 0.2, weight: 1.5 }).addTo(map);
+    //  }
+    //});
 
     // ── Address search via Nominatim ─────────────────────────────────────────
     async function zoekLocatie() {
