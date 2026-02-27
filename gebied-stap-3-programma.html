@@ -83,6 +83,10 @@
                 <span>· Bovenbouwplein</span>
                 <span id="opp-summary-bovenbouwPlein">— m²</span>
             </div>
+            <div class="flex justify-between text-xs" style="color:#00fff2">
+                <span>· Vrije loopruimte</span>
+                <span id="opp-summary-loopruimte">— m²</span>
+            </div>
             <div class="flex justify-between text-xs" style="color:#A855F7">
                 <span>· Fietsenstalling</span>
                 <span id="opp-summary-fietsenstalling">— m²</span>
@@ -259,6 +263,7 @@
     const TABS = [
       { key: 'onderbouwplein',  label: 'Onderbouwplein',   color: '#22C55E' },
       { key: 'bovenbouwPlein',  label: 'Bovenbouw plein',  color: '#0EA5E9' },
+      // { key: 'loopruimte',  label: 'Vrije loopruimte',  color: '#00fff2' },
       { key: 'fietsenstalling', label: 'Fietsenstalling',  color: '#A855F7' },
     ];
     TABS.forEach(t => { if (!variant[t.key]) variant[t.key] = { geo: [], opp: 0 }; });
