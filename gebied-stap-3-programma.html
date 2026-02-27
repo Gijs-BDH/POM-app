@@ -549,6 +549,7 @@
               <span class="font-semibold text-violet-700">${totalOpp ? totalOpp.toLocaleString('nl-NL') + ' m²' : '— m²'}</span>
             </div>
             ${renderPveZoneList(tab.key, totalOpp)}
+            <button onclick="volgendeTab(${idx})" class="w-full text-sm py-2 rounded-lg font-medium bg-orange-400 hover:bg-orange-500 text-white transition-colors">sla over</button>
             <button onclick="volgendeTab(${idx})" class="btn-primary w-full text-sm py-2">volgende</button>`;
           container.appendChild(card);
         } else {
