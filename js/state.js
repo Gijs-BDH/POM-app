@@ -71,12 +71,26 @@ function createProjectFromDraft() {
     activePveId: null,
     gebiedVarianten: [],
     gebouwVarianten: [],
+    bagHiddenFeatureKeys: [],
     createdAt: Date.now()
   };
   saveProject(project);
   setCurrentId(project.id);
   clearDraft();
   return project;
+}
+
+function getProjectBagHiddenKeys() {
+  const p = getCurrentProject();
+  if (!p) return [];
+  return Array.isArray(p.bagHiddenFeatureKeys) ? p.bagHiddenFeatureKeys : [];
+}
+
+function setProjectBagHiddenKeys(keys) {
+  const p = getCurrentProject();
+  if (!p) return;
+  const normalized = Array.from(new Set((keys || []).filter(k => typeof k === 'string' && k.length > 0)));
+  saveProject({ ...p, bagHiddenFeatureKeys: normalized });
 }
 
 // ── PVE Variant Helpers ───────────────────────────────────────────────────────
