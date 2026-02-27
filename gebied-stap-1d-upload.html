@@ -108,43 +108,23 @@
 
     // ── Kavelpaspoort left-panel display ──────────────────────────────────────
     function renderKavelpaspoortPanel() {
-      const panel = document.getElementById('kavelpaspoort-panel');
-      if (variant.kavelpaspoort) {
-        panel.classList.remove('hidden');
-      } else {
-        panel.classList.add('hidden');
-      }
+      document.getElementById('kavelpaspoort-panel').classList.toggle('hidden', !variant.kavelpaspoort);
     }
 
-    // ── Upload handling ────────────────────────────────────────────────────────
+    // ── Upload handling (stores boolean flag only) ────────────────────────────
     function handleUpload(event, key) {
-      const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = e => {
-        const dataUrl = e.target.result;
-        variant[key] = dataUrl;
-        // Render immediately so the UI responds even if storage fails
-        if (key === 'kavelpaspoort') renderKavelpaspoortPanel();
-        renderCards();
-        try {
-          updateGebiedVariantById(gebiedId, { [key]: dataUrl });
-        } catch (err) {
-          console.warn('Bestand te groot om op te slaan (localStorage vol):', err);
-        }
-      };
-      reader.readAsDataURL(file);
+      if (!event.target.files[0]) return;
+      variant[key] = true;
+      updateGebiedVariantById(gebiedId, { [key]: true });
+      if (key === 'kavelpaspoort') renderKavelpaspoortPanel();
+      renderCards();
     }
 
     function clearUpload(key) {
-      variant[key] = null;
+      variant[key] = false;
+      updateGebiedVariantById(gebiedId, { [key]: false });
       if (key === 'kavelpaspoort') renderKavelpaspoortPanel();
       renderCards();
-      try {
-        updateGebiedVariantById(gebiedId, { [key]: null });
-      } catch (err) {
-        console.warn('Opslaan mislukt:', err);
-      }
     }
 
     // ── Render right-side tab cards ───────────────────────────────────────────
@@ -158,28 +138,19 @@
         const isActive = idx === activeIdx;
 
         if (isActive) {
-          const value  = variant[card.key];
           const cardEl = document.createElement('div');
           cardEl.className = 'card p-4 flex flex-col gap-3';
           cardEl.style.border = '2px solid #7C3AED';
-
-          let previewHtml = '';
-          if (value) {
-            if (value.startsWith('data:application/pdf') || value.startsWith('data:application/octet')) {
-              previewHtml = `<embed src="${value}" type="application/pdf" class="w-full rounded-lg" style="height:120px;"/>`;
-            } else {
-              previewHtml = `<img src="${value}" class="w-full rounded-lg object-contain" style="max-height:120px;"/>`;
-            }
-          }
-
           cardEl.innerHTML = `
             <h3 class="font-semibold text-sm text-gray-700">${card.label}</h3>
-            ${value ? previewHtml : '<p class="text-xs text-gray-300">Nog geen bestand geüpload</p>'}
+            ${isDone
+              ? `<p class="text-xs text-emerald-600">✓ Bestand geüpload</p>`
+              : `<p class="text-xs text-gray-300">Nog geen bestand geüpload</p>`}
             <label class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border border-violet-300 text-violet-600 hover:bg-violet-50 transition-all cursor-pointer text-center">
-              ↑ ${value ? 'Vervangen' : card.uploadLabel}
+              ↑ ${isDone ? 'Vervangen' : card.uploadLabel}
               <input type="file" accept="${card.accept}" class="hidden" onchange="handleUpload(event, '${card.key}')"/>
             </label>
-            ${value ? `
+            ${isDone ? `
             <button onclick="clearUpload('${card.key}')"
               class="text-xs text-gray-400 hover:text-red-500 transition-colors text-left">
               ✕ Verwijder bestand
