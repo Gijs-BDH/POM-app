@@ -51,6 +51,15 @@
           <div class="flex justify-between text-xs" style="color:#F59E0B"><span>· Obstakels</span><span id="opp-summary-obstakels">— m²</span></div>
           <div class="flex justify-between text-xs" style="color:#14B8A6"><span>· Placeholder</span><span id="opp-summary-placeholder">— m²</span></div>
 
+          <div class="border-t border-gray-100 pt-2 flex justify-between text-xs font-semibold">
+            <span class="text-gray-700">Bebouwbaar</span>
+            <span id="bebouwbaar-opp-display" class="text-emerald-600">— m²</span>
+          </div>
+          <div id="pve-compat-container" class="hidden flex flex-col gap-1 pt-2 border-t border-gray-100">
+            <div class="text-xs font-semibold text-gray-400 uppercase tracking-widest" style="letter-spacing:0.05em">PVE grondvlak</div>
+            <div id="pve-compat-list" class="flex flex-col gap-1"></div>
+          </div>
+
           <div class="mt-auto border-t border-gray-100 pt-2 flex flex-col gap-2">
             <button id="btn-walkthrough" onclick="toggleWalkthrough()" class="btn-secondary w-full text-sm py-2">Walkthrough</button>
             <button onclick="afronden()" class="btn-primary w-full text-sm py-2">volgende</button>
@@ -137,15 +146,56 @@
       return data.opp || 0;
     }
 
+    // ── PVE ground-floor compatibility ───────────────────────────────────────
+    function calcMinGrondvlak(pveVariant) {
+      const rs = pveVariant && pveVariant.ruimtestaat;
+      if (!rs) return null;
+      const clusters = rs.clusters || [];
+      if (!clusters.length) return null;
+      return Math.round(clusters
+        .filter(c => c.verdiepingrestrictie)
+        .reduce((sum, c) => sum + c.rooms.reduce(
+          (s, r) => s + parseFloat(r.aantal) * parseFloat(r.oppervlakte), 0), 0));
+    }
+
+    function updatePveCompatList(bebouwbaarOpp) {
+      const pveVarianten = project.pveVarianten || [];
+      const container = document.getElementById('pve-compat-container');
+      const listEl    = document.getElementById('pve-compat-list');
+      if (!container || !listEl) return;
+      if (pveVarianten.length === 0) { container.classList.add('hidden'); return; }
+      container.classList.remove('hidden');
+      listEl.innerHTML = pveVarianten.map(pv => {
+        const minOpp = calcMinGrondvlak(pv);
+        if (minOpp === null || minOpp === 0) {
+          return `<div class="flex items-center justify-between gap-1 text-xs">
+            <span class="truncate flex-1" style="color:#D1D5DB" title="${pv.naam}">${pv.naam}</span>
+            <span class="flex-shrink-0" style="color:#D1D5DB">geen ruimtestaat</span>
+          </div>`;
+        }
+        const ok = bebouwbaarOpp > 0 && bebouwbaarOpp >= minOpp;
+        return `<div class="flex items-center justify-between gap-1 text-xs">
+          <span class="truncate flex-1" style="${ok ? 'color:#4B5563' : 'color:#D1D5DB'}" title="${pv.naam}">${pv.naam}</span>
+          <span class="flex-shrink-0" style="${ok ? 'color:#6B7280' : 'color:#D1D5DB'}">${minOpp.toLocaleString('nl-NL')} m²</span>
+          <span class="flex-shrink-0 font-semibold" style="${ok ? 'color:#7C3AED' : 'color:#D1D5DB'}">${ok ? '✓' : '✗'}</span>
+        </div>`;
+      }).join('');
+    }
+
     function updateSummary() {
       const bouwvlakOpp = (variant.bouwbaarGebied && variant.bouwbaarGebied.opp) || variant.opp || 0;
       document.getElementById('opp-summary-bouwvlak').textContent = bouwvlakOpp ? bouwvlakOpp.toLocaleString('nl-NL') + ' m²' : '— m²';
+      let nietBebouwbaarOpp = 0;
       ['onbebouwdGebied', 'uitsluiting', 'parkeren', 'onderbouwplein', 'bovenbouwPlein', 'fietsenstalling', 'obstakels', 'placeholder'].forEach(key => {
         const el = document.getElementById('opp-summary-' + key);
         if (!el) return;
         const opp = layerOpp(key);
         el.textContent = opp ? opp.toLocaleString('nl-NL') + ' m²' : '— m²';
+        nietBebouwbaarOpp += opp;
       });
+      const bebouwbaarOpp = Math.max(0, bouwvlakOpp - nietBebouwbaarOpp);
+      document.getElementById('bebouwbaar-opp-display').textContent = bebouwbaarOpp.toLocaleString('nl-NL') + ' m²';
+      updatePveCompatList(bebouwbaarOpp);
     }
     updateSummary();
 
