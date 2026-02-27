@@ -78,7 +78,7 @@
 
     // ── Map init ─────────────────────────────────────────────────────────────
     const MAP_VIEW_KEY = 'pom_map_view_gebied_' + project.id;
-    const savedView = JSON.parse(localStorage.getItem(MAP_VIEW_KEY) || 'null');
+      const savedView = null;// JSON.parse(localStorage.getItem(MAP_VIEW_KEY) || 'null');
     const map = L.map('map').setView(
       savedView ? [savedView.lat, savedView.lng] : [52.2, 5.3],
       savedView ? savedView.zoom : 8
