@@ -6,9 +6,10 @@
   <title>POM – Gebied Context</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link href="https://cdn.jsdelivr.net/npm/cesium@1.107/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
   <link rel="stylesheet" href="css/styles.css"/>
   <style>
-    #map { height: 800px; border-radius: 0.75rem; }
+    #map, #map3d { height: 800px; border-radius: 0.75rem; }
     .tab-pill {
       width: 100%; padding: 0.55rem 1rem; border-radius: 99px;
       border: 1.5px solid #E5E7EB; background: white;
@@ -39,7 +40,14 @@
 
       <!-- Map -->
       <div class="flex-1">
+        <div class="flex justify-end mb-2">
+          <div class="inline-flex rounded-lg border border-gray-200 bg-white p-0.5">
+            <button id="btn-2d" onclick="setMapMode('2d')" class="px-3 py-1 text-xs rounded-md bg-violet-600 text-white">2D</button>
+            <button id="btn-3d" onclick="setMapMode('3d')" class="px-3 py-1 text-xs rounded-md text-gray-500">3D</button>
+          </div>
+        </div>
         <div id="map"></div>
+        <div id="map3d" class="hidden"></div>
       </div>
 
       <!-- Right: tab-style upload cards -->
@@ -50,6 +58,9 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>window.CESIUM_BASE_URL = 'https://cdn.jsdelivr.net/npm/cesium@1.107/Build/Cesium/';</script>
+  <script src="https://cdn.jsdelivr.net/npm/cesium@1.107/Build/Cesium/Cesium.js"></script>
+  <script src="js/cesium-maplibre-shim.js?v=20261030"></script>
   <script src="js/state.js"></script>
   <script>
     const params   = new URLSearchParams(window.location.search);
@@ -79,6 +90,105 @@
       const c = map.getCenter();
       localStorage.setItem(MAP_VIEW_KEY, JSON.stringify({ lat: c.lat, lng: c.lng, zoom: map.getZoom() }));
     });
+
+    const map3d = new maplibregl.Map({
+      container: 'map3d',
+      style: {
+        version: 8,
+        sources: {
+          osm: {
+            type: 'raster',
+            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            attribution: '© OpenStreetMap contributors'
+          }
+        },
+        layers: [{ id: 'osm', type: 'raster', source: 'osm' }]
+      },
+      center: [map.getCenter().lng, map.getCenter().lat],
+      zoom: map.getZoom(),
+      pitch: 55,
+      bearing: -15
+    });
+
+    let mapMode = '2d';
+    function setMapMode(mode) {
+      mapMode = mode;
+      const map2dEl = document.getElementById('map');
+      const map3dEl = document.getElementById('map3d');
+      const btn2d = document.getElementById('btn-2d');
+      const btn3d = document.getElementById('btn-3d');
+
+      if (mode === '3d') {
+        const c = map.getCenter();
+        map3d.setCenter([c.lng, c.lat]);
+        map3d.setZoom(map.getZoom());
+        map2dEl.classList.add('hidden');
+        map3dEl.classList.remove('hidden');
+        btn2d.className = 'px-3 py-1 text-xs rounded-md text-gray-500';
+        btn3d.className = 'px-3 py-1 text-xs rounded-md bg-violet-600 text-white';
+        map3d.resize();
+        syncLeafletTo3D();
+      } else {
+        const c = map3d.getCenter();
+        map.setView([c.lat, c.lng], map3d.getZoom());
+        map3dEl.classList.add('hidden');
+        map2dEl.classList.remove('hidden');
+        btn2d.className = 'px-3 py-1 text-xs rounded-md bg-violet-600 text-white';
+        btn3d.className = 'px-3 py-1 text-xs rounded-md text-gray-500';
+        map.invalidateSize();
+      }
+    }
+    window.setMapMode = setMapMode;
+
+    let map3dReady = false;
+    const sync3dSourceId = 'leaflet-polygons-src';
+    function syncLeafletTo3D() {
+      if (!map3dReady) return;
+      const features = [];
+      map.eachLayer(layer => {
+        if (layer instanceof L.Polygon) {
+          const gj = layer.toGeoJSON();
+          if (gj && gj.geometry) {
+            gj.properties = {
+              fillColor: layer.options?.fillColor || layer.options?.color || '#7C3AED',
+              lineColor: layer.options?.color || '#4C1D95',
+              fillOpacity: layer.options?.fillOpacity ?? 0.22,
+              lineWidth: layer.options?.weight ?? 1.5,
+            };
+            features.push(gj);
+          }
+        }
+      });
+      const fc = { type: 'FeatureCollection', features };
+      const src = map3d.getSource(sync3dSourceId);
+      if (src) {
+        src.setData(fc);
+      } else {
+        map3d.addSource(sync3dSourceId, { type: 'geojson', data: fc });
+        map3d.addLayer({
+          id: 'leaflet-polygons-fill',
+          type: 'fill',
+          source: sync3dSourceId,
+          paint: {
+            'fill-color': ['coalesce', ['get', 'fillColor'], '#7C3AED'],
+            'fill-opacity': ['coalesce', ['get', 'fillOpacity'], 0.22]
+          }
+        });
+        map3d.addLayer({
+          id: 'leaflet-polygons-line',
+          type: 'line',
+          source: sync3dSourceId,
+          paint: {
+            'line-color': ['coalesce', ['get', 'lineColor'], '#4C1D95'],
+            'line-width': ['coalesce', ['get', 'lineWidth'], 1.5]
+          }
+        });
+      }
+    }
+    map3d.on('load', () => { map3dReady = true; syncLeafletTo3D(); });
+    map.on('layeradd', syncLeafletTo3D);
+    map.on('layerremove', syncLeafletTo3D);
 
     if (variant.geo && variant.geo.length >= 3) {
       const kavelPoly = L.polygon(variant.geo, {
