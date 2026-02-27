@@ -181,32 +181,25 @@
           </button>
           <div class="card step-card" id="card-2" style="padding:1.5rem; display:none">
             <div class="step-card-title">Lokalen</div>
-            <div class="hint-box" id="hint-lokalen">
-              Op basis van de leerlingenaantal worden de basisklassen berekend.
-            </div>
-            <div class="qrow">
-              <label class="qlabel">Extra lokalen</label>
-              <input type="number" id="q-extra-lokalen" class="num-field"
-                     value="0" min="0" max="20" oninput="recalculate(); updateLokalenHint()"/>
-            </div>
+            <div id="hint-lokalen" class="hint-box"></div>
             <div id="row-ob" class="qrow">
               <label class="qlabel">Lokalen onderbouw</label>
               <input type="number" id="q-ob-lokalen" class="num-field"
-                     value="4" min="0" max="30" oninput="recalculate()"/>
+                     value="4" min="0" max="30" oninput="recalculate(); updateLokalenInfo()"/>
             </div>
             <div id="row-mb" class="qrow" style="display:none">
               <label class="qlabel">Lokalen middenbouw</label>
               <input type="number" id="q-mb-lokalen" class="num-field"
-                     value="4" min="0" max="30" oninput="recalculate()"/>
+                     value="4" min="0" max="30" oninput="recalculate(); updateLokalenInfo()"/>
             </div>
             <div id="row-bb" class="qrow">
               <label class="qlabel">Lokalen bovenbouw</label>
               <input type="number" id="q-bb-lokalen" class="num-field"
-                     value="4" min="0" max="30" oninput="recalculate()"/>
+                     value="4" min="0" max="30" oninput="recalculate(); updateLokalenInfo()"/>
             </div>
             <div class="flex justify-between mt-2">
               <button class="btn-ghost px-4 py-2 text-sm" onclick="goToStep(1)">← Vorige</button>
-              <button class="btn-primary px-5 py-2 text-sm" onclick="completeAndNext(2)">Volgende →</button>
+              <button id="btn-lokalen-next" class="btn-primary px-5 py-2 text-sm" onclick="completeAndNext(2)">Volgende →</button>
             </div>
           </div>
 
@@ -427,7 +420,7 @@
         }
       });
       currentStep = n;
-      if (n === 2) updateLokalenHint();
+      if (n === 2) updateLokalenInfo();
     }
 
     function completeAndNext(n) {
@@ -436,17 +429,54 @@
       if (n < 4) goToStep(n + 1);
     }
 
-    // ── Lokalen hint ──────────────────────────────────────────────────────────
-    function updateLokalenHint() {
+    // ── Lokalen info ──────────────────────────────────────────────────────────
+    function updateLokalenInfo() {
       const po         = (pveV && pveV.voorzieningen && pveV.voorzieningen.primairOnderwijs) || {};
       const leerlingen = po.leerlingen || 0;
-      const extra      = parseInt(document.getElementById('q-extra-lokalen').value) || 0;
       const base       = Math.ceil(leerlingen / 30);
-      const total      = base + extra;
-      const hint       = document.getElementById('hint-lokalen');
-      if (hint) hint.textContent =
-        `Op basis van ${leerlingen} leerlingen worden ${base} basisklassen berekend` +
-        (extra > 0 ? ` + ${extra} extra = ${total} totaal.` : ` (${total} totaal).`);
+      const clusters   = document.getElementById('q-clusters').value;
+
+      let entered = 0;
+      if (clusters === '1 cluster') {
+        entered = base;
+      } else if (clusters === '2 clusters OB+BB') {
+        entered = (parseInt(document.getElementById('q-ob-lokalen').value) || 0)
+                + (parseInt(document.getElementById('q-bb-lokalen').value)  || 0);
+      } else {
+        entered = (parseInt(document.getElementById('q-ob-lokalen').value) || 0)
+                + (parseInt(document.getElementById('q-mb-lokalen').value) || 0)
+                + (parseInt(document.getElementById('q-bb-lokalen').value)  || 0);
+      }
+
+      const over = entered - base;
+      const hint = document.getElementById('hint-lokalen');
+      if (!hint) return;
+
+      const isUnder = over < 0;
+      hint.style.background  = isUnder ? '#FEF3C7' : '#F5F3FF';
+      hint.style.color       = isUnder ? '#92400E'  : '#6D28D9';
+
+      let html = `Standaard berekend: <strong>${base}</strong> lokalen`;
+      if (leerlingen > 0) html += ` (${leerlingen} leerlingen ÷ 30)`;
+      if (clusters !== '1 cluster') {
+        if (over === 0) {
+          html += `<br>Ingevoerd totaal: <strong>${entered}</strong> lokalen`;
+        } else if (over > 0) {
+          html += `<br>Ingevoerd totaal: <strong>${entered}</strong> lokalen`
+                + ` (+${over} boven het berekende aantal — dit vermindert de beschikbare ruimte voor andere opties)`;
+        } else {
+          html += `<br>Ingevoerd totaal: <strong>${entered}</strong> lokalen`
+                + ` — <strong>te weinig lokalen voor ${leerlingen} leerlingen. Voeg ${-over} lokaal${-over > 1 ? 'en' : ''} toe.</strong>`;
+        }
+      }
+      hint.innerHTML = html;
+
+      const nextBtn = document.getElementById('btn-lokalen-next');
+      if (nextBtn) {
+        nextBtn.disabled = isUnder;
+        nextBtn.style.opacity = isUnder ? '0.4' : '';
+        nextBtn.style.cursor  = isUnder ? 'not-allowed' : '';
+      }
     }
 
     // ── Ja/Nee state ──────────────────────────────────────────────────────────
@@ -480,6 +510,7 @@
       document.getElementById('row-mb').style.display = triple  ? 'flex' : 'none';
       document.getElementById('row-bb').style.display = single  ? 'none' : 'flex';
       recalculate();
+      updateLokalenInfo();
     }
 
     // ── Collect inputs ────────────────────────────────────────────────────────
@@ -491,7 +522,6 @@
         budget,
         fte:                       parseInt(document.getElementById('q-fte').value)               || 0,
         clusters:                  document.getElementById('q-clusters').value,
-        extraLokalen:              parseInt(document.getElementById('q-extra-lokalen').value)      || 0,
         aantalLokalenOB:           parseInt(document.getElementById('q-ob-lokalen').value)        || 0,
         aantalLokalenMB:           parseInt(document.getElementById('q-mb-lokalen').value)        || 0,
         aantalLokalenBB:           parseInt(document.getElementById('q-bb-lokalen').value)        || 0,
@@ -594,7 +624,6 @@
         const n = (id, val) => { if (val !== undefined && val !== null) document.getElementById(id).value = val; };
         n('q-fte',                saved.fte);
         n('q-clusters',           saved.clusters);
-        n('q-extra-lokalen',      saved.extraLokalen);
         n('q-ob-lokalen',         saved.aantalLokalenOB);
         n('q-mb-lokalen',         saved.aantalLokalenMB);
         n('q-bb-lokalen',         saved.aantalLokalenBB);
@@ -625,6 +654,22 @@
         });
         if (JN.bibliotheek === 'ja') {
           document.getElementById('q-biblio-grootte').style.display = '';
+        }
+      }
+
+      if (!saved) {
+        // Initialise OB/MB/BB defaults from the calculated base count
+        const po         = (pveV && pveV.voorzieningen && pveV.voorzieningen.primairOnderwijs) || {};
+        const leerlingen = po.leerlingen || 0;
+        const base       = Math.ceil(leerlingen / 30) || 8; // fallback to 8 if leerlingen unknown
+        const clusterVal = document.getElementById('q-clusters').value;
+        if (clusterVal === '2 clusters OB+BB') {
+          document.getElementById('q-ob-lokalen').value = Math.ceil(base / 2);
+          document.getElementById('q-bb-lokalen').value = Math.floor(base / 2);
+        } else if (clusterVal === '3 clusters OB+MB+BB') {
+          document.getElementById('q-ob-lokalen').value = Math.ceil(base / 3);
+          document.getElementById('q-mb-lokalen').value = Math.round(base / 3);
+          document.getElementById('q-bb-lokalen').value = Math.floor(base / 3);
         }
       }
 
