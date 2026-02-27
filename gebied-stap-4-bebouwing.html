@@ -42,14 +42,14 @@
         <div id="map"></div>
         <div id="map3d" class="hidden"></div>
         <p id="map-hint" class="text-xs text-gray-400 mt-2 text-center hidden">
-          Klik op de kaart om punten te plaatsen &nbsp;·&nbsp; dubbelklik om te beëindigen
+          Klik om punten te plaatsen &nbsp;·&nbsp; dubbelklik of druk op Enter om te voltooien
         </p>
       </div>
 
       <!-- Right: tab list + summary -->
       <div class="w-52 flex-shrink-0 flex flex-col gap-3">
         <div id="tabs-container" class="flex flex-col gap-2"></div>
-        <div class="card p-4 flex flex-col gap-2">
+        <div class="card p-4 flex flex-col gap-2" style="display:none">
           <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Oppervlak</h3>
           <div class="flex justify-between text-xs text-gray-500">
             <span>Bouwvlak</span>
@@ -62,10 +62,13 @@
           <div class="flex justify-between text-xs" style="color:#0EA5E9"><span>· Bovenbouwplein</span><span id="opp-summary-bovenbouwPlein">— m²</span></div>
           <div class="flex justify-between text-xs" style="color:#A855F7"><span>· Fietsenstalling</span><span id="opp-summary-fietsenstalling">— m²</span></div>
           <div class="border-t border-gray-100 pt-1 mt-1 flex justify-between text-xs" style="color:#F59E0B"><span>· Obstakels</span><span id="opp-summary-obstakels">— m²</span></div>
-          <div class="flex justify-between text-xs" style="color:#14B8A6"><span>· Placeholder</span><span id="opp-summary-placeholder">— m²</span></div>
           <div class="border-t border-gray-100 pt-2 flex justify-between text-xs font-semibold">
             <span class="text-gray-700">Bebouwbaar</span>
             <span id="bebouwbaar-opp-display" class="text-emerald-600">— m²</span>
+          </div>
+          <div id="pve-compat-container" class="hidden flex flex-col gap-1 pt-2 border-t border-gray-100">
+            <div class="text-xs font-semibold text-gray-400 uppercase tracking-widest" style="letter-spacing:0.05em">PVE grondvlak</div>
+            <div id="pve-compat-list" class="flex flex-col gap-1"></div>
           </div>
         </div>
       </div>
@@ -408,14 +411,13 @@
     }
 
     const TABS = [
-      { key: 'obstakels',   label: 'Obstakels',   color: '#F59E0B' },
-      { key: 'placeholder', label: 'Placeholder',  color: '#14B8A6' },
+      { key: 'obstakels', label: 'Obstakels', color: '#F59E0B' },
     ];
     const OBSTAKEL_KEY = 'obstakels';
     const OBSTAKEL_TYPES = [
-      { key: 'boom', label: 'Boom', icon: '🌳' },
-      { key: 'lamp', label: 'Lichtmast', icon: '💡' },
-      { key: 'bank', label: 'Bankje', icon: '🪑' },
+      { key: 'boom', label: 'Boom', icon: '🌳', opp: 4 },
+      { key: 'lamp', label: 'Lichtmast', icon: '💡', opp: 1 },
+      { key: 'bank', label: 'Bankje', icon: '🪑', opp: 2 },
     ];
     TABS.forEach(t => { if (!variant[t.key]) variant[t.key] = { geo: [], opp: 0 }; });
 
@@ -481,18 +483,30 @@
         renderTabs();
       });
       marker.bindTooltip(type.label, { direction: 'top', offset: [0, -8] });
+      marker.on('contextmenu', e => {
+        L.DomEvent.stopPropagation(e);
+        removeObstacle(item.id);
+      });
+      marker.bindTooltip(`${type.label} (${type.opp} m²) · rechtermuisknop om te verwijderen`, { direction: 'top', offset: [0, -8] });
       return marker;
     }
 
     function saveObstacleItems() {
       const objects = obstacleItems.map(o => ({ id: o.id, type: o.type, lat: o.lat, lng: o.lng }));
+      const markersOpp = obstacleItems.reduce((sum, o) => {
+        const t = getObstacleType(o.type);
+        return sum + (t.opp || 0);
+      }, 0);
+      const zones = tabZones[OBSTAKEL_KEY].map(z => ({ geo: z.geo, opp: z.opp }));
+      const zonesOpp = tabZones[OBSTAKEL_KEY].reduce((s, z) => s + z.opp, 0);
+      const totalOpp = markersOpp + zonesOpp;
       if (!variant[OBSTAKEL_KEY]) variant[OBSTAKEL_KEY] = {};
       variant[OBSTAKEL_KEY].objects = objects;
-      variant[OBSTAKEL_KEY].zones = [];
-      variant[OBSTAKEL_KEY].geo = [];
-      variant[OBSTAKEL_KEY].opp = 0;
+      variant[OBSTAKEL_KEY].zones = zones;
+      variant[OBSTAKEL_KEY].geo = zones.length > 0 ? zones[0].geo : [];
+      variant[OBSTAKEL_KEY].opp = totalOpp;
       updateGebiedVariantById(gebiedId, {
-        [OBSTAKEL_KEY]: { objects, zones: [], geo: [], opp: 0 }
+        [OBSTAKEL_KEY]: { objects, zones, geo: variant[OBSTAKEL_KEY].geo, opp: totalOpp }
       });
       updateSummary();
       syncObstaclesTo3D();
@@ -512,6 +526,21 @@
       selectedObstacleId = item.id;
       refreshObstacleMarkerSelection();
       saveObstacleItems();
+      renderTabs();
+    }
+    function toggleStamping(typeKey) {
+      if (drawingMode) stopDrawing();
+      stampingObstacleType = stampingObstacleType === typeKey ? null : typeKey;
+      const hint = document.getElementById('map-hint');
+      if (stampingObstacleType) {
+        const type = getObstacleType(stampingObstacleType);
+        map.getContainer().style.cursor = 'copy';
+        hint.textContent = `Klik op de kaart om ${type.icon} ${type.label.toLowerCase()} te plaatsen`;
+        hint.classList.remove('hidden');
+      } else {
+        map.getContainer().style.cursor = '';
+        hint.classList.add('hidden');
+      }
       renderTabs();
     }
 
@@ -557,10 +586,11 @@
     });
 
     // ── Drawing state ─────────────────────────────────────────────────────────
-    let activeTab   = null;
-    let drawingMode = false;
-    let drawPoints  = [];
-    let currentPoly = null;
+    let activeTab             = null;
+    let drawingMode           = false;
+    let drawPoints            = [];
+    let currentPoly           = null;
+    let stampingObstacleType  = null; // typeKey being stamped, or null
 
     function calcAreaM2(latlngs) {
       if (!latlngs || latlngs.length < 3) return 0;
@@ -582,6 +612,82 @@
       return data.opp || 0;
     }
 
+    // ── PVE ground-floor compatibility ───────────────────────────────────────
+    function calcMinGrondvlak(pveVariant) {
+      const rs = pveVariant && pveVariant.ruimtestaat;
+      if (!rs) return null;
+      const clusters = rs.clusters || [];
+      if (!clusters.length) return null;
+      return Math.round(clusters
+        .filter(c => c.verdiepingrestrictie)
+        .reduce((sum, c) => sum + c.rooms.reduce(
+          (s, r) => s + parseFloat(r.aantal) * parseFloat(r.oppervlakte), 0), 0));
+    }
+
+    function updatePveCompatList(bebouwbaarOpp) {
+      const pveVarianten = project.pveVarianten || [];
+      const container = document.getElementById('pve-compat-container');
+      const listEl    = document.getElementById('pve-compat-list');
+      if (!container || !listEl) return;
+      if (pveVarianten.length === 0) { container.classList.add('hidden'); return; }
+      container.classList.remove('hidden');
+      listEl.innerHTML = pveVarianten.map(pv => {
+        const minOpp = calcMinGrondvlak(pv);
+        if (minOpp === null || minOpp === 0) {
+          return `<div class="flex items-center justify-between gap-1 text-xs">
+            <span class="truncate flex-1" style="color:#D1D5DB" title="${pv.naam}">${pv.naam}</span>
+            <span class="flex-shrink-0" style="color:#D1D5DB">geen ruimtestaat</span>
+          </div>`;
+        }
+        const ok = bebouwbaarOpp > 0 && bebouwbaarOpp >= minOpp;
+        return `<div class="flex items-center justify-between gap-1 text-xs">
+          <span class="truncate flex-1" style="${ok ? 'color:#4B5563' : 'color:#D1D5DB'}" title="${pv.naam}">${pv.naam}</span>
+          <span class="flex-shrink-0" style="${ok ? 'color:#6B7280' : 'color:#D1D5DB'}">${minOpp.toLocaleString('nl-NL')} m²</span>
+          <span class="flex-shrink-0 font-semibold" style="${ok ? 'color:#7C3AED' : 'color:#D1D5DB'}">${ok ? '✓' : '✗'}</span>
+        </div>`;
+      }).join('');
+    }
+
+    function calcBebouwbaarOpp() {
+      const bouwvlakOpp = (variant.bouwbaarGebied && variant.bouwbaarGebied.opp) || variant.opp || 0;
+      let nietBebouwbaarOpp = 0;
+      ['onbebouwdGebied', 'uitsluiting', 'parkeren', 'onderbouwplein', 'bovenbouwPlein', 'fietsenstalling'].forEach(key => {
+        nietBebouwbaarOpp += layerOpp(key);
+      });
+      TABS.forEach(t => {
+        let opp = tabZones[t.key].reduce((s, z) => s + z.opp, 0);
+        if (t.key === OBSTAKEL_KEY) {
+          opp += obstacleItems.reduce((sum, o) => { const type = getObstacleType(o.type); return sum + (type.opp || 0); }, 0);
+        }
+        nietBebouwbaarOpp += opp;
+      });
+      return Math.max(0, bouwvlakOpp - nietBebouwbaarOpp);
+    }
+
+    function renderPveGrondvlakList(bebouwbaarOpp) {
+      const pveVarianten = project.pveVarianten || [];
+      if (pveVarianten.length === 0) return '';
+      const rows = pveVarianten.map(pv => {
+        const minOpp = calcMinGrondvlak(pv);
+        if (minOpp === null || minOpp === 0) {
+          return `<div class="flex items-center justify-between gap-1 text-xs">
+            <span class="truncate flex-1" style="color:#D1D5DB" title="${pv.naam}">${pv.naam}</span>
+            <span class="flex-shrink-0" style="color:#D1D5DB">geen ruimtestaat</span>
+          </div>`;
+        }
+        const ok = bebouwbaarOpp > 0 && bebouwbaarOpp >= minOpp;
+        return `<div class="flex items-center justify-between gap-1 text-xs">
+          <span class="truncate flex-1" style="${ok ? 'color:#4B5563' : 'color:#D1D5DB'}" title="${pv.naam}">${pv.naam}</span>
+          <span class="flex-shrink-0" style="${ok ? 'color:#6B7280' : 'color:#D1D5DB'}">${minOpp.toLocaleString('nl-NL')} m²</span>
+          <span class="flex-shrink-0 font-semibold" style="${ok ? 'color:#7C3AED' : 'color:#D1D5DB'}">${ok ? '✓' : '✗'}</span>
+        </div>`;
+      }).join('');
+      return `<div class="flex flex-col gap-1 pt-2 border-t border-gray-100">
+        <div class="text-xs font-semibold text-gray-400 uppercase tracking-widest" style="letter-spacing:0.05em">PVE grondvlak</div>
+        ${rows}
+      </div>`;
+    }
+
     function updateSummary() {
       const bouwvlakOpp = (variant.bouwbaarGebied && variant.bouwbaarGebied.opp) || variant.opp || 0;
       document.getElementById('opp-summary-bouwvlak').textContent = bouwvlakOpp ? bouwvlakOpp.toLocaleString('nl-NL') + ' m²' : '— m²';
@@ -596,16 +702,37 @@
       TABS.forEach(t => {
         const el = document.getElementById('opp-summary-' + t.key);
         if (!el) return;
-        const opp = tabZones[t.key].reduce((s, z) => s + z.opp, 0);
+        let opp = tabZones[t.key].reduce((s, z) => s + z.opp, 0);
+        if (t.key === OBSTAKEL_KEY) {
+          opp += obstacleItems.reduce((sum, o) => {
+            const type = getObstacleType(o.type);
+            return sum + (type.opp || 0);
+          }, 0);
+        }
         el.textContent = opp ? opp.toLocaleString('nl-NL') + ' m²' : '— m²';
         nietBebouwbaarOpp += opp;
       });
       const bebouwbaarOpp = Math.max(0, bouwvlakOpp - nietBebouwbaarOpp);
       document.getElementById('bebouwbaar-opp-display').textContent = bebouwbaarOpp.toLocaleString('nl-NL') + ' m²';
+      updatePveCompatList(bebouwbaarOpp);
     }
 
     let clickTimer = null;
     map.on('click', e => {
+      if (stampingObstacleType && activeTab && activeTab.key === OBSTAKEL_KEY) {
+        const item = {
+          id: nextObstacleId++,
+          type: stampingObstacleType,
+          lat: e.latlng.lat,
+          lng: e.latlng.lng,
+          marker: null
+        };
+        item.marker = createObstacleMarker(item);
+        obstacleItems.push(item);
+        saveObstacleItems();
+        renderTabs();
+        return;
+      }
       if (!drawingMode) return;
       const latlng = e.latlng;
       clearTimeout(clickTimer);
@@ -617,11 +744,16 @@
             color: activeTab.color, fillColor: activeTab.color,
             fillOpacity: 0.2, weight: 2, dashArray: '5 4'
           }).addTo(map);
+          const liveOpp = calcAreaM2(currentPoly.getLatLngs()[0]);
+          const liveEl = document.getElementById('live-draw-opp');
+          if (liveEl) liveEl.textContent = liveOpp.toLocaleString('nl-NL') + ' m²';
+          const voltooienBtn = document.getElementById('btn-voltooien');
+          if (voltooienBtn) voltooienBtn.disabled = false;
         }
       }, 250);
     });
 
-    map.on('dblclick', e => {
+    function finishDrawing() {
       if (!drawingMode || !currentPoly || drawPoints.length < 3) return;
       clearTimeout(clickTimer);
       const tab = activeTab;
@@ -640,17 +772,32 @@
       document.getElementById('map-hint').classList.add('hidden');
       saveTabZones(tab.key);
       renderTabs();
+    }
+
+    map.on('dblclick', e => {
+      if (!drawingMode || !currentPoly || drawPoints.length < 3) return;
+      clearTimeout(clickTimer);
+      finishDrawing();
     });
 
     function saveTabZones(key) {
       const zones = tabZones[key].map(z => ({ geo: z.geo, opp: z.opp }));
-      const totalOpp = tabZones[key].reduce((s, z) => s + z.opp, 0);
+      let totalOpp = tabZones[key].reduce((s, z) => s + z.opp, 0);
+      const updates = {};
+      if (key === OBSTAKEL_KEY) {
+        const markersOpp = obstacleItems.reduce((sum, o) => {
+          const t = getObstacleType(o.type);
+          return sum + (t.opp || 0);
+        }, 0);
+        totalOpp += markersOpp;
+        updates[key] = { objects: variant[OBSTAKEL_KEY].objects || [], zones, opp: totalOpp, geo: zones.length > 0 ? zones[0].geo : [] };
+      } else {
+        updates[key] = { zones, opp: totalOpp, geo: zones.length > 0 ? zones[0].geo : [] };
+      }
       if (!variant[key]) variant[key] = {};
       variant[key].zones = zones;
       variant[key].opp = totalOpp;
-      variant[key].geo = zones.length > 0 ? zones[0].geo : [];
-      const updates = {};
-      updates[key] = { zones, opp: totalOpp, geo: variant[key].geo };
+      variant[key].geo = updates[key].geo;
       updateGebiedVariantById(gebiedId, updates);
       updateSummary();
     }
@@ -669,11 +816,13 @@
       if (currentPoly) { map.removeLayer(currentPoly); currentPoly = null; }
       drawingMode = false;
       drawPoints = [];
+      stampingObstacleType = null;
       map.getContainer().style.cursor = '';
       document.getElementById('map-hint').classList.add('hidden');
     }
 
     function toggleDrawing(tab) {
+      stampingObstacleType = null;
       if (drawingMode) {
         stopDrawing();
       } else {
@@ -703,13 +852,22 @@
         if (isActive) {
           if (tab.key === OBSTAKEL_KEY) {
             const isDrawing = drawingMode;
-            const totalOpp = zones.reduce((s, z) => s + z.opp, 0);
+            const markersOpp = obstacleItems.reduce((sum, o) => { const t = getObstacleType(o.type); return sum + (t.opp || 0); }, 0);
+            const zonesOpp = zones.reduce((s, z) => s + z.opp, 0);
+            const totalOpp = markersOpp + zonesOpp;
+            const bebouwbaarOpp = calcBebouwbaarOpp();
             const card = document.createElement('div');
             card.className = 'card p-4 flex flex-col gap-3';
             card.style.border = '2px solid #7C3AED';
-            const typeButtons = OBSTAKEL_TYPES.map(t =>
-              `<button onclick="addObstacle('${t.key}')" class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border border-violet-300 text-violet-600 hover:bg-violet-50 transition-all">${t.icon} ${t.label}</button>`
-            ).join('');
+            const typeButtons = OBSTAKEL_TYPES.map(t => {
+              const isStamping = stampingObstacleType === t.key;
+              return `<button onclick="toggleStamping('${t.key}')"
+                class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border transition-all ${isStamping
+                  ? 'border-red-300 text-red-500 bg-red-50'
+                  : 'border-violet-300 text-violet-600 hover:bg-violet-50'}">
+                ${isStamping ? `✕ Stop ${t.label.toLowerCase()} plaatsen` : `${t.icon} ${t.label}`}
+              </button>`;
+            }).join('');
             const zonesHtml = zones.map((z, i) => `
               <div class="flex items-center gap-1 text-xs">
                 <span class="text-gray-600 flex-1">Vlak ${i + 1}</span>
@@ -723,6 +881,7 @@
               const isSelected = o.id === selectedObstacleId;
               return `<div class="flex items-center gap-1 text-xs">
                 <span class="${isSelected ? 'text-violet-700 font-semibold' : 'text-gray-600'} flex-1">${isSelected ? '● ' : ''}${t.icon} ${t.label} ${i + 1}</span>
+                <span class="text-gray-400 flex-shrink-0">${t.opp} m²</span>
                 <button onclick="removeObstacle(${o.id})"
                   class="text-gray-300 hover:text-red-400 transition-colors leading-none flex-shrink-0"
                   title="Verwijderen">×</button>
@@ -730,7 +889,7 @@
             }).join('');
             card.innerHTML = `
               <h3 class="font-semibold text-sm text-gray-700">${tab.label}</h3>
-              <p class="text-xs text-gray-400">Voeg objecten toe en sleep ze naar de juiste positie op de kaart.</p>
+              <p class="text-xs text-gray-400">Selecteer een type en klik op de kaart om te plaatsen. Sleep om te verplaatsen, rechtermuisknop om te verwijderen.</p>
               <div class="flex flex-col gap-1">${typeButtons}</div>
               <p class="text-[11px] text-gray-400">Klik op een object en druk op Delete om te verwijderen.</p>
               <button onclick="toggleDrawing(TABS[${idx}])"
@@ -739,6 +898,15 @@
                   : 'border-violet-300 text-violet-600 hover:bg-violet-50'}">
                 ${isDrawing ? '✕ Stoppen met vlak tekenen' : '✏ Teken obstakelvlak'}
               </button>
+              ${isDrawing ? `
+              <div class="flex items-center justify-between text-xs text-gray-400">
+                <span>Huidig vlak</span>
+                <span id="live-draw-opp">— m²</span>
+              </div>
+              <button id="btn-voltooien" onclick="finishDrawing()" disabled
+                class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border border-emerald-300 text-emerald-600 hover:bg-emerald-50 transition-all disabled:opacity-40 disabled:cursor-default">
+                ✓ Voltooien
+              </button>` : ''}
               ${listHtml
                 ? `<div class="flex flex-col gap-1 pt-1 border-t border-gray-100">${listHtml}</div>`
                 : '<p class="text-xs text-gray-300">Nog geen objecten geplaatst</p>'}
@@ -746,9 +914,14 @@
                 ? `<div class="flex flex-col gap-1 pt-1 border-t border-gray-100">${zonesHtml}</div>`
                 : '<p class="text-xs text-gray-300">Nog geen obstakelvlakken getekend</p>'}
               <div class="flex items-center justify-between text-xs text-gray-500 pt-1 border-t border-gray-100">
-                <span>Vlakken totaal</span>
+                <span>Obstakels totaal</span>
                 <span class="font-semibold text-violet-700">${totalOpp ? totalOpp.toLocaleString('nl-NL') + ' m²' : '— m²'}</span>
               </div>
+              <div class="flex items-center justify-between text-xs pt-1">
+                <span class="text-gray-500">Bebouwbaar</span>
+                <span class="font-semibold text-emerald-600">${bebouwbaarOpp ? bebouwbaarOpp.toLocaleString('nl-NL') + ' m²' : '— m²'}</span>
+              </div>
+              ${renderPveGrondvlakList(bebouwbaarOpp)}
               <button onclick="volgendeTab(${idx})" class="btn-primary w-full text-sm py-2">volgende</button>`;
             container.appendChild(card);
             return;
@@ -775,6 +948,15 @@
                 : 'border-violet-300 text-violet-600 hover:bg-violet-50'}">
               ${isDrawing ? '✕ Stoppen met tekenen' : '✏ Teken zone'}
             </button>
+            ${isDrawing ? `
+            <div class="flex items-center justify-between text-xs text-gray-400">
+              <span>Huidig vlak</span>
+              <span id="live-draw-opp">— m²</span>
+            </div>
+            <button id="btn-voltooien" onclick="finishDrawing()" disabled
+              class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border border-emerald-300 text-emerald-600 hover:bg-emerald-50 transition-all disabled:opacity-40 disabled:cursor-default">
+              ✓ Voltooien
+            </button>` : ''}
             ${zonesHtml
               ? `<div class="flex flex-col gap-1">${zonesHtml}</div>`
               : '<p class="text-xs text-gray-300">Nog geen zones getekend</p>'}
@@ -796,7 +978,11 @@
     }
 
     function volgendeTab(currentIdx) {
-      stopDrawing();
+      if (drawingMode && currentPoly && drawPoints.length >= 3) {
+        finishDrawing();
+      } else {
+        stopDrawing();
+      }
       if (currentIdx + 1 < TABS.length) {
         activeTab = TABS[currentIdx + 1];
         renderTabs();
@@ -804,6 +990,12 @@
         window.location.href = 'gebied-stap-5-bouwvlak.html?id=' + gebiedId;
       }
     }
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && drawingMode && drawPoints.length >= 3) {
+        finishDrawing();
+      }
+    });
 
     activeTab = TABS[0];
     renderTabs();
