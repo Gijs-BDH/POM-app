@@ -75,6 +75,14 @@ const BOT_SCRIPTS = {
     actions: [
       { id: "close_bot", label: "Aan de slag" }
     ]
+  },
+
+  "gebouw_geen_opties": {
+    message: "Er zijn geen valide gebouwopties gevonden die binnen de huidige specificaties vallen. Probeer een andere PVE- of gebiedvariant te maken.",
+    // actions: [
+    //   { id: "go_to_pve_nieuw",    label: "Maak nieuwe PVE variant" },
+    //   { id: "go_to_gebied_nieuw", label: "Maak nieuwe gebiedvariant" }
+    // ]
   }
 
 };
@@ -280,6 +288,16 @@ function handleBotAction(actionId) {
     case 'go_to_gebouw_nieuw':
       closeBot();
       window.location.href = 'gebouw-stap-1-uitgangspunten.html';
+      break;
+
+    case 'go_to_pve_nieuw':
+      closeBot();
+      window.location.href = 'pve-stap-1-invoer.html';
+      break;
+
+    case 'go_to_gebied_nieuw':
+      closeBot();
+      window.location.href = 'gebied-stap-1b-kavels.html';
       break;
 
     case 'next_step':

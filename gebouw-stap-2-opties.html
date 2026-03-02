@@ -156,6 +156,7 @@
   <script src="js/state.js"></script>
   <script src="js/calculations.js"></script>
   <script src="js/gebouw-opties.js"></script>
+  <script src="js/bot.js"></script>
   <script>
     const params     = new URLSearchParams(window.location.search);
     const gebouwId   = params.get('id');
@@ -230,7 +231,10 @@
     // ── Render option grid for active group ────────────────────────────────────
     function renderGrid() {
       const group = GEBOUW_OPTIES_GROUPS.find(g => g.id === activeGroupId);
-      if (!group) return;
+      if (!group || group.opties.length === 0) {
+        triggerBot('gebouw_geen_opties');
+        return;
+      }
 
       // Adjust columns based on group size
       const n = group.opties.length;
@@ -377,6 +381,5 @@
       renderGrid();
     }
   </script>
-  <script src="js/bot.js"></script>
 </body>
 </html>

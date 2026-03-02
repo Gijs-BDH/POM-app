@@ -451,7 +451,7 @@ window.getGebouwOptie = id => window.GEBOUW_ALLE_OPTIES.find(o => o.id === id) |
 // Als een combinatie ontbreekt, wordt de eerste groep als standaard gebruikt.
 window.GROEP_MATRIX = [
   //  gebiedIndex 0            gebiedIndex 1
-  [ 'grondgebonden',           'gestapeld','grondgebonden',           'gestapeld','grondgebonden',           'gestapeld','grondgebonden',           'gestapeld'    ],  // pveIndex 0
+  [ '',           'gestapeld','grondgebonden',           'gestapeld','grondgebonden',           'gestapeld','grondgebonden',           'gestapeld'    ],  // pveIndex 0
   [ 'paviljoen',               'hybride','paviljoen',               'hybride','paviljoen',               'hybride','paviljoen',               'hybride',      ],  // pveIndex 1
   [ 'innovatief',              'grondgebonden','innovatief',              'grondgebonden','innovatief',              'grondgebonden','innovatief',              'grondgebonden',],  // pveIndex 2
   [ 'grondgebonden',           'gestapeld','grondgebonden',           'gestapeld','grondgebonden',           'gestapeld','grondgebonden',           'gestapeld'    ],  // pveIndex 0
