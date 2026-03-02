@@ -153,6 +153,20 @@
     </div>
   </div>
 
+  <!-- Demo keuze modal -->
+  <div id="demo-keuze-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden" style="background:rgba(0,0,0,0.4);">
+    <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full mx-4 flex flex-col gap-4">
+      <div>
+        <div class="text-xs font-semibold text-violet-500 uppercase tracking-widest mb-1">Demo keuze</div>
+        <p class="text-sm text-gray-600 leading-relaxed">Ter tijdsbesparing voor het geven van de demo kunt u kiezen om de kwalitatieve beoordeling over te slaan.</p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="demoKeuzeGaDoor()" class="btn-primary flex-1 text-sm py-2.5">Ga door naar beoordeling</button>
+        <button onclick="demoKeuzeOverslaan()" class="btn-primary flex-1 text-sm py-2.5">Beoordeling stap overslaan</button>
+      </div>
+    </div>
+  </div>
+
   <script src="js/state.js"></script>
   <script src="js/calculations.js"></script>
   <script src="js/gebouw-opties.js"></script>
@@ -347,16 +361,31 @@
       });
     }
 
-    function selecteerOptie() {
-      geselecteerdOptieId = detailOptie.id;
-      updateGebouwVariantById(gebouwId, { geselecteerdeOptie: geselecteerdOptieId });
+    let pendingOptieId = null;
+
+    function showDemoKeuzeModal(id) {
+      pendingOptieId = id;
+      updateGebouwVariantById(gebouwId, { geselecteerdeOptie: id });
+      geselecteerdOptieId = id;
+      document.getElementById('demo-keuze-modal').classList.remove('hidden');
+    }
+
+    function demoKeuzeGaDoor() {
+      document.getElementById('demo-keuze-modal').classList.add('hidden');
       window.location.href = 'gebouw-stap-3-kwaliteit.html?id=' + gebouwId;
     }
 
+    function demoKeuzeOverslaan() {
+      document.getElementById('demo-keuze-modal').classList.add('hidden');
+      window.location.href = 'project-overzicht.html';
+    }
+
+    function selecteerOptie() {
+      showDemoKeuzeModal(detailOptie.id);
+    }
+
     function selecteerEnNaarStap3(id) {
-      geselecteerdOptieId = id;
-      updateGebouwVariantById(gebouwId, { geselecteerdeOptie: id });
-      window.location.href = 'gebouw-stap-3-kwaliteit.html?id=' + gebouwId;
+      showDemoKeuzeModal(id);
     }
 
     // ── Init ──────────────────────────────────────────────────────────────────
