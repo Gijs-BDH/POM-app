@@ -216,6 +216,8 @@
     const AREA_SCALE    = 12;
     const STAGE_H       = 800;
     const MIN_CLUSTER_R = 70;
+    const LATCH_RANGE   = 120; // px band beyond collision where latch attraction is active
+    const LATCH_STR     = 8;   // velocity impulse at gap=0, alpha=1
 
     function getRoomRadius(area) {
       return Math.sqrt(Math.max(area || MIN_AREA, MIN_AREA)) * AREA_SCALE;
@@ -277,6 +279,8 @@
       width: STAGE_W,
       height: STAGE_H
     });
+    const latchLayer = new Konva.Layer();
+    stage.add(latchLayer);
     const layer = new Konva.Layer();
     stage.add(layer);
 
@@ -351,12 +355,43 @@
     // ── D3 Simulations ─────────────────────────────────────────────────────
     let clusterSim = null;
     const roomSims  = {};
+    const latchLines = {};  // pair key → Konva.Line
 
     function setupClusterSim() {
       if (clusterSim) clusterSim.stop();
+
       clusterSim = d3.forceSimulation(clusters)
         .force('collide', d3.forceCollide().radius(d => d.radius + 24).iterations(3))
-        .force('charge',  d3.forceManyBody().strength(60))
+        // .force('charge', d3.forceManyBody().strength(60))  // global attraction — replaced by soft latch below
+        .force('latch', function(alpha) {
+          // Pairwise soft-latch: weak attraction only in the band just beyond collision.
+          // Fixed acceleration (not mass-proportional) so cluster size doesn't affect stickiness.
+          // At slow drag speeds the neighbor keeps up; at normal speed it separates.
+          for (let i = 0; i < clusters.length; i++) {
+            for (let j = i + 1; j < clusters.length; j++) {
+              const a = clusters[i], b = clusters[j];
+              const dx = b.x - a.x;
+              const dy = b.y - a.y;
+              const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+
+              // Edge of the collision zone (mirrors forceCollide radius)
+              const collDist = (a.radius + 24) + (b.radius + 24);
+              const gap = dist - collDist;
+
+              // Only attract within the latch band
+              if (gap <= 0 || gap > LATCH_RANGE) continue;
+
+              // Linear falloff: full strength at gap=0, zero at gap=LATCH_RANGE
+              const t = 1 - gap / LATCH_RANGE;
+              const accel = LATCH_STR * t * alpha / dist;  // simplifies to LATCH_STR*t*alpha in direction nx,ny
+
+              a.vx += dx * accel;
+              a.vy += dy * accel;
+              b.vx -= dx * accel;
+              b.vy -= dy * accel;
+            }
+          }
+        })
         .force('center',  d3.forceCenter(STAGE_W / 2, STAGE_H / 2).strength(0.005))
         .alphaDecay(0.1)
         .velocityDecay(0.6)
@@ -365,7 +400,22 @@
 
     function setupRoomSim(cluster) {
       if (roomSims[cluster.id]) roomSims[cluster.id].stop();
-      roomSims[cluster.id] = d3.forceSimulation(cluster.rooms)
+
+      // Phantom nodes: fixed row at the title/summary text band (top of cluster).
+      // The text spans most of the cluster diameter but is only ~30px tall, so
+      // three nodes spread horizontally approximate the wide, flat shape.
+      // cluster name is at y = -cluster.radius + 22, summary at y = -cluster.radius + 40.
+      const titleY = -(cluster.radius - 36);
+      const span   = cluster.radius * 0.55;                    // half of approx text width
+      const nodeR  = Math.max(cluster.radius * 0.22, 20);      // scales with cluster size
+      const phantoms = [-span, 0, span].map(xOff => ({
+        _phantom: true,
+        x: xOff, fx: xOff,
+        y: titleY, fy: titleY,
+        radius: nodeR,
+      }));
+
+      roomSims[cluster.id] = d3.forceSimulation([...phantoms, ...cluster.rooms])
         .force('collide', d3.forceCollide().radius(d => d.radius + 5))
         .force('center',  d3.forceCenter(0, 0).strength(0.1))
         .alphaDecay(0.1)
@@ -378,6 +428,7 @@
         const g = layer.findOne('#' + c.id);
         if (g) { g.x(c.x); g.y(c.y); }
       });
+      // updateLatchLines();  // disabled — visual not active
       layer.batchDraw();
     }
 
@@ -399,9 +450,73 @@
       layer.batchDraw();
     }
 
+    // ── Latch line visuals ─────────────────────────────────────────────────
+    function getLatchKey(a, b) {
+      return a.id < b.id ? `${a.id}_${b.id}` : `${b.id}_${a.id}`;
+    }
+
+    function updateLatchLines() {
+      const activePairs = new Set();
+
+      for (let i = 0; i < clusters.length; i++) {
+        for (let j = i + 1; j < clusters.length; j++) {
+          const a = clusters[i], b = clusters[j];
+          const dx = b.x - a.x, dy = b.y - a.y;
+          const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+          const collDist = (a.radius + 24) + (b.radius + 24);
+          const gap = dist - collDist;
+
+          if (gap <= 0 || gap > LATCH_RANGE) continue;
+
+          // Opacity: 1 at contact → 0 at edge of latch band
+          const t = 1 - gap / LATCH_RANGE;
+          const key = getLatchKey(a, b);
+          activePairs.add(key);
+
+          // Line runs between the visible cluster edges (not centers)
+          const nx = dx / dist, ny = dy / dist;
+          const x1 = a.x + nx * a.radius, y1 = a.y + ny * a.radius;
+          const x2 = b.x - nx * b.radius, y2 = b.y - ny * b.radius;
+
+          if (!latchLines[key]) {
+            latchLines[key] = new Konva.Line({
+              points: [x1, y1, x2, y2],
+              stroke: PRIMARY,
+              strokeWidth: 1.5,
+              dash: [6, 5],
+              opacity: 0,
+              lineCap: 'round',
+            });
+            latchLayer.add(latchLines[key]);
+          } else {
+            latchLines[key].points([x1, y1, x2, y2]);
+          }
+          latchLines[key].opacity(t * 0.45);
+        }
+      }
+
+      // Remove lines for pairs no longer latched
+      for (const key of Object.keys(latchLines)) {
+        if (!activePairs.has(key)) {
+          latchLines[key].destroy();
+          delete latchLines[key];
+        }
+      }
+    }
+
+    // Continuous marching-dash animation for active latch lines
+    const latchAnim = new Konva.Animation(() => {
+      Object.values(latchLines).forEach(ln => {
+        ln.dashOffset((ln.dashOffset() || 0) - 0.4);
+      });
+    }, latchLayer);
+    // latchAnim.start();  // disabled — visual not active
+
     // ── Build Konva nodes ──────────────────────────────────────────────────
     function rebuildLayer() {
       layer.destroyChildren();
+      // Clear latch lines — they'll be redrawn on next tick
+      Object.keys(latchLines).forEach(k => { latchLines[k].destroy(); delete latchLines[k]; });
 
       // Per-cluster groups
       clusters.forEach(c => layer.add(buildClusterGroup(c)));
