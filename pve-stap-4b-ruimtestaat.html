@@ -516,10 +516,16 @@
     // ── Collect inputs ────────────────────────────────────────────────────────
     function getInputs() {
       const po = (pveV && pveV.voorzieningen && pveV.voorzieningen.primairOnderwijs) || {};
+      const vs = (pveV && pveV.voorzieningen && pveV.voorzieningen.voorschoolseOpvang) || {};
+      const sp = (pveV && pveV.voorzieningen && pveV.voorzieningen.sport) || {};
       const budget = window.POM_CALC ? window.POM_CALC.calcTotalBVO((pveV && pveV.voorzieningen) || {}) : 0;
       return {
         leerlingen:                po.leerlingen || 0,
         budget,
+        voorschoolseActief:        !!vs.actief,
+        voorschoolseGroepen:       vs.groepen || 2,
+        sportActief:               !!sp.actief,
+        sportType:                 sp.type || 'gymzaal',
         fte:                       parseInt(document.getElementById('q-fte').value)               || 0,
         clusters:                  document.getElementById('q-clusters').value,
         aantalLokalenOB:           parseInt(document.getElementById('q-ob-lokalen').value)        || 0,
