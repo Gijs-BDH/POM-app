@@ -6,90 +6,788 @@
   <title>POM – Gebiedsinstellingen</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link href="https://cdn.jsdelivr.net/npm/cesium@1.107/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
   <link rel="stylesheet" href="css/styles.css"/>
   <style>
-    #map { height: 300px; border-radius: 0.75rem; }
+    #map, #map3d { height: 700px; border-radius: 0.75rem; }
+    .area-card { transition: border 0.12s; }
+    .stamp-btn {
+      flex: 1; padding: 0.3rem; border-radius: 0.4rem;
+      border: 1.5px solid #E5E7EB; background: white;
+      cursor: pointer; font-size: 1.05rem; text-align: center;
+      transition: all 0.12s;
+    }
+    .stamp-btn.active { border-color: #7C3AED; background: #F5F3FF; }
+    .stamp-btn:hover:not(.active) { border-color: #C4B5FD; }
+    #map.drawing-cursor,
+    #map.drawing-cursor .leaflet-container { cursor: crosshair !important; }
+
+    /* ── Layer toggle switch ─────────────────────────────────────────── */
+    .layer-toggle {
+      position: relative; width: 28px; height: 16px;
+      background: #D1D5DB; border-radius: 99px;
+      cursor: pointer; flex-shrink: 0; transition: background 0.15s;
+    }
+    .layer-toggle.on { background: #7C3AED; }
+    .layer-toggle::after {
+      content: ''; position: absolute; top: 2px; left: 2px;
+      width: 12px; height: 12px; background: white; border-radius: 50%;
+      transition: transform 0.15s; box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    }
+    .layer-toggle.on::after { transform: translateX(12px); }
   </style>
 </head>
 <body class="min-h-screen bg-gray-50 p-8">
 
-  <div class="max-w-2xl mx-auto flex flex-col gap-6">
+  <div class="mx-auto">
 
     <!-- Header -->
-    <div class="flex items-start justify-between gap-4">
+    <div class="flex items-start justify-between gap-4 mb-4">
       <div>
         <a href="project-overzicht.html" class="breadcrumb">← Project overzicht</a>
         <h1 class="page-title">Gebiedsinstellingen</h1>
       </div>
-      <button onclick="maakKopie()" class="btn-secondary text-sm px-4 py-2 flex-shrink-0 mt-1">⊕ Maak een kopie</button>
-    </div>
-
-    <!-- ── Section 1: Variant details ──────────────────────────────────────── -->
-    <div class="card flex flex-col gap-5">
-      <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Variant</h2>
-
-      <div class="form-row">
-        <label>Naam</label>
-        <input id="g-naam" type="text" class="input-field" placeholder="Locatie naam"/>
-      </div>
-
-      <div class="form-row">
-        <label>Oppervlak (m²)</label>
-        <input id="g-opp" type="number" class="input-field" placeholder="0" min="0"/>
+      <div class="flex items-center gap-3 mt-1 flex-shrink-0">
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-gray-500 font-medium whitespace-nowrap">Naam variant</label>
+          <input id="g-naam" type="text" class="input-field text-sm px-3 py-1.5" placeholder="Locatie naam" style="width:180px;"/>
+        </div>
+        <button onclick="maakKopie()" class="btn-secondary text-sm px-4 py-2 flex-shrink-0">⊕ Kopie</button>
+        <button onclick="opslaanInstellingen()" class="btn-primary text-sm px-4 py-2 flex-shrink-0">Opslaan</button>
       </div>
     </div>
 
-    <!-- ── Section 2: Kaart ────────────────────────────────────────────────── -->
-    <div class="card flex flex-col gap-4">
-      <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Locatie</h2>
-      <div id="map"></div>
-      <div class="info-card text-xs">
-        De kaart toont het getekende perceel. Om de grens opnieuw in te tekenen, ga terug naar
-        <a href="gebied-stap-1b-kavels.html" class="text-violet-600 hover:underline">Gebied aanmaken</a>.
+    <div class="flex gap-5">
+      <div id="nav-panel" class="nav-panel"></div>
+
+      <!-- Summary card (LEFT of map) -->
+      <div class="w-52 flex-shrink-0">
+        <div class="card p-4 flex flex-col gap-2" style="border: 2px solid #7C3AED;">
+          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Oppervlak</h3>
+          <div class="flex justify-between text-xs text-gray-500">
+            <span>Bouwvlak</span><span id="opp-summary-bouwvlak">— m²</span>
+          </div>
+          <div class="flex justify-between text-xs" style="color:#F97316"><span>· Onbebouwd</span><span id="opp-summary-onbebouwdGebied">— m²</span></div>
+          <div class="flex justify-between text-xs" style="color:#EF4444"><span>· Uitsluiting</span><span id="opp-summary-uitsluiting">— m²</span></div>
+          <div class="flex justify-between text-xs" style="color:#3B82F6"><span>· Parkeren</span><span id="opp-summary-parkeren">— m²</span></div>
+          <div class="flex justify-between text-xs" style="color:#22C55E"><span>· Onderbouwplein</span><span id="opp-summary-onderbouwplein">— m²</span></div>
+          <div class="flex justify-between text-xs" style="color:#0EA5E9"><span>· Bovenbouwplein</span><span id="opp-summary-bovenbouwPlein">— m²</span></div>
+          <div class="flex justify-between text-xs" style="color:#A855F7"><span>· Fietsenstalling</span><span id="opp-summary-fietsenstalling">— m²</span></div>
+          <div class="flex justify-between text-xs" style="color:#F59E0B"><span>· Obstakels</span><span id="opp-summary-obstakels">— m²</span></div>
+          <div class="border-t border-gray-100 pt-2 flex justify-between text-xs font-semibold">
+            <span class="text-gray-700">Bebouwbaar</span>
+            <span id="bebouwbaar-opp-display" class="text-emerald-600">— m²</span>
+          </div>
+          <div id="pve-compat-container" class="hidden flex flex-col gap-1 pt-2 border-t border-gray-100">
+            <div class="text-xs font-semibold text-gray-400 uppercase tracking-widest" style="letter-spacing:0.05em">PVE grondvlak</div>
+            <div id="pve-compat-list" class="flex flex-col gap-1"></div>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <!-- ── Footer actions ────────────────────────────────────────────────── -->
-    <div class="flex justify-end gap-3 pb-4">
-      <a href="project-overzicht.html" class="btn-ghost px-6 py-2">Annuleren</a>
-      <button onclick="opslaanInstellingen()" class="btn-primary px-6 py-2">Opslaan</button>
-    </div>
+      <!-- Map (center) -->
+      <div class="flex-1">
+        <div class="flex justify-end mb-2">
+          <div class="inline-flex rounded-lg border border-gray-200 bg-white p-0.5">
+            <button id="btn-2d" onclick="setMapMode('2d')" class="px-3 py-1 text-xs rounded-md bg-violet-600 text-white">2D</button>
+            <button id="btn-3d" onclick="setMapMode('3d')" class="px-3 py-1 text-xs rounded-md text-gray-500">3D</button>
+          </div>
+        </div>
+        <div id="map"></div>
+        <div id="map3d" class="hidden"></div>
+      </div>
 
+      <!-- Area cards (RIGHT) -->
+      <div class="w-52 flex-shrink-0" style="max-height:740px;overflow-y:auto;">
+        <div id="area-cards" class="flex flex-col gap-2"></div>
+      </div>
+
+    </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>window.CESIUM_BASE_URL = 'https://cdn.jsdelivr.net/npm/cesium@1.107/Build/Cesium/';</script>
+  <script src="https://cdn.jsdelivr.net/npm/cesium@1.107/Build/Cesium/Cesium.js"></script>
+  <script src="js/cesium-maplibre-shim.js?v=20261030"></script>
   <script src="js/state.js"></script>
   <script>
-    const params    = new URLSearchParams(window.location.search);
-    const gebiedId  = params.get('id');
-    const project   = getCurrentProject();
+    const params   = new URLSearchParams(window.location.search);
+    const gebiedId = params.get('id');
+    const project  = getCurrentProject();
     if (!project) { window.location.href = 'index.html'; }
 
     const gebiedVarianten = project.gebiedVarianten || [];
-    const variant = gebiedId
+    let variant = gebiedId
       ? gebiedVarianten.find(g => g.id === gebiedId)
       : gebiedVarianten[0];
     if (!variant) { window.location.href = 'project-overzicht.html'; }
 
-    // Pre-fill form
-    document.getElementById('g-naam').value = variant.naam || '';
-    document.getElementById('g-opp').value  = variant.opp  || 0;
+    document.getElementById('g-naam').value        = variant.naam || '';
+    document.getElementById('nav-panel').innerHTML = renderNavPanel('gebied', project);
 
-    // ── Leaflet map (read-only preview) ────────────────────────────────────
-    const map = L.map('map').setView([52.2, 5.3], 8);
+    // ── Save helper ────────────────────────────────────────────────────────────
+    function saveVariantFields(fields) {
+      Object.assign(variant, fields);
+      const updated = gebiedVarianten.map(g => g.id === variant.id ? { ...g, ...fields } : g);
+      updateCurrentProject({ gebiedVarianten: updated });
+      updateSummary();
+      renderAreaCards();
+    }
+
+    // ── Map setup ──────────────────────────────────────────────────────────────
+    const MAP_VIEW_KEY = 'pom_map_view_gebied_' + project.id;
+    const savedView = JSON.parse(localStorage.getItem(MAP_VIEW_KEY) || 'null');
+    const map = L.map('map', { doubleClickZoom: false }).setView(
+      savedView ? [savedView.lat, savedView.lng] : [52.2, 5.3],
+      savedView ? savedView.zoom : 8
+    );
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 19
     }).addTo(map);
+    map.on('moveend', () => {
+      const c = map.getCenter();
+      localStorage.setItem(MAP_VIEW_KEY, JSON.stringify({ lat: c.lat, lng: c.lng, zoom: map.getZoom() }));
+    });
 
-    if (variant.geo && variant.geo.length >= 3) {
-      const poly = L.polygon(variant.geo, {
-        color: '#7C3AED', fillColor: '#7C3AED', fillOpacity: 0.3, weight: 2
-      }).addTo(map);
-      map.fitBounds(poly.getBounds(), { padding: [30, 30] });
+    // 3D map
+    const map3d = new maplibregl.Map({
+      container: 'map3d',
+      style: {
+        version: 8,
+        sources: { osm: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256 } },
+        layers: [{ id: 'osm', type: 'raster', source: 'osm' }]
+      },
+      center: [map.getCenter().lng, map.getCenter().lat],
+      zoom: map.getZoom(),
+      pitch: 55,
+      bearing: -15
+    });
+
+    let mapMode = '2d';
+    function setMapMode(mode) {
+      mapMode = mode;
+      const map2dEl = document.getElementById('map');
+      const map3dEl = document.getElementById('map3d');
+      if (mode === '3d') {
+        const c = map.getCenter();
+        map3d.setCenter([c.lng, c.lat]);
+        map3d.setZoom(map.getZoom());
+        map2dEl.classList.add('hidden');
+        map3dEl.classList.remove('hidden');
+        document.getElementById('btn-2d').className = 'px-3 py-1 text-xs rounded-md text-gray-500';
+        document.getElementById('btn-3d').className = 'px-3 py-1 text-xs rounded-md bg-violet-600 text-white';
+        map3d.resize();
+        syncLeafletTo3D();
+      } else {
+        const c = map3d.getCenter();
+        map.setView([c.lat, c.lng], map3d.getZoom());
+        map3dEl.classList.add('hidden');
+        map2dEl.classList.remove('hidden');
+        document.getElementById('btn-2d').className = 'px-3 py-1 text-xs rounded-md bg-violet-600 text-white';
+        document.getElementById('btn-3d').className = 'px-3 py-1 text-xs rounded-md text-gray-500';
+        map.invalidateSize();
+      }
+    }
+    window.setMapMode = setMapMode;
+
+    // ── 3D sync ────────────────────────────────────────────────────────────────
+    let map3dReady = false;
+    const sync3dSrcId  = 'leaflet-polygons-src';
+    const obs3dPtSrcId = 'obstacles-points-src';
+    const obs3dVolSrcId = 'obstacles-volume-src';
+
+    function syncLeafletTo3D() {
+      if (!map3dReady) return;
+      const features = [];
+      map.eachLayer(layer => {
+        if (layer instanceof L.Polygon) {
+          const gj = layer.toGeoJSON();
+          if (gj && gj.geometry) {
+            gj.properties = {
+              fillColor:   layer.options?.fillColor || layer.options?.color || '#7C3AED',
+              lineColor:   layer.options?.color || '#4C1D95',
+              fillOpacity: layer.options?.fillOpacity ?? 0.22,
+              lineWidth:   layer.options?.weight ?? 1.5,
+            };
+            features.push(gj);
+          }
+        }
+      });
+      const fc  = { type: 'FeatureCollection', features };
+      const src = map3d.getSource(sync3dSrcId);
+      if (src) {
+        src.setData(fc);
+      } else {
+        map3d.addSource(sync3dSrcId, { type: 'geojson', data: fc });
+        map3d.addLayer({ id: 'leaflet-polygons-fill', type: 'fill', source: sync3dSrcId,
+          paint: { 'fill-color': ['coalesce', ['get', 'fillColor'], '#7C3AED'], 'fill-opacity': ['coalesce', ['get', 'fillOpacity'], 0.22] } });
+        map3d.addLayer({ id: 'leaflet-polygons-line', type: 'line', source: sync3dSrcId,
+          paint: { 'line-color': ['coalesce', ['get', 'lineColor'], '#4C1D95'], 'line-width': ['coalesce', ['get', 'lineWidth'], 1.5] } });
+      }
     }
 
-    // ── Copy variant ───────────────────────────────────────────────────────
+    function circleFootprint(lng, lat, radiusM, steps = 16) {
+      const mToLng = 1 / (111320 * Math.cos(lat * Math.PI / 180));
+      const mToLat = 1 / 111320;
+      const ring = [];
+      for (let i = 0; i <= steps; i++) {
+        const a = (i / steps) * Math.PI * 2;
+        ring.push([lng + Math.cos(a) * radiusM * mToLng, lat + Math.sin(a) * radiusM * mToLat]);
+      }
+      return ring;
+    }
+    function rectFootprint(lng, lat, widthM, lengthM) {
+      const hw = widthM / 2, hl = lengthM / 2;
+      const mToLng = 1 / (111320 * Math.cos(lat * Math.PI / 180));
+      const mToLat = 1 / 111320;
+      const pts = [
+        [lng - hl * mToLng, lat - hw * mToLat], [lng + hl * mToLng, lat - hw * mToLat],
+        [lng + hl * mToLng, lat + hw * mToLat], [lng - hl * mToLng, lat + hw * mToLat],
+      ];
+      pts.push(pts[0]);
+      return pts;
+    }
+    function obstacleVolumeFeatures(o) {
+      const mToLng = 1 / (111320 * Math.cos(o.lat * Math.PI / 180));
+      const mToLat = 1 / 111320;
+      if (o.type === 'boom') return [
+        { type:'Feature', geometry:{ type:'Polygon', coordinates:[circleFootprint(o.lng,o.lat,0.16)] }, properties:{ color:'#6B3F1F', h:3.2, b:0, op:0.98 } },
+        { type:'Feature', geometry:{ type:'Polygon', coordinates:[circleFootprint(o.lng,o.lat,1.45)] }, properties:{ color:'#2F7D32', h:5.4, b:2.4, op:0.94 } },
+        { type:'Feature', geometry:{ type:'Polygon', coordinates:[circleFootprint(o.lng-0.95*mToLng,o.lat+0.2*mToLat,1.05)] }, properties:{ color:'#2E7D32', h:5.8, b:3.0, op:0.92 } },
+        { type:'Feature', geometry:{ type:'Polygon', coordinates:[circleFootprint(o.lng+0.95*mToLng,o.lat+0.18*mToLat,1.0)] }, properties:{ color:'#357A38', h:5.8, b:3.0, op:0.92 } },
+        { type:'Feature', geometry:{ type:'Polygon', coordinates:[circleFootprint(o.lng-0.35*mToLng,o.lat-0.95*mToLat,0.9)] }, properties:{ color:'#3E8C41', h:5.6, b:2.9, op:0.9 } },
+        { type:'Feature', geometry:{ type:'Polygon', coordinates:[circleFootprint(o.lng+0.3*mToLng,o.lat+0.9*mToLat,0.85)] }, properties:{ color:'#4C9A4A', h:6.1, b:3.4, op:0.9 } },
+        { type:'Feature', geometry:{ type:'Polygon', coordinates:[circleFootprint(o.lng,o.lat+0.15*mToLat,0.75)] }, properties:{ color:'#66B56A', h:7.0, b:4.9, op:0.88 } }
+      ];
+      if (o.type === 'lamp') return [
+        { type:'Feature', geometry:{ type:'Polygon', coordinates:[circleFootprint(o.lng,o.lat,0.07)] }, properties:{ color:'#9CA3AF', h:4.8, b:0, op:0.98 } },
+        { type:'Feature', geometry:{ type:'Polygon', coordinates:[rectFootprint(o.lng+0.32*mToLng,o.lat,0.07,0.65)] }, properties:{ color:'#D1D5DB', h:4.95, b:4.75, op:0.98 } },
+        { type:'Feature', geometry:{ type:'Polygon', coordinates:[circleFootprint(o.lng+0.62*mToLng,o.lat,0.18)] }, properties:{ color:'#FEF3C7', h:5.15, b:4.8, op:0.78 } }
+      ];
+      return [
+        { type:'Feature', geometry:{ type:'Polygon', coordinates:[rectFootprint(o.lng,o.lat,0.55,1.8)] }, properties:{ color:'#A16207', h:0.5, b:0.45, op:0.98 } },
+        { type:'Feature', geometry:{ type:'Polygon', coordinates:[rectFootprint(o.lng-0.62*mToLng,o.lat-0.18*mToLat,0.1,0.12)] }, properties:{ color:'#6B4F3A', h:0.45, b:0, op:0.98 } },
+        { type:'Feature', geometry:{ type:'Polygon', coordinates:[rectFootprint(o.lng+0.62*mToLng,o.lat-0.18*mToLat,0.1,0.12)] }, properties:{ color:'#6B4F3A', h:0.45, b:0, op:0.98 } },
+        { type:'Feature', geometry:{ type:'Polygon', coordinates:[rectFootprint(o.lng,o.lat+0.3*mToLat,0.1,1.8)] }, properties:{ color:'#92400E', h:1.1, b:0.45, op:0.98 } }
+      ];
+    }
+    function syncObstaclesTo3D() {
+      if (!map3dReady) return;
+      const obstItems = ((variant.obstakels && variant.obstakels.objects) || [])
+        .filter(o => typeof o.lat === 'number' && typeof o.lng === 'number');
+      const pointFc  = { type: 'FeatureCollection', features: obstItems.map(o => {
+        const t = OBSTAKEL_TYPES.find(x => x.key === o.type) || OBSTAKEL_TYPES[0];
+        return { type: 'Feature', geometry: { type: 'Point', coordinates: [o.lng, o.lat] }, properties: { label: t.label, icon: t.icon } };
+      }) };
+      const volumeFc = { type: 'FeatureCollection', features: obstItems.flatMap(obstacleVolumeFeatures) };
+      if (!map3d.getSource(obs3dPtSrcId))  map3d.addSource(obs3dPtSrcId,  { type: 'geojson', data: pointFc  });
+      if (!map3d.getSource(obs3dVolSrcId)) map3d.addSource(obs3dVolSrcId, { type: 'geojson', data: volumeFc });
+      if (!map3d.getLayer('obstacles-objects-3d')) map3d.addLayer({ id: 'obstacles-objects-3d', type: 'fill-extrusion', source: obs3dVolSrcId,
+        paint: { 'fill-extrusion-color': ['coalesce',['get','color'],'#9CA3AF'], 'fill-extrusion-height': ['coalesce',['get','h'],1], 'fill-extrusion-base': ['coalesce',['get','b'],0], 'fill-extrusion-opacity': ['coalesce',['get','op'],0.95] } });
+      if (!map3d.getLayer('obstacles-objects-3d-outline')) map3d.addLayer({ id: 'obstacles-objects-3d-outline', type: 'line', source: obs3dVolSrcId,
+        paint: { 'line-color': '#5B4636', 'line-width': 1 } });
+      if (!map3d.getLayer('obstacles-points-label')) map3d.addLayer({ id: 'obstacles-points-label', type: 'symbol', source: obs3dPtSrcId,
+        layout: { 'text-field': ['concat',['get','icon'],' ',['get','label']], 'text-size': 12, 'text-offset': [0,1.2], 'text-anchor': 'top' },
+        paint: { 'text-color': '#7C2D12' } });
+      map3d.getSource(obs3dPtSrcId).setData(pointFc);
+      map3d.getSource(obs3dVolSrcId).setData(volumeFc);
+    }
+    map3d.on('load', () => { map3dReady = true; syncLeafletTo3D(); syncObstaclesTo3D(); });
+
+    // ── Constants ──────────────────────────────────────────────────────────────
+    const OBSTAKEL_TYPES = [
+      { key: 'boom', label: 'Boom',      icon: '🌳' },
+      { key: 'lamp', label: 'Lichtmast', icon: '💡' },
+      { key: 'bank', label: 'Bankje',    icon: '🪑' },
+    ];
+
+    // Zone layers rendered on map (including display-only ones)
+    const ZONE_LAYERS = [
+      { key: 'onbebouwdGebied', color: '#F97316' },
+      { key: 'uitsluiting',     color: '#EF4444' },
+      { key: 'parkeren',        color: '#3B82F6' },
+      { key: 'onderbouwplein',  color: '#22C55E' },
+      { key: 'bovenbouwPlein',  color: '#0EA5E9' },
+      { key: 'fietsenstalling', color: '#A855F7' },
+      { key: 'placeholder',     color: '#14B8A6' },
+    ];
+
+    // Editable area definitions for the right-side cards
+    const AREA_DEFS = [
+      { key: 'kavel',           label: 'Kavel',            color: '#7C3AED', type: 'kavel'     },
+      // { key: 'kavelpaspoort',   label: 'Kavelpaspoort',    color: '#6B7280', type: 'upload'    },
+      // { key: 'omgevingMassa',   label: 'Omgeving massa',   color: '#78716C', type: 'upload'    },
+      { key: 'onbebouwdGebied', label: 'Onbebouwd gebied', color: '#F97316', type: 'zones'     },
+      { key: 'parkeren',        label: 'Parkeren',          color: '#3B82F6', type: 'zones'     },
+      { key: 'onderbouwplein',  label: 'Onderbouwplein',   color: '#22C55E', type: 'zones'     },
+      { key: 'bovenbouwPlein',  label: 'Bovenbouwplein',   color: '#0EA5E9', type: 'zones'     },
+      { key: 'fietsenstalling', label: 'Fietsenstalling',  color: '#A855F7', type: 'zones'     },
+      { key: 'obstakels',       label: 'Obstakels',         color: '#F59E0B', type: 'obstacles' },
+    ];
+
+    // ── Layer groups (one per key) ─────────────────────────────────────────────
+    const layerGroups = {};
+    ['kavel', ...ZONE_LAYERS.map(z => z.key), 'obstakels'].forEach(k => {
+      layerGroups[k] = L.layerGroup().addTo(map);
+    });
+
+    // ── Area calculation (shoelace on projected coords) ────────────────────────
+    function calcPolygonArea(latlngs) {
+      const n = latlngs.length;
+      if (n < 3) return 0;
+      let sum = 0;
+      for (let i = 0; i < n; i++) {
+        const j = (i + 1) % n;
+        const xi = latlngs[i].lng * 111320 * Math.cos(latlngs[i].lat * Math.PI / 180);
+        const yi = latlngs[i].lat * 111320;
+        const xj = latlngs[j].lng * 111320 * Math.cos(latlngs[j].lat * Math.PI / 180);
+        const yj = latlngs[j].lat * 111320;
+        sum += xi * yj - xj * yi;
+      }
+      return Math.round(Math.abs(sum / 2));
+    }
+
+    // ── Redraw all map layers from variant data ────────────────────────────────
+    function redrawAllLayers() {
+      const disabled = variant.disabledLayers || {};
+
+      // Kavel boundary
+      layerGroups['kavel'].clearLayers();
+      if (!disabled['kavel'] && variant.geo && variant.geo.length >= 3) {
+        L.polygon(variant.geo, {
+          color: '#7C3AED', fillColor: '#7C3AED', fillOpacity: 0.06,
+          weight: 2, dashArray: '6 4'
+        }).addTo(layerGroups['kavel']);
+      }
+
+      // Zone layers
+      ZONE_LAYERS.forEach(zl => {
+        layerGroups[zl.key].clearLayers();
+        if (disabled[zl.key]) return;
+        const data = variant[zl.key];
+        if (!data) return;
+        const zones = (data.zones && data.zones.length > 0)
+          ? data.zones
+          : (data.geo && data.geo.length >= 3 ? [{ geo: data.geo, opp: data.opp }] : []);
+        zones.forEach(z => {
+          if (z.geo && z.geo.length >= 3) {
+            L.polygon(z.geo, {
+              color: zl.color, fillColor: zl.color, fillOpacity: 0.2, weight: 1.5, dashArray: '4 4'
+            }).addTo(layerGroups[zl.key]);
+          }
+        });
+      });
+
+      // Obstacle markers
+      layerGroups['obstakels'].clearLayers();
+      if (!disabled['obstakels']) {
+        const obstItems = ((variant.obstakels && variant.obstakels.objects) || [])
+          .filter(o => typeof o.lat === 'number' && typeof o.lng === 'number');
+        obstItems.forEach(o => {
+          const t = OBSTAKEL_TYPES.find(x => x.key === o.type) || OBSTAKEL_TYPES[0];
+          const icon = L.divIcon({ className: '', html: `<div style="font-size:1.2rem;line-height:1;">${t.icon}</div>`, iconSize: [22,22], iconAnchor: [11,11] });
+          L.marker([o.lat, o.lng], { icon }).addTo(layerGroups['obstakels'])
+            .bindTooltip(t.label, { direction: 'top', offset: [0,-8] });
+        });
+      }
+
+      syncLeafletTo3D();
+      syncObstaclesTo3D();
+    }
+
+    // Initial draw + fit bounds
+    redrawAllLayers();
+    if (!savedView) {
+      const allPts = [];
+      Object.values(layerGroups).forEach(lg => {
+        lg.eachLayer(layer => {
+          if (layer instanceof L.Polygon) {
+            layer.getLatLngs()[0].forEach(ll => allPts.push(ll));
+          }
+        });
+      });
+      if (allPts.length > 0) {
+        map.fitBounds(L.latLngBounds(allPts), { padding: [40, 40] });
+      }
+    }
+
+    // ── Drawing state ──────────────────────────────────────────────────────────
+    let activeAreaKey   = null;
+    let drawingMode     = null;   // 'polygon' | 'stamp' | null
+    let currentPoints   = [];     // LatLng[] while drawing
+    let drawMarkers     = [];     // temp vertex markers
+    let drawPolyline    = null;   // temp preview polyline
+    let activeStampType = 'boom';
+    let clickTimeout    = null;
+
+    function setDrawingCursor(on) {
+      const mapEl = document.getElementById('map');
+      if (on) mapEl.classList.add('drawing-cursor');
+      else    mapEl.classList.remove('drawing-cursor');
+    }
+
+    // ── Map event handlers ─────────────────────────────────────────────────────
+    map.on('click', function(e) {
+      if (!drawingMode) return;
+      if (drawingMode === 'stamp') { placeObstacle(e.latlng); return; }
+      // Polygon: debounce to skip the first click of a dblclick
+      if (clickTimeout) { clearTimeout(clickTimeout); clickTimeout = null; return; }
+      clickTimeout = setTimeout(() => { clickTimeout = null; addDrawVertex(e.latlng); }, 230);
+    });
+
+    map.on('dblclick', function(e) {
+      if (!drawingMode || drawingMode !== 'polygon') return;
+      if (clickTimeout) { clearTimeout(clickTimeout); clickTimeout = null; }
+      L.DomEvent.preventDefault(e);
+      L.DomEvent.stopPropagation(e);
+      finishPolygon();
+    });
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && drawingMode) cancelDrawing();
+    });
+
+    // ── Polygon drawing helpers ────────────────────────────────────────────────
+    function addDrawVertex(latlng) {
+      currentPoints.push(latlng);
+      // Vertex dot
+      const m = L.circleMarker(latlng, {
+        radius: 4, color: '#7C3AED', fillColor: '#7C3AED', fillOpacity: 1, weight: 1
+      }).addTo(map);
+      drawMarkers.push(m);
+      // Preview polyline
+      if (drawPolyline) { drawPolyline.remove(); }
+      if (currentPoints.length >= 2) {
+        drawPolyline = L.polyline([...currentPoints, currentPoints[0]], {
+          color: '#7C3AED', dashArray: '5 4', weight: 1.5
+        }).addTo(map);
+      }
+      // Update instruction in active card
+      const instrEl = document.getElementById('draw-instruction');
+      if (instrEl) {
+        instrEl.textContent = currentPoints.length >= 3
+          ? `${currentPoints.length} punten – dubbelklik om af te ronden`
+          : `${currentPoints.length} punt${currentPoints.length !== 1 ? 'en' : ''} – klik om door te gaan`;
+      }
+    }
+
+    function clearDrawPreview() {
+      drawMarkers.forEach(m => m.remove());
+      drawMarkers = [];
+      if (drawPolyline) { drawPolyline.remove(); drawPolyline = null; }
+      currentPoints = [];
+    }
+
+    function finishPolygon() {
+      if (currentPoints.length < 3) { cancelDrawing(); return; }
+      const geo = currentPoints.map(p => [p.lat, p.lng]);
+      const opp = calcPolygonArea(currentPoints);
+      clearDrawPreview();
+      drawingMode = null;
+      setDrawingCursor(false);
+
+      if (activeAreaKey === 'kavel') {
+        saveVariantFields({ geo, opp });
+      } else {
+        const existing = variant[activeAreaKey] || {};
+        const zones = [...(existing.zones || []), { name: `Zone ${(existing.zones || []).length + 1}`, geo, opp }];
+        saveVariantFields({ [activeAreaKey]: { ...existing, zones } });
+      }
+      redrawAllLayers();
+
+      // Update instruction after save
+      const instrEl = document.getElementById('draw-instruction');
+      if (instrEl) instrEl.textContent = 'Zone opgeslagen. Klik hieronder om nog een zone te tekenen.';
+    }
+
+    function cancelDrawing() {
+      clearDrawPreview();
+      drawingMode = null;
+      setDrawingCursor(false);
+      renderAreaCards();
+    }
+
+    // ── Obstacle stamping ──────────────────────────────────────────────────────
+    function placeObstacle(latlng) {
+      const existing = variant.obstakels || { objects: [], opp: 0 };
+      const objects  = [...(existing.objects || []), { type: activeStampType, lat: latlng.lat, lng: latlng.lng }];
+      saveVariantFields({ obstakels: { ...existing, objects } });
+      redrawAllLayers();
+    }
+
+    function deleteObstacle(idx) {
+      const existing = variant.obstakels || { objects: [] };
+      const objects  = (existing.objects || []).filter((_, i) => i !== idx);
+      saveVariantFields({ obstakels: { ...existing, objects } });
+      redrawAllLayers();
+    }
+
+    function deleteZone(areaKey, zoneIdx) {
+      if (areaKey === 'kavel') {
+        saveVariantFields({ geo: null, opp: 0 });
+      } else {
+        const existing = variant[areaKey] || {};
+        const zones = (existing.zones || []).filter((_, i) => i !== zoneIdx);
+        saveVariantFields({ [areaKey]: { ...existing, zones } });
+      }
+      redrawAllLayers();
+    }
+
+    // ── Card activation ────────────────────────────────────────────────────────
+    function activateCard(key) {
+      cancelDrawing();
+      activeAreaKey = key;
+      const def = AREA_DEFS.find(a => a.key === key);
+      if (def && def.type === 'obstacles') {
+        drawingMode = 'stamp';
+        setDrawingCursor(true);
+      }
+      renderAreaCards();
+      // Scroll card into view
+      setTimeout(() => {
+        const cards = document.getElementById('area-cards');
+        const active = cards && cards.querySelector('[data-area-key="' + key + '"]');
+        if (active) active.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 50);
+    }
+
+    function deactivateCard() {
+      cancelDrawing();
+      activeAreaKey = null;
+      renderAreaCards();
+    }
+
+    function startZoneDrawing(key) {
+      activeAreaKey = key;
+      drawingMode   = 'polygon';
+      currentPoints = [];
+      setDrawingCursor(true);
+      renderAreaCards();
+    }
+
+    function setStampType(type) {
+      activeStampType = type;
+      renderAreaCards();
+    }
+
+    function toggleAreaLayer(key) {
+      const disabled = variant.disabledLayers || {};
+      const nowDisabled = !disabled[key];
+      saveVariantFields({ disabledLayers: { ...disabled, [key]: nowDisabled } });
+      redrawAllLayers();
+    }
+
+    // ── Area cards rendering ───────────────────────────────────────────────────
+    function renderAreaCards() {
+      const container = document.getElementById('area-cards');
+      container.innerHTML = '';
+
+      AREA_DEFS.forEach(area => {
+        const isActive = activeAreaKey === area.key;
+
+        // Compute display state
+        let isDone = false, detail = '';
+        let zones = [], obstItems = [];
+
+        if (area.key === 'kavel') {
+          isDone = !!(variant.geo && variant.geo.length >= 3);
+          detail = isDone ? ((variant.opp || 0).toLocaleString('nl-NL') + ' m²') : 'Niet getekend';
+        } else if (area.type === 'upload') {
+          isDone = !!variant[area.key];
+          detail = isDone ? 'Geüpload' : 'Niet geüpload';
+        } else if (area.type === 'obstacles') {
+          const obs = variant.obstakels || {};
+          obstItems = (obs.objects || []).filter(o => typeof o.lat === 'number');
+          isDone    = obstItems.length > 0;
+          detail    = isDone ? `${obstItems.length} object${obstItems.length !== 1 ? 'en' : ''}` : 'Geen obstakels';
+        } else {
+          const data = variant[area.key];
+          zones = (data && data.zones) || [];
+          isDone = zones.length > 0;
+          const totalOpp = zones.reduce((s, z) => s + (z.opp || 0), 0);
+          detail = isDone ? `${zones.length} zone${zones.length !== 1 ? 's' : ''} · ${totalOpp.toLocaleString('nl-NL')} m²` : 'Geen zones';
+        }
+
+        const card = document.createElement('div');
+        card.className = 'card p-3 flex flex-col gap-2 area-card';
+        card.dataset.areaKey = area.key;
+        if (isActive) card.style.border = `2px solid ${area.color}`;
+
+        const isEnabled = !(variant.disabledLayers || {})[area.key];
+        const toggleHtml = `<div onclick="event.stopPropagation(); toggleAreaLayer('${area.key}')"
+          class="layer-toggle ${isEnabled ? 'on' : ''}"
+          title="${isEnabled ? 'Klik om uit te schakelen' : 'Klik om in te schakelen'}"></div>`;
+        const dotHtml = `<span style="width:8px;height:8px;border-radius:50%;background:${isEnabled ? area.color : '#D1D5DB'};flex-shrink:0;display:inline-block;"></span>`;
+        const doneHtml = `<span class="text-xs font-semibold" style="color:${isDone && isEnabled ? '#059669' : '#D1D5DB'}">${isDone && isEnabled ? '✓' : '—'}</span>`;
+
+        if (!isActive) {
+          // ── Inactive card ─────────────────────────────────────────────────
+          let editBtn = '';
+          if (area.type === 'upload') {
+            editBtn = `<a href="gebied-stap-1d-upload.html?id=${gebiedId}" class="text-xs font-medium text-violet-600 hover:text-violet-800 transition-colors">→ Bewerken</a>`;
+          } else {
+            editBtn = `<button onclick="activateCard('${area.key}')" class="text-xs font-medium text-violet-600 hover:text-violet-800 transition-colors text-left">✏ Bewerken</button>`;
+          }
+          card.innerHTML = `
+            <div class="flex items-center gap-1.5">
+              ${dotHtml}
+              <span class="text-xs font-semibold ${isEnabled ? 'text-gray-700' : 'text-gray-400'} flex-1">${area.label}</span>
+              ${toggleHtml}
+            </div>
+            <div class="text-xs leading-tight ${isEnabled ? 'text-gray-400' : 'text-gray-300'}">${isEnabled ? detail : '(uitgeschakeld)'}</div>
+            ${editBtn}`;
+
+        } else if (area.type === 'kavel') {
+          // ── Active kavel card ─────────────────────────────────────────────
+          const kavExists = !!(variant.geo && variant.geo.length >= 3);
+          const instrText = drawingMode === 'polygon'
+            ? 'Klik op de kaart · dubbelklik om af te ronden'
+            : 'Teken of herteken de kavelgrens op de kaart';
+          card.innerHTML = `
+            <div class="flex items-center gap-1.5">
+              ${dotHtml}
+              <span class="text-xs font-semibold text-gray-700 flex-1">${area.label}</span>
+              ${toggleHtml}
+              <button onclick="deactivateCard()" class="text-xs text-gray-400 hover:text-gray-600 font-semibold leading-none ml-1">✕</button>
+            </div>
+            <div id="draw-instruction" class="text-xs bg-violet-50 text-violet-700 rounded p-1.5 leading-snug">${instrText}</div>
+            ${kavExists ? `
+              <div class="flex items-center justify-between text-xs text-gray-500">
+                <span>Huidig kavel</span>
+                <span>${(variant.opp || 0).toLocaleString('nl-NL')} m²</span>
+              </div>
+              <button onclick="deleteZone('kavel',0)" class="text-xs text-red-400 hover:text-red-600 transition-colors text-left">✕ Verwijder kavel</button>` : ''}
+            ${drawingMode !== 'polygon'
+              ? `<button onclick="startZoneDrawing('kavel')" class="text-xs font-medium py-1.5 px-2 rounded bg-violet-600 text-white hover:bg-violet-700 transition-colors text-center">
+                  ${kavExists ? '↺ Herteken' : '+ Teken kavel'}
+                </button>`
+              : `<button onclick="cancelDrawing()" class="text-xs font-medium py-1.5 px-2 rounded border border-gray-300 text-gray-500 hover:text-gray-700 transition-colors text-center">Annuleren (Esc)</button>`
+            }`;
+
+        } else if (area.type === 'zones') {
+          // ── Active zones card ─────────────────────────────────────────────
+          const instrText = drawingMode === 'polygon'
+            ? 'Klik op kaart · dubbelklik om af te ronden'
+            : 'Klik hieronder om een zone te tekenen';
+          const zoneListHtml = zones.map((z, i) => `
+            <div class="flex items-center gap-1 text-xs">
+              <span class="flex-1 text-gray-600 truncate">${z.name || 'Zone ' + (i + 1)}</span>
+              <span class="text-gray-400 flex-shrink-0">${(z.opp || 0).toLocaleString('nl-NL')} m²</span>
+              <button onclick="deleteZone('${area.key}',${i})" class="text-red-400 hover:text-red-600 ml-1 flex-shrink-0">✕</button>
+            </div>`).join('');
+          card.innerHTML = `
+            <div class="flex items-center gap-1.5">
+              ${dotHtml}
+              <span class="text-xs font-semibold text-gray-700 flex-1">${area.label}</span>
+              ${toggleHtml}
+              <button onclick="deactivateCard()" class="text-xs text-gray-400 hover:text-gray-600 font-semibold leading-none ml-1">✕</button>
+            </div>
+            <div id="draw-instruction" class="text-xs rounded p-1.5 leading-snug ${drawingMode === 'polygon' ? 'bg-violet-50 text-violet-700' : 'bg-gray-50 text-gray-500'}">${instrText}</div>
+            ${zoneListHtml ? `<div class="flex flex-col gap-1">${zoneListHtml}</div>` : ''}
+            ${drawingMode !== 'polygon'
+              ? `<button onclick="startZoneDrawing('${area.key}')" class="text-xs font-medium py-1.5 px-2 rounded bg-violet-600 text-white hover:bg-violet-700 transition-colors text-center">+ Zone toevoegen</button>`
+              : `<button onclick="cancelDrawing()" class="text-xs font-medium py-1.5 px-2 rounded border border-gray-300 text-gray-500 hover:text-gray-700 transition-colors text-center">Annuleren (Esc)</button>`
+            }`;
+
+        } else if (area.type === 'obstacles') {
+          // ── Active obstacles card ─────────────────────────────────────────
+          const stampBtns = OBSTAKEL_TYPES.map(t => `
+            <button onclick="setStampType('${t.key}')"
+              class="stamp-btn ${activeStampType === t.key ? 'active' : ''}"
+              title="${t.label}">${t.icon}</button>`).join('');
+          const obsListHtml = obstItems.map((o, i) => {
+            const t = OBSTAKEL_TYPES.find(x => x.key === o.type) || OBSTAKEL_TYPES[0];
+            return `<div class="flex items-center gap-1 text-xs">
+              <span class="flex-shrink-0">${t.icon}</span>
+              <span class="flex-1 text-gray-600">${t.label}</span>
+              <button onclick="deleteObstacle(${i})" class="text-red-400 hover:text-red-600 flex-shrink-0">✕</button>
+            </div>`;
+          }).join('');
+          card.innerHTML = `
+            <div class="flex items-center gap-1.5">
+              ${dotHtml}
+              <span class="text-xs font-semibold text-gray-700 flex-1">${area.label}</span>
+              ${toggleHtml}
+              <button onclick="deactivateCard()" class="text-xs text-gray-400 hover:text-gray-600 font-semibold leading-none ml-1">✕</button>
+            </div>
+            <div class="flex gap-1">${stampBtns}</div>
+            <div id="draw-instruction" class="text-xs bg-violet-50 text-violet-700 rounded p-1.5 leading-snug">Klik op de kaart om te plaatsen</div>
+            ${obsListHtml
+              ? `<div class="flex flex-col gap-1">${obsListHtml}</div>`
+              : `<div class="text-xs text-gray-400">Nog geen obstakels</div>`
+            }`;
+        }
+
+        container.appendChild(card);
+      });
+    }
+
+    // ── Summary card update ────────────────────────────────────────────────────
+    function layerOpp(key) {
+      const data = variant[key];
+      if (!data) return 0;
+      if (data.zones && data.zones.length) return data.zones.reduce((sum, z) => sum + (z.opp || 0), 0);
+      return data.opp || 0;
+    }
+
+    function calcMinGrondvlak(pveVariant) {
+      const rs = pveVariant && pveVariant.ruimtestaat;
+      if (!rs) return null;
+      const clusters = rs.clusters || [];
+      if (!clusters.length) return null;
+      return Math.round(clusters
+        .filter(c => c.verdiepingrestrictie)
+        .reduce((sum, c) => sum + c.rooms.reduce((s, r) => s + parseFloat(r.aantal) * parseFloat(r.oppervlakte), 0), 0));
+    }
+
+    function updatePveCompatList(bebouwbaarOpp) {
+      const pveVarianten = project.pveVarianten || [];
+      const container = document.getElementById('pve-compat-container');
+      const listEl    = document.getElementById('pve-compat-list');
+      if (!container || !listEl) return;
+      if (!pveVarianten.length) { container.classList.add('hidden'); return; }
+      container.classList.remove('hidden');
+      listEl.innerHTML = pveVarianten.map(pv => {
+        const minOpp = calcMinGrondvlak(pv);
+        if (minOpp === null || minOpp === 0) {
+          return `<div class="flex items-center justify-between gap-1 text-xs">
+            <span class="truncate flex-1" style="color:#D1D5DB" title="${pv.naam}">${pv.naam}</span>
+            <span class="flex-shrink-0" style="color:#D1D5DB">geen ruimtestaat</span>
+          </div>`;
+        }
+        const ok = bebouwbaarOpp > 0 && bebouwbaarOpp >= minOpp;
+        return `<div class="flex items-center justify-between gap-1 text-xs">
+          <span class="truncate flex-1" style="${ok ? 'color:#4B5563' : 'color:#D1D5DB'}" title="${pv.naam}">${pv.naam}</span>
+          <span class="flex-shrink-0" style="${ok ? 'color:#6B7280' : 'color:#D1D5DB'}">${minOpp.toLocaleString('nl-NL')} m²</span>
+          <span class="flex-shrink-0 font-semibold" style="${ok ? 'color:#7C3AED' : 'color:#D1D5DB'}">${ok ? '✓' : '✗'}</span>
+        </div>`;
+      }).join('');
+    }
+
+    function updateSummary() {
+      const disabled = variant.disabledLayers || {};
+      const bouwvlakOpp = (variant.bouwbaarGebied && variant.bouwbaarGebied.opp) || variant.opp || 0;
+      document.getElementById('opp-summary-bouwvlak').textContent = bouwvlakOpp ? bouwvlakOpp.toLocaleString('nl-NL') + ' m²' : '— m²';
+      let nietBebouwbaarOpp = 0;
+      ['onbebouwdGebied', 'uitsluiting', 'parkeren', 'onderbouwplein', 'bovenbouwPlein', 'fietsenstalling', 'obstakels', 'placeholder'].forEach(key => {
+        const el  = document.getElementById('opp-summary-' + key);
+        if (!el) return;
+        const isOff = !!disabled[key];
+        const opp = isOff ? 0 : layerOpp(key);
+        el.textContent = opp ? opp.toLocaleString('nl-NL') + ' m²' : '— m²';
+        el.style.opacity = isOff ? '0.35' : '1';
+        if (!isOff) nietBebouwbaarOpp += opp;
+      });
+      const bebouwbaarOpp = Math.max(0, bouwvlakOpp - nietBebouwbaarOpp);
+      document.getElementById('bebouwbaar-opp-display').textContent = bebouwbaarOpp.toLocaleString('nl-NL') + ' m²';
+      updatePveCompatList(bebouwbaarOpp);
+    }
+
+    updateSummary();
+    renderAreaCards();
+
+    // ── Copy variant ───────────────────────────────────────────────────────────
     function maakKopie() {
       const cur  = getCurrentProject();
       const copy = { ...JSON.parse(JSON.stringify(variant)), id: crypto.randomUUID(), naam: variant.naam + ' (kopie)' };
@@ -97,13 +795,10 @@
       window.location.href = 'gebied-instellingen.html?id=' + copy.id;
     }
 
-    // ── Save ───────────────────────────────────────────────────────────────
+    // ── Save naam ──────────────────────────────────────────────────────────────
     function opslaanInstellingen() {
       const naam = document.getElementById('g-naam').value.trim() || variant.naam;
-      const opp  = parseInt(document.getElementById('g-opp').value) || variant.opp || 0;
-      const updated = gebiedVarianten.map(g =>
-        g.id === variant.id ? { ...g, naam, opp } : g
-      );
+      const updated = gebiedVarianten.map(g => g.id === variant.id ? { ...g, naam } : g);
       updateCurrentProject({ gebiedVarianten: updated });
       window.location.href = 'project-overzicht.html';
     }

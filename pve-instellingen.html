@@ -8,6 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="css/styles.css"/>
   <style>
+    /* ── Ambitie dimension labels ────────────────────────────────────── */
     .dim-lbl {
       font-size:0.7rem; padding:0.25rem 0.6rem; border-radius:99px;
       border:1.5px solid #D1D5DB; background:white; color:#6B7280;
@@ -15,8 +16,92 @@
     }
     .dim-lbl.active { background:#7C3AED; color:white; border-color:#7C3AED; }
     .dim-lbl:hover:not(.active) { border-color:#7C3AED; color:#7C3AED; }
-    .cluster-wrap { display:inline-flex; flex-direction:column; align-items:center; gap:0.5rem; vertical-align:top; margin:0.5rem; }
-    .rooms-row { display:flex; flex-wrap:wrap; gap:0.5rem; justify-content:center; }
+
+    /* ── Vlekkenplan canvas ──────────────────────────────────────────── */
+    #stage-container {
+      width: 100%; height: 560px;
+      border-radius: 0.75rem; overflow: hidden;
+      background: #F9FAFB; cursor: default;
+      background-image: radial-gradient(circle, #D1D5DB 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+    #stage-container canvas { display: block; }
+    #zoom-controls {
+      position: absolute; bottom: 14px; right: 14px;
+      display: flex; flex-direction: column; gap: 3px; z-index: 20;
+    }
+    .zoom-btn {
+      width: 30px; height: 30px; border-radius: 8px;
+      border: 1.5px solid #E5E7EB; background: white; color: #6B7280;
+      font-size: 1rem; line-height: 1; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08); transition: border-color 0.15s, color 0.15s, background 0.15s;
+      user-select: none;
+    }
+    .zoom-btn:hover { border-color: #7C3AED; color: #7C3AED; background: #F5F3FF; }
+    .zoom-btn:active { background: #EDE9FE; }
+    #zoom-level {
+      position: absolute; top: 14px; left: 14px;
+      font-size: 0.7rem; color: #9CA3AF; background: white;
+      border: 1.5px solid #E5E7EB; border-radius: 6px;
+      padding: 3px 7px; z-index: 20; pointer-events: none;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    #canvas-add-fab {
+      position: absolute; bottom: 14px; left: 14px;
+      width: 38px; height: 38px; border-radius: 50%;
+      border: 2.5px solid #7C3AED; background: white; color: #7C3AED;
+      font-size: 1.4rem; line-height: 1; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 8px rgba(124,58,237,0.18); z-index: 20;
+      transition: background 0.15s, color 0.15s; user-select: none;
+    }
+    #canvas-add-fab:hover { background: #7C3AED; color: white; }
+
+    /* ── Timeline (planning) ─────────────────────────────────────────── */
+    #tl-canvas { position: relative; min-height: 300px; }
+    .tl-ms {
+      position: absolute; display: flex; flex-direction: column; align-items: center;
+    }
+    .tl-diamond {
+      width: 36px; height: 36px;
+      border: 2px solid var(--primary); background: white;
+      transform: rotate(45deg); flex-shrink: 0;
+    }
+    .tl-ms-label { font-size: 0.72rem; font-weight: 600; color: #374151; margin-top: 0.45rem; text-align: center; }
+    .tl-ms-date  { font-size: 0.65rem; color: #9CA3AF; text-align: center; min-height: 1em; }
+    .tl-date-input {
+      border: 1.5px solid #E5E7EB; border-radius: 0.375rem;
+      padding: 0.2rem 0.35rem; font-size: 0.68rem; color: #374151;
+      outline: none; width: 118px; margin-top: 0.3rem; text-align: center; cursor: pointer;
+    }
+    .tl-date-input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(124,58,237,0.1); }
+    .tl-phase {
+      position: absolute; display: flex; flex-direction: column;
+      align-items: flex-start; overflow: hidden;
+    }
+    .tl-phase .planning-pill { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tl-dur-row {
+      display: flex; align-items: center; justify-content: center;
+      gap: 0.4rem; margin-top: 0.3rem; width: 100%;
+    }
+    .tl-adj {
+      background: none; border: none; cursor: pointer;
+      color: #C4B5FD; font-size: 0.8rem; font-weight: 700;
+      padding: 0 3px; line-height: 1; transition: color 0.15s; user-select: none;
+    }
+    .tl-adj:hover { color: var(--primary); }
+    .tl-dur-text { font-size: 0.72rem; color: #9CA3AF; white-space: nowrap; }
+    .tl-sep {
+      position: absolute; width: 28px; transform: translateX(-14px);
+      cursor: col-resize; z-index: 10; display: flex; justify-content: center; user-select: none;
+    }
+    .tl-sep-line {
+      width: 0; height: 100%; border-left: 2px dashed #DDD6FE;
+      pointer-events: none; transition: border-color 0.15s;
+    }
+    .tl-sep:hover .tl-sep-line,
+    .tl-sep.is-dragging .tl-sep-line { border-color: var(--primary); opacity: 0.7; }
   </style>
 </head>
 <body class="min-h-screen bg-gray-50 p-8">
@@ -32,16 +117,26 @@
       <button onclick="maakKopie()" class="btn-secondary text-sm px-4 py-2 flex-shrink-0 mt-1">⊕ Maak een kopie</button>
     </div>
 
-    <!-- ── Section 1: Variant naam ─────────────────────────────────────────── -->
+    <!-- ── Section 1: Variant ───────────────────────────────────────────── -->
     <div class="card flex flex-col gap-4">
       <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Variant</h2>
       <div class="form-row">
         <label>Naam</label>
         <input id="variant-naam" type="text" class="input-field" placeholder="PVE variant naam"/>
       </div>
+      <div class="form-row">
+        <label>Gebruiksduur (jaar)</label>
+        <div class="flex items-center gap-2">
+          <input id="gebruiksduur" type="number" class="input-field w-28" min="1" max="100" value="40"/>
+          <span class="info-wrap">
+            <button class="info-btn" type="button">i</button>
+            <span class="info-popover">Aantal jaar dat de school in gebruik zal zijn. Bepaalt de TCO-berekening: een langere gebruiksduur verlaagt de jaarlijkse kosten maar verhoogt de totale onderhoudslasten.</span>
+          </span>
+        </div>
+      </div>
     </div>
 
-    <!-- ── Section 2: Voorzieningen ────────────────────────────────────────── -->
+    <!-- ── Section 2: Voorzieningen ─────────────────────────────────────── -->
     <div class="card flex flex-col gap-4">
       <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Voorzieningen</h2>
 
@@ -129,127 +224,190 @@
       </div>
     </div>
 
-    <!-- ── Section 3: Ambitiekaders ────────────────────────────────────────── -->
+    <!-- ── Section 3: Ambitiekaders ─────────────────────────────────────── -->
     <div class="card flex flex-col gap-5">
       <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Ambitiekaders</h2>
 
       <div class="flex gap-6 items-start">
-        <!-- Radar chart + dimension buttons -->
+        <!-- Radar chart -->
         <div class="flex-1 flex flex-col gap-4">
-          <canvas id="radar-chart" style="max-height:320px;"></canvas>
+          <div style="position:relative; height:320px;">
+            <canvas id="radar-chart"></canvas>
+          </div>
+          <!-- Legend -->
+          <div class="flex gap-6 justify-center text-xs text-gray-500">
+            <span class="flex items-center gap-1">
+              <span class="inline-block w-3 h-3 rounded-sm bg-blue-400 opacity-70"></span>Gestelde ambities
+            </span>
+            <span class="flex items-center gap-1">
+              <span class="inline-block w-3 h-3 rounded-sm bg-orange-400 opacity-70"></span>Gemiddelde ambities
+            </span>
+          </div>
           <div class="flex flex-wrap gap-2 justify-center">
             <button onclick="selectDimensie('gezondSchool')"    id="dim-gezondSchool"    class="dim-lbl">Gezonde school</button>
             <button onclick="selectDimensie('duurzameSchool')"  id="dim-duurzameSchool"  class="dim-lbl">Duurzame school</button>
-            <button onclick="selectDimensie('adaptieveSchool')" id="dim-adaptieveSchool" class="dim-lbl">Adaptieve school</button>
             <button onclick="selectDimensie('veiligSchool')"    id="dim-veiligSchool"    class="dim-lbl">Veilige school</button>
             <button onclick="selectDimensie('digitaleSchool')"  id="dim-digitaleSchool"  class="dim-lbl">Digitale school</button>
           </div>
         </div>
 
         <!-- Ambitie settings panel -->
-        <div class="w-64 flex-shrink-0 flex flex-col gap-3">
+        <div class="w-80 flex-shrink-0 flex flex-col gap-3">
           <h3 id="ambitie-titel" class="text-sm font-semibold text-gray-700 capitalize"></h3>
           <div id="ambitie-lijst" class="flex flex-col gap-3"></div>
         </div>
       </div>
     </div>
 
-    <!-- ── Section 4: Ruimtestaat / Vlekkenplan ─────────────────────────────── -->
+    <!-- ── Section 4: Vlekkenplan ────────────────────────────────────────── -->
     <div class="card flex flex-col gap-4">
-      <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Ruimtestaat</h2>
+      <div class="flex items-center justify-between">
+        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Ruimteschema – Vlekkenplan</h2>
+        <button onclick="openNieuwCluster()" class="btn-primary text-sm px-4 py-1.5">+ Nieuw cluster</button>
+      </div>
+      <p class="text-xs text-gray-400 -mt-2">Sleep clusters. Dubbelklik om te hernoemen. Klik + voor ruimtes.</p>
 
-      <div id="canvas" class="flex flex-wrap items-start content-start gap-3 min-h-48 bg-gray-50 rounded-xl p-4">
-        <!-- clusters rendered here -->
+      <div style="position: relative;">
+        <div id="stage-container"></div>
+        <div id="zoom-controls">
+          <button class="zoom-btn" onclick="zoomIn()" title="Inzoomen">+</button>
+          <button class="zoom-btn" onclick="resetZoom()" title="Zoom terugzetten" style="font-size:0.75rem;">⊡</button>
+          <button class="zoom-btn" onclick="zoomOut()" title="Uitzoomen">−</button>
+        </div>
+        <div id="zoom-level">100%</div>
+        <button id="canvas-add-fab" onclick="openNieuwCluster()" title="Nieuw cluster">+</button>
       </div>
 
-      <div class="flex items-center gap-3 pt-4 border-t border-gray-100">
-        <div class="add-btn" onclick="openNieuwCluster()" style="width:36px;height:36px;font-size:1.3rem;">+</div>
-        <span class="text-sm text-gray-400">Nieuw cluster toevoegen</span>
+      <div class="flex items-center gap-4 text-xs text-gray-400 pt-1 border-t border-gray-100">
+        <span id="summary-clusters">0 clusters</span>
+        <span>·</span>
+        <span id="summary-rooms">0 ruimtes</span>
+        <span>·</span>
+        <span id="summary-area">0 m²</span>
       </div>
     </div>
 
-    <!-- ── Section 5: Planning ──────────────────────────────────────────────── -->
+    <!-- ── Section 5: Planning ──────────────────────────────────────────── -->
     <div class="card flex flex-col gap-5">
       <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Planning</h2>
 
-      <div class="flex items-start justify-center gap-0">
-        <div class="planning-step">
-          <div class="planning-pill active">Definitie fase</div>
-          <div class="text-xs text-gray-400 mt-1 text-center">7 weken</div>
+      <div style="padding: 1.5rem 0 0.5rem;">
+        <div id="tl-canvas">
+          <div class="tl-ms" id="ms-start">
+            <div class="tl-diamond"></div>
+            <div class="tl-ms-label">Startdatum</div>
+            <input type="date" id="inp-besluit" class="tl-date-input" oninput="onDateChange()"/>
+          </div>
+          <div class="tl-phase" id="row-aanb">
+            <div class="planning-pill">Aanbesteding integraal bouwteam</div>
+            <div class="tl-dur-row">
+              <button class="tl-adj" onclick="adjAbs('aanb',-1)">−</button>
+              <span class="tl-dur-text"><span id="dur-aanb">6</span> mnd</span>
+              <button class="tl-adj" onclick="adjAbs('aanb',+1)">+</button>
+            </div>
+          </div>
+          <div class="tl-sep" id="sep1" onmousedown="startDrag(event,0)">
+            <div class="tl-sep-line"></div>
+          </div>
+          <div class="tl-phase" id="row-ontw">
+            <div class="planning-pill">Ontwerpfase</div>
+            <div class="tl-dur-row">
+              <button class="tl-adj" onclick="adjAbs('ontw',-1)">−</button>
+              <span class="tl-dur-text"><span id="dur-ontw">12</span> mnd</span>
+              <button class="tl-adj" onclick="adjAbs('ontw',+1)">+</button>
+            </div>
+          </div>
+          <div class="tl-sep" id="sep2" onmousedown="startDrag(event,1)">
+            <div class="tl-sep-line"></div>
+          </div>
+          <div class="tl-phase" id="row-uitv">
+            <div class="planning-pill">Uitvoeringsfase</div>
+            <div class="tl-dur-row">
+              <button class="tl-adj" onclick="adjAbs('uitv',-1)">−</button>
+              <span class="tl-dur-text"><span id="dur-uitv">12</span> mnd</span>
+              <button class="tl-adj" onclick="adjAbs('uitv',+1)">+</button>
+            </div>
+          </div>
+          <div class="tl-ms" id="ms-end">
+            <div class="tl-diamond"></div>
+            <div class="tl-ms-label">Oplevering</div>
+            <div class="tl-ms-date" id="lbl-oplevering"></div>
+          </div>
         </div>
-        <div class="flex items-center pt-4 px-1"><span class="text-gray-300 text-lg">→</span></div>
-        <div class="planning-step">
-          <div class="planning-pill">Uitvraag</div>
-          <div class="text-xs text-gray-400 mt-1 text-center">2 maand</div>
-        </div>
-        <div class="flex items-center pt-4 px-1"><span class="text-gray-300 text-lg">→</span></div>
-        <div class="planning-step">
-          <div class="planning-pill">Uitwerking</div>
-          <div class="text-xs text-gray-400 mt-1 text-center">1 jaar</div>
-        </div>
-        <div class="flex items-center pt-4 px-1"><span class="text-gray-300 text-lg">→</span></div>
-        <div class="planning-step">
-          <div class="planning-pill">Oplevering</div>
-          <div class="text-xs text-gray-400 mt-1 text-center">2 jaar</div>
-        </div>
-        <div class="flex items-center pt-4 px-1"><span class="text-gray-300 text-lg">→</span></div>
-        <div class="planning-step">
-          <div class="planning-pill">Gebruik</div>
-          <div class="text-xs text-gray-400 mt-1 text-center">50 jaar</div>
-        </div>
+        <p style="font-size:0.7rem;color:#9CA3AF;text-align:center;margin-top:1.25rem;">
+          Versleep de verticale lijnen om de doorlooptijd te verdelen
+        </p>
       </div>
-
-      <!-- <div class="flex items-center gap-3 pt-3 border-t border-gray-100">
-        <input type="checkbox" id="planning-afgerond" class="w-4 h-4 accent-violet-600"/>
-        <label for="planning-afgerond" class="text-sm text-gray-600 cursor-pointer">PVE afgerond</label>
-        <span id="planning-datum" class="text-xs text-gray-400 ml-2"></span>
-      </div> -->
     </div>
 
-    <!-- ── Footer actions ────────────────────────────────────────────────── -->
+    <!-- ── Footer actions ────────────────────────────────────────────── -->
     <div class="flex justify-end gap-3 pb-4">
       <a href="project-overzicht.html" class="btn-ghost px-6 py-2">Annuleren</a>
       <button onclick="opslaanInstellingen()" class="btn-primary px-6 py-2">Opslaan</button>
     </div>
   </div>
 
-  <!-- Modal: Nieuw cluster -->
-  <div id="modal-cluster" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-    <div class="card w-80">
-      <h3 class="text-base font-semibold text-gray-700 mb-4">nieuw cluster</h3>
-      <div class="flex gap-3">
-        <input id="cluster-naam" type="text" class="input-field flex-1" placeholder="voorbeeld"/>
-        <button onclick="maakCluster()" class="btn-primary px-4">Maak</button>
+  <!-- Modal: Cluster -->
+  <div id="modal-cluster" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+    <div class="card w-80 p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h3 id="modal-cluster-title" class="text-base font-semibold text-gray-700">Nieuw cluster</h3>
+        <button onclick="closeModal('modal-cluster')" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
       </div>
-      <button onclick="closeModal('modal-cluster')" class="mt-3 text-xs text-gray-400 hover:text-gray-600">Annuleer</button>
-    </div>
-  </div>
-
-  <!-- Modal: Nieuwe ruimte -->
-  <div id="modal-ruimte" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-    <div class="card w-80">
-      <h3 class="text-base font-semibold text-gray-700 mb-4">nieuwe ruimte</h3>
-      <input type="hidden" id="ruimte-cluster-idx"/>
       <div class="flex flex-col gap-3">
-        <div class="flex items-center gap-3">
-          <label class="text-sm text-gray-500 w-16 text-right">Naam</label>
-          <input id="ruimte-naam" type="text" class="input-field flex-1" value="lokaal"/>
+        <div>
+          <label class="text-xs font-semibold text-gray-400 uppercase tracking-widest block mb-1.5">Naam</label>
+          <input id="cluster-naam" type="text" class="input-field" placeholder="Bijv. Onderbouw, Centraal…"/>
         </div>
-        <div class="flex items-center gap-3">
-          <label class="text-sm text-gray-500 w-16 text-right">Aantal</label>
-          <input id="ruimte-aantal" type="number" class="input-field w-24" value="1" min="1"/>
-        </div>
+        <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors select-none">
+          <input id="cluster-bg" type="checkbox" class="w-4 h-4 accent-violet-600"/>
+          <span class="text-sm text-gray-600 font-medium">Begane grond</span>
+        </label>
       </div>
-      <div class="flex gap-2 mt-4">
-        <button onclick="maakRuimte()" class="btn-primary flex-1">Maak</button>
-        <button onclick="closeModal('modal-ruimte')" class="btn-ghost">Annuleer</button>
+      <div class="flex gap-2 mt-5">
+        <button onclick="closeModal('modal-cluster')" class="btn-ghost flex-1">Annuleer</button>
+        <button id="cluster-submit-btn" onclick="submitCluster()" class="btn-primary flex-1">Maak</button>
       </div>
     </div>
   </div>
 
+  <!-- Modal: Ruimte -->
+  <div id="modal-ruimte" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+    <div class="card w-80 p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h3 id="modal-ruimte-title" class="text-base font-semibold text-gray-700">Nieuwe ruimte</h3>
+        <button onclick="closeModal('modal-ruimte')" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+      </div>
+      <input type="hidden" id="ruimte-cluster-id"/>
+      <input type="hidden" id="ruimte-room-id"/>
+      <div class="flex flex-col gap-3">
+        <div>
+          <label class="text-xs font-semibold text-gray-400 uppercase tracking-widest block mb-1.5">Naam</label>
+          <input id="ruimte-naam" type="text" class="input-field" placeholder="Bijv. Lokaal, Aula…"/>
+        </div>
+        <div id="ruimte-aantal-row">
+          <label class="text-xs font-semibold text-gray-400 uppercase tracking-widest block mb-1.5">Aantal</label>
+          <input id="ruimte-aantal" type="number" min="1" class="input-field" value="1"/>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-gray-400 uppercase tracking-widest block mb-1.5">Oppervlak (m²)</label>
+          <input id="ruimte-opp" type="number" min="0" step="0.5" class="input-field" placeholder="10"/>
+        </div>
+      </div>
+      <div class="flex gap-2 mt-5">
+        <button onclick="closeModal('modal-ruimte')" class="btn-ghost flex-1">Annuleer</button>
+        <button id="ruimte-submit-btn" onclick="submitRuimte()" class="btn-primary flex-1">Maak</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="js/state.js"></script>
   <script src="js/calculations.js"></script>
+  <script src="js/ruimtestaat-default.js"></script>
   <script>
+    // ── Bootstrap ─────────────────────────────────────────────────────────────
     const params    = new URLSearchParams(window.location.search);
     const variantId = params.get('id');
     const project   = getCurrentProject();
@@ -264,28 +422,34 @@
       setActivePveId(variantId);
     }
 
-    // Working copies
-    const V       = JSON.parse(JSON.stringify(variant.voorzieningen));
-    let ambities  = JSON.parse(JSON.stringify(variant.ambities));
-    let clusters  = (variant.ruimtestaat && variant.ruimtestaat.data && variant.ruimtestaat.data.clusters)
-                    ? JSON.parse(JSON.stringify(variant.ruimtestaat.data.clusters))
-                    : [];
+    // Working copies for form-saved fields
+    const V      = JSON.parse(JSON.stringify(variant.voorzieningen));
+    let ambities = JSON.parse(JSON.stringify(variant.ambities));
 
-    // ── Variant naam ───────────────────────────────────────────────────────
-    document.getElementById('variant-naam').value = variant.naam || '';
+    // ── Variant naam + gebruiksduur ───────────────────────────────────────────
+    document.getElementById('variant-naam').value  = variant.naam || '';
+    document.getElementById('gebruiksduur').value  = project.gebruiksduur || 40;
 
-    // ── Planning init ──────────────────────────────────────────────────────
-    const planningAfgerond = variant.planning && variant.planning.afgerond;
-    const planningAfgerondEl = document.getElementById('planning-afgerond');
-    if (planningAfgerondEl) {
-      planningAfgerondEl.checked = !!planningAfgerond;
-      if (planningAfgerond && variant.planning.datum) {
-        document.getElementById('planning-datum').textContent =
-          'Afgerond op ' + new Date(variant.planning.datum).toLocaleDateString('nl-NL');
+    // ── Info popovers ────────────────────────────────────────────────────────
+    document.addEventListener('click', e => {
+      const btn = e.target.closest('.info-btn');
+      const allPopovers = document.querySelectorAll('.info-popover.open');
+      const allBtns     = document.querySelectorAll('.info-btn.open');
+      if (btn) {
+        const popover = btn.nextElementSibling;
+        const isOpen  = popover.classList.contains('open');
+        allPopovers.forEach(p => p.classList.remove('open'));
+        allBtns.forEach(b => b.classList.remove('open'));
+        if (!isOpen) { popover.classList.add('open'); btn.classList.add('open'); }
+      } else if (!e.target.closest('.info-wrap')) {
+        allPopovers.forEach(p => p.classList.remove('open'));
+        allBtns.forEach(b => b.classList.remove('open'));
       }
-    }
+    });
 
-    // ── Voorzieningen ──────────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════════
+    // SECTION: Voorzieningen
+    // ══════════════════════════════════════════════════════════════════════════
     function toggleCard(key) {
       const card  = document.getElementById('card-' + key);
       const body  = document.getElementById('body-' + key);
@@ -300,11 +464,9 @@
       }
       updateTotaal();
     }
-
     function keyToField(k) {
       return { po: 'primairOnderwijs', vs: 'voorschoolseOpvang', sp: 'sport' }[k];
     }
-
     function updatePO() {
       const ll = parseInt(document.getElementById('po-leerlingen').value) || 0;
       document.getElementById('po-bvo-calc').textContent     = POM_CALC.formatM2(POM_CALC.calcPrimairBVO(ll));
@@ -313,7 +475,6 @@
       document.getElementById('po-fietsen-calc').textContent = POM_CALC.calcFietsenstalling(ll) + ' fietsen';
       updateTotaal();
     }
-
     function updateVS() {
       const gr = parseInt(document.getElementById('vs-groepen').value) || 0;
       document.getElementById('vs-bvo-calc').textContent     = POM_CALC.formatM2(POM_CALC.calcVoorschoolseBVO(gr));
@@ -321,18 +482,15 @@
       document.getElementById('vs-fietsen-calc').textContent = POM_CALC.calcVoorschoolseFietsen(gr) + ' fietsen';
       updateTotaal();
     }
-
     function updateSP() {
       document.getElementById('sp-bvo-calc').textContent =
         POM_CALC.formatM2(POM_CALC.calcSportBVO(document.getElementById('sp-type').value));
       updateTotaal();
     }
-
     function parseManual(id) {
       const v = document.getElementById(id).value;
       return v ? parseInt(v) : null;
     }
-
     function buildVoorzeningenFromInputs() {
       const po = V.primairOnderwijs;
       po.leerlingen               = parseInt(document.getElementById('po-leerlingen').value) || 400;
@@ -341,33 +499,29 @@
       po.kinderpleinHandmatig     = parseManual('po-kinder-hand');
       po.fietsenstallingHandmatig = parseManual('po-fietsen-hand');
       const vs = V.voorschoolseOpvang;
-      vs.groepen              = parseInt(document.getElementById('vs-groepen').value) || 2;
-      vs.bvoHandmatig         = parseManual('vs-bvo-hand');
-      vs.pleinHandmatig       = parseManual('vs-plein-hand');
+      vs.groepen                  = parseInt(document.getElementById('vs-groepen').value) || 2;
+      vs.bvoHandmatig             = parseManual('vs-bvo-hand');
+      vs.pleinHandmatig           = parseManual('vs-plein-hand');
       vs.fietsenstallingHandmatig = parseManual('vs-fietsen-hand');
       const sp = V.sport;
       sp.type         = document.getElementById('sp-type').value;
       sp.bvoHandmatig = parseManual('sp-bvo-hand');
     }
-
     function updateTotaal() {
       buildVoorzeningenFromInputs();
       document.getElementById('totaal-bvo').textContent = POM_CALC.formatM2(POM_CALC.calcTotalBVO(V));
     }
-
     (function initVoorzieningen() {
-      const po = V.primairOnderwijs;
-      const vs = V.voorschoolseOpvang;
-      const sp = V.sport;
+      const po = V.primairOnderwijs, vs = V.voorschoolseOpvang, sp = V.sport;
       document.getElementById('po-leerlingen').value = po.leerlingen;
       if (po.bvoHandmatig)             document.getElementById('po-bvo-hand').value      = po.bvoHandmatig;
       if (po.kleuterpleinHandmatig)    document.getElementById('po-kleuter-hand').value  = po.kleuterpleinHandmatig;
       if (po.kinderpleinHandmatig)     document.getElementById('po-kinder-hand').value   = po.kinderpleinHandmatig;
       if (po.fietsenstallingHandmatig) document.getElementById('po-fietsen-hand').value  = po.fietsenstallingHandmatig;
       document.getElementById('vs-groepen').value = vs.groepen;
-      if (vs.bvoHandmatig)             document.getElementById('vs-bvo-hand').value   = vs.bvoHandmatig;
-      if (vs.pleinHandmatig)           document.getElementById('vs-plein-hand').value = vs.pleinHandmatig;
-      if (vs.fietsenstallingHandmatig) document.getElementById('vs-fietsen-hand').value = vs.fietsenstallingHandmatig;
+      if (vs.bvoHandmatig)             document.getElementById('vs-bvo-hand').value      = vs.bvoHandmatig;
+      if (vs.pleinHandmatig)           document.getElementById('vs-plein-hand').value    = vs.pleinHandmatig;
+      if (vs.fietsenstallingHandmatig) document.getElementById('vs-fietsen-hand').value  = vs.fietsenstallingHandmatig;
       document.getElementById('sp-type').value = sp.type || 'gymzaal';
       [['po', po], ['vs', vs], ['sp', sp]].forEach(([k, d]) => {
         if (d.actief) {
@@ -379,43 +533,43 @@
       updatePO(); updateVS(); updateSP();
     })();
 
-    // ── Ambitiekaders ──────────────────────────────────────────────────────
-    const DIMS = ['gezondSchool','duurzameSchool','adaptieveSchool','veiligSchool','digitaleSchool'];
+    // ══════════════════════════════════════════════════════════════════════════
+    // SECTION: Ambitiekaders (updated to match pve-stap-3-ambities.html)
+    // ══════════════════════════════════════════════════════════════════════════
+    const DIMS = ['gezondSchool','duurzameSchool','veiligSchool','digitaleSchool'];
     const DIM_LABELS = {
       gezondSchool:    'Gezonde school',
       duurzameSchool:  'Duurzame school',
-      adaptieveSchool: 'Adaptieve school',
       veiligSchool:    'Veilige school',
       digitaleSchool:  'Digitale school',
     };
     const DIM_ITEMS = {
       gezondSchool: [
-        { key:'geluid',               label:'Geluid',                        opts:['C','B','A'] },
-        { key:'temperatuur',          label:'Temperatuur',                   opts:['C','B','A'] },
-        { key:'licht',                label:'Licht',                         opts:['C','B','A'] },
-        { key:'lucht',                label:'Lucht',                         opts:['C','B','A'] },
-        { key:'kwaliteitsborging',    label:'Kwaliteitsborging',             opts:['C','B','A'] },
-        { key:'comfortNietOnderwijs', label:'Comfort niet-onderwijsruimten', opts:['C','B','A'] },
+        { key:'geluid',               label:'Geluid',                         opts:['C','B','A'] },
+        { key:'temperatuur',          label:'Temperatuur',                    opts:['C','B','A'] },
+        { key:'licht',                label:'Licht',                          opts:['C','B','A'] },
+        { key:'lucht',                label:'Lucht',                          opts:['C','B','A'] },
+        { key:'kwaliteitsborging',    label:'Kwaliteitsborging',              opts:['C','B','A'] },
+        { key:'comfortNietOnderwijs', label:'Comfort niet-onderwijsruimten',  opts:['BBL','C','B','A'] },
       ],
       duurzameSchool: [
-        { key:'energiegebruik',       label:'Energiegebruik',       opts:['Goed','Beter','Beste'] },
-        { key:'materiaalgebruik',     label:'Materiaalgebruik',     opts:['Goed','Beter','Beste'] },
-        { key:'watergebruik',         label:'Watergebruik',         opts:['Goed','Beter','Beste'] },
-        { key:'natuurInclusiviteit',  label:'Natuur inclusiviteit', opts:['Goed','Beter','Beste'] },
-        { key:'klimaatAdaptie',       label:'Klimaat adaptie',      opts:['Goed','Beter','Beste'] },
-      ],
-      adaptieveSchool: [
-        { key:'adaptievePlattegrond', label:'Adaptieve plattegrond', opts:['Goed','Beter','Beste'] },
-        { key:'adaptieveTechniek',    label:'Adaptieve techniek',    opts:['Goed','Beter','Beste'] },
+        { key:'energiegebruik',         label:'Energiegebruik',                    opts:['BENG','C','B','A','ENG','E-neutraal'] },
+        { key:'materiaalgebruik',       label:'Gebruik van duurzame materialen',   opts:['15%','25%','35%'] },
+        { key:'meteriaalhergebruik',    label:'Herbruikbaarheid van materialen',   opts:['30%','40%','50%'] },
+        { key:'Subbemetering',          label:'Subbemetering',                     opts:['Geen','Wel'] },
+        { key:'afvalwater hergebruik',  label:'Afvalwater hergebruik',             opts:['Geen','Wel'] },
+        { key:'grijswatersysteem',      label:'Grijswatersysteem',                 opts:['Geen','Wel'] },
+        { key:'natuurInclusiviteit',    label:'Groendak',                          opts:['Geen','Wel'] },
+        { key:'klimaatAdaptie',         label:'Waterretentie systeem',             opts:['Geen','Wel'] },
       ],
       veiligSchool: [
-        { key:'bouwkundigInbraak',    label:'Bouwk. inbraakbestendigheid',    opts:['Goed','Beter','Beste'] },
-        { key:'technischInbraak',     label:'Techn. inbraakbestendigheid',    opts:['Goed','Beter','Beste'] },
-        { key:'bouwkundigVandalisme', label:'Bouwk. vandalismebestendigheid', opts:['Goed','Beter','Beste'] },
-        { key:'technischVandalisme',  label:'Techn. vandalismebestendigheid', opts:['Goed','Beter','Beste'] },
+        { key:'bouwkundigInbraak',    label:'Bouwkundige beveiligingsmaatregelen', opts:['Geen','Wel'] },
+        { key:'technischInbraak',     label:'Toegangscontrole systeem',            opts:['Geen','Wel'] },
+        { key:'bouwkundigVandalisme', label:'Camera systeem',                      opts:['Geen','Wel'] },
+        { key:'technischVandalisme',  label:'Vandalismebestendigheid maatregelen', opts:['Geen','Wel'] },
       ],
       digitaleSchool: [
-        { key:'technischeIntegratie', label:'Technische integratie', opts:['Goed','Beter','Beste'] },
+        { key:'technischeIntegratie', label:'Slim gebouw', opts:['Geen','Wel'] },
       ],
     };
 
@@ -425,11 +579,10 @@
     function getScores() {
       return DIMS.map(d => {
         const items = DIM_ITEMS[d];
-        const vals  = items.map(it => POM_CALC.selectionScore(ambities[d][it.key]));
+        const vals  = items.map(it => POM_CALC.selectionScore(ambities[d] && ambities[d][it.key]));
         return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
       });
     }
-
     function buildChart() {
       const ctx = document.getElementById('radar-chart').getContext('2d');
       radarChart = new Chart(ctx, {
@@ -440,52 +593,45 @@
             {
               label: 'Gestelde ambities',
               data: getScores(),
-              backgroundColor: 'rgba(96,165,250,0.3)',
-              borderColor: 'rgba(96,165,250,0.9)',
-              borderWidth: 2,
-              pointBackgroundColor: 'rgba(96,165,250,0.9)',
-              pointRadius: 4,
+              backgroundColor: 'rgba(96,165,250,0.3)', borderColor: 'rgba(96,165,250,0.9)',
+              borderWidth: 2, pointBackgroundColor: 'rgba(96,165,250,0.9)', pointRadius: 4,
             },
             {
               label: 'Gemiddelde ambities',
               data: DIMS.map(d => POM_CALC.GEMIDDELDE_AMBITIES[d]),
-              backgroundColor: 'rgba(251,146,60,0.25)',
-              borderColor: 'rgba(251,146,60,0.8)',
-              borderWidth: 2,
-              borderDash: [5, 3],
-              pointBackgroundColor: 'rgba(251,146,60,0.8)',
-              pointRadius: 3,
+              backgroundColor: 'rgba(251,146,60,0.25)', borderColor: 'rgba(251,146,60,0.8)',
+              borderWidth: 2, borderDash: [5,3], pointBackgroundColor: 'rgba(251,146,60,0.8)', pointRadius: 3,
             }
           ]
         },
         options: {
+          responsive: true,
+          maintainAspectRatio: false,
           scales: { r: { min:0, max:100, ticks:{ stepSize:25, font:{size:9} }, pointLabels:{ font:{size:11} } } },
           plugins: { legend:{ display:false } },
           animation: { duration: 200 }
         }
       });
     }
-
     function updateChart() {
+      if (!radarChart) return;
       radarChart.data.datasets[0].data = getScores();
       radarChart.update();
     }
-
     function selectDimensie(dim) {
       selectedDim = dim;
       document.querySelectorAll('.dim-lbl').forEach(el => el.classList.remove('active'));
       document.getElementById('dim-' + dim).classList.add('active');
       renderAmbitiePanel();
     }
-
     function renderAmbitiePanel() {
       document.getElementById('ambitie-titel').textContent = DIM_LABELS[selectedDim];
       const lijst = document.getElementById('ambitie-lijst');
       lijst.innerHTML = '';
       DIM_ITEMS[selectedDim].forEach(item => {
-        const current = ambities[selectedDim][item.key];
+        const current = ambities[selectedDim] && ambities[selectedDim][item.key];
         const row = document.createElement('div');
-        row.className = 'flex items-center justify-between text-sm';
+        row.className = 'flex items-center gap-2 text-sm';
         row.innerHTML = `
           <span class="text-gray-600 flex-1 text-sm">${item.label}</span>
           <div class="flex gap-1">
@@ -498,104 +644,435 @@
         lijst.appendChild(row);
       });
     }
-
     function setAmbitie(dim, key, val, btn) {
+      if (!ambities[dim]) ambities[dim] = {};
       ambities[dim][key] = val;
       btn.closest('.flex.gap-1').querySelectorAll('.sel-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       updateChart();
     }
-
     buildChart();
     selectDimensie('gezondSchool');
 
-    // ── Vlekkenplan ────────────────────────────────────────────────────────
-    function renderCanvas() {
-      const canvas = document.getElementById('canvas');
-      canvas.innerHTML = '';
-      clusters.forEach((cluster, ci) => {
-        const wrap = document.createElement('div');
-        wrap.className = 'cluster-wrap';
-        const circle = document.createElement('div');
-        circle.className = 'cluster-circle';
-        circle.style.cssText = 'width:160px;height:160px;padding:12px;';
-        const label = document.createElement('div');
-        label.className = 'text-xs font-semibold text-gray-600 mb-2 text-center';
-        label.textContent = cluster.naam;
-        circle.appendChild(label);
-        const roomsRow = document.createElement('div');
-        roomsRow.className = 'rooms-row';
-        cluster.ruimtes.forEach(r => {
-          for (let n = 0; n < r.aantal; n++) {
-            const rc = document.createElement('div');
-            rc.className = 'room-circle';
-            rc.style.cssText = 'width:44px;height:44px;';
-            rc.textContent = r.naam;
-            rc.title = r.naam;
-            roomsRow.appendChild(rc);
-          }
-        });
-        circle.appendChild(roomsRow);
-        const addRoom = document.createElement('div');
-        addRoom.className = 'add-btn mt-1';
-        addRoom.style.cssText = 'width:28px;height:28px;font-size:1rem;';
-        addRoom.innerHTML = '+';
-        addRoom.onclick = (e) => { e.stopPropagation(); openNieuweRuimte(ci); };
-        circle.appendChild(addRoom);
-        wrap.appendChild(circle);
-        const cname = document.createElement('div');
-        cname.className = 'text-xs text-gray-500 font-medium';
-        cname.textContent = cluster.naam;
-        wrap.appendChild(cname);
-        canvas.appendChild(wrap);
+    // ══════════════════════════════════════════════════════════════════════════
+    // SECTION: Vlekkenplan (Konva + D3, from pve-stap-4c-vlekkenplan.html)
+    // ══════════════════════════════════════════════════════════════════════════
+    const PRIMARY       = '#7C3AED';
+    const PRIMARY_LIGHT = '#EDE9FE';
+    const DANGER        = '#EF4444';
+    const DANGER_LIGHT  = '#FEE2E2';
+    const MIN_AREA      = 2;
+    const AREA_SCALE    = 12;
+    const STAGE_H       = 560;
+    const MIN_CLUSTER_R = 70;
+
+    function getRoomRadius(area) { return Math.sqrt(Math.max(area || MIN_AREA, MIN_AREA)) * AREA_SCALE; }
+    function getClusterRadius(rooms) {
+      if (!rooms || !rooms.length) return MIN_CLUSTER_R;
+      const total = rooms.reduce((a, r) => a + (r.oppervlak || 0), 0);
+      return Math.max(Math.sqrt(total * 1.7) * AREA_SCALE, MIN_CLUSTER_R);
+    }
+    function uid() { return 'x' + Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+    let clusters = [];
+    const savedRS = variant.ruimtestaat && variant.ruimtestaat.data;
+    if (savedRS && savedRS.clusters && savedRS.clusters.length) {
+      clusters = savedRS.clusters.map((c) => {
+        if (!c.id) {
+          const rooms = (c.ruimtes || []).flatMap(r =>
+            Array.from({ length: r.aantal || 1 }, () => ({
+              id: uid(), naam: r.naam || 'ruimte',
+              x: (Math.random() - 0.5) * 40, y: (Math.random() - 0.5) * 40,
+              oppervlak: r.oppervlak || 10, radius: getRoomRadius(r.oppervlak || 10)
+            }))
+          );
+          return { id: uid(), naam: c.naam || 'Cluster', x: undefined, y: undefined, is_begane_grond: false, rooms, radius: getClusterRadius(rooms) };
+        }
+        return { ...c, rooms: (c.rooms || []).map(r => ({ ...r, radius: r.radius || getRoomRadius(r.oppervlak) })) };
       });
     }
 
+    const containerEl = document.getElementById('stage-container');
+    let STAGE_W = containerEl.offsetWidth || 800;
+    const stage = new Konva.Stage({ container: 'stage-container', width: STAGE_W, height: STAGE_H });
+    const layer = new Konva.Layer();
+    stage.add(layer);
+
+    const MIN_ZOOM = 0.25, MAX_ZOOM = 4, ZOOM_STEP = 1.14;
+    function applyZoom(newScale, pivotX, pivotY) {
+      newScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newScale));
+      const oldScale = stage.scaleX(), stageX = stage.x(), stageY = stage.y();
+      const pointTo = { x: (pivotX - stageX) / oldScale, y: (pivotY - stageY) / oldScale };
+      stage.scale({ x: newScale, y: newScale });
+      stage.position({ x: pivotX - pointTo.x * newScale, y: pivotY - pointTo.y * newScale });
+      stage.batchDraw();
+      updateTextSizes(newScale);
+      document.getElementById('zoom-level').textContent = Math.round(newScale * 100) + '%';
+    }
+    function zoomIn()    { applyZoom(stage.scaleX() * ZOOM_STEP,   STAGE_W / 2, STAGE_H / 2); }
+    function zoomOut()   { applyZoom(stage.scaleX() / ZOOM_STEP,   STAGE_W / 2, STAGE_H / 2); }
+    function resetZoom() {
+      stage.scale({ x: 1, y: 1 }); stage.position({ x: 0, y: 0 }); stage.batchDraw();
+      updateTextSizes(1);
+      document.getElementById('zoom-level').textContent = '100%';
+    }
+    containerEl.addEventListener('wheel', e => {
+      e.preventDefault();
+      const ptr = stage.getPointerPosition(); if (!ptr) return;
+      const dir = e.deltaY < 0 ? 1 : -1;
+      applyZoom(stage.scaleX() * (dir > 0 ? ZOOM_STEP : 1 / ZOOM_STEP), ptr.x, ptr.y);
+    }, { passive: false });
+
+    stage.draggable(true);
+    stage.on('dragstart', e => { if (e.target === stage) stage.container().style.cursor = 'grabbing'; });
+    stage.on('dragend', () => { stage.container().style.cursor = 'default'; });
+
+    let clusterSim = null;
+    const roomSims = {};
+
+    function setupClusterSim() {
+      if (clusterSim) clusterSim.stop();
+      clusterSim = d3.forceSimulation(clusters)
+        .force('collide', d3.forceCollide().radius(d => d.radius + 24).iterations(3))
+        .force('charge',  d3.forceManyBody().strength(60))
+        .force('center',  d3.forceCenter(STAGE_W / 2, STAGE_H / 2).strength(0.005))
+        .alphaDecay(0.1).velocityDecay(0.6)
+        .on('tick', () => {
+          clusters.forEach(c => { const g = layer.findOne('#' + c.id); if (g) { g.x(c.x); g.y(c.y); } });
+          layer.batchDraw();
+        });
+    }
+    function setupRoomSim(cluster) {
+      if (roomSims[cluster.id]) roomSims[cluster.id].stop();
+      roomSims[cluster.id] = d3.forceSimulation(cluster.rooms)
+        .force('collide', d3.forceCollide().radius(d => d.radius + 5))
+        .force('center',  d3.forceCenter(0, 0).strength(0.1))
+        .alphaDecay(0.1).velocityDecay(0.5)
+        .on('tick', () => {
+          const c = clusters.find(cl => cl.id === cluster.id); if (!c) return;
+          c.rooms.forEach(r => {
+            const dist = Math.sqrt(r.x * r.x + r.y * r.y);
+            const maxDist = c.radius - r.radius - 8;
+            if (dist > maxDist && dist > 0) { const ang = Math.atan2(r.y, r.x); r.x = Math.cos(ang) * maxDist; r.y = Math.sin(ang) * maxDist; }
+            const rg = layer.findOne('#' + r.id); if (rg) { rg.x(r.x); rg.y(r.y); }
+          });
+          layer.batchDraw();
+        });
+    }
+    function updateTextSizes(scale) {
+      layer.find('Text').forEach(node => { const base = node.getAttr('baseFontSize'); if (base) node.fontSize(base / scale); });
+      layer.batchDraw();
+    }
+    function updateVlekkenplanSummary() {
+      const nRooms = clusters.reduce((a, c) => a + c.rooms.length, 0);
+      const nArea  = clusters.reduce((a, c) => a + c.rooms.reduce((b, r) => b + (r.oppervlak || 0), 0), 0);
+      document.getElementById('summary-clusters').textContent = clusters.length + ' cluster' + (clusters.length !== 1 ? 's' : '');
+      document.getElementById('summary-rooms').textContent    = nRooms + ' ruimte' + (nRooms !== 1 ? 's' : '');
+      document.getElementById('summary-area').textContent     = nArea + ' m²';
+    }
+    function buildClusterGroup(c) {
+      const g = new Konva.Group({ id: c.id, x: c.x || STAGE_W / 2, y: c.y || STAGE_H / 2, draggable: true });
+      const circ = new Konva.Circle({ radius: c.radius, fill: 'white', stroke: c.is_begane_grond ? PRIMARY : '#374151', strokeWidth: c.is_begane_grond ? 3 : 1.5, shadowBlur: 28, shadowColor: 'rgba(0,0,0,0.07)', shadowOpacity: 1 });
+      g.add(circ);
+      if (c.is_begane_grond) {
+        const badge = new Konva.Group({ y: -c.radius - 16 });
+        badge.add(new Konva.Circle({ radius: 12, fill: PRIMARY }));
+        badge.add(new Konva.Text({ text: 'BG', fontSize: 7, fontStyle: 'bold', fill: 'white', align: 'center', width: 24, x: -12, y: -4 }));
+        g.add(badge);
+      }
+      g.add(new Konva.Text({ text: c.naam, baseFontSize: 16, fontSize: 16, fontStyle: 'bold', fill: '#1F2937', align: 'center', width: c.radius * 2, x: -c.radius, y: -c.radius + 22, wrap: 'none', ellipsis: true }));
+      const totalArea = c.rooms.reduce((a, r) => a + (r.oppervlak || 0), 0);
+      g.add(new Konva.Text({ text: `${c.rooms.length} ruimtes · ${totalArea} m²`, baseFontSize: 11, fontSize: 11, fill: '#9CA3AF', align: 'center', width: c.radius * 2, x: -c.radius, y: -c.radius + 40, wrap: 'none', ellipsis: true }));
+      c.rooms.forEach(r => g.add(buildRoomGroup(c, r)));
+      const ab = new Konva.Group({ x: c.radius * 0.64, y: c.radius * 0.64 });
+      ab.add(new Konva.Circle({ radius: 18, fill: 'white', stroke: PRIMARY, strokeWidth: 2, shadowBlur: 6, shadowColor: 'rgba(124,58,237,0.15)', shadowOpacity: 1 }));
+      ab.add(new Konva.Line({ points: [-8, 0, 8, 0], stroke: PRIMARY, strokeWidth: 2, lineCap: 'round' }));
+      ab.add(new Konva.Line({ points: [0, -8, 0, 8], stroke: PRIMARY, strokeWidth: 2, lineCap: 'round' }));
+      ab.on('click tap', e => { e.cancelBubble = true; openNieuweRuimte(c.id); });
+      ab.on('mouseenter', () => { stage.container().style.cursor = 'pointer'; });
+      ab.on('mouseleave', () => { stage.container().style.cursor = 'default'; });
+      g.add(ab);
+      const db = new Konva.Group({ x: -c.radius * 0.64, y: c.radius * 0.64 });
+      db.add(new Konva.Circle({ radius: 15, fill: DANGER_LIGHT }));
+      db.add(new Konva.Text({ text: '✕', fontSize: 11, fill: DANGER, x: -5, y: -6 }));
+      db.on('click tap', e => { e.cancelBubble = true; deleteCluster(c.id); });
+      db.on('mouseenter', () => { stage.container().style.cursor = 'pointer'; });
+      db.on('mouseleave', () => { stage.container().style.cursor = 'default'; });
+      g.add(db);
+      g.on('dragstart', () => { const sn = clusterSim.nodes().find(n => n.id === c.id); if (sn) { sn.fx = g.x(); sn.fy = g.y(); } });
+      g.on('dragmove', () => {
+        const sn = clusterSim.nodes().find(n => n.id === c.id); if (sn) { sn.fx = g.x(); sn.fy = g.y(); }
+        const cd = clusters.find(cl => cl.id === c.id); if (cd) { cd.x = g.x(); cd.y = g.y(); }
+        clusterSim.alpha(0.1).restart();
+      });
+      g.on('dragend', () => { const sn = clusterSim.nodes().find(n => n.id === c.id); if (sn) { delete sn.fx; delete sn.fy; } clusterSim.alpha(0.3).restart(); });
+      g.on('mouseenter', e => { if (e.target === circ) stage.container().style.cursor = 'move'; });
+      g.on('mouseleave', () => { stage.container().style.cursor = 'default'; });
+      g.on('dblclick', e => { if (e.target === circ) openEditCluster(c.id); });
+      return g;
+    }
+    function buildRoomGroup(c, r) {
+      const rg = new Konva.Group({ id: r.id, x: r.x || 0, y: r.y || 0, draggable: true });
+      rg.add(new Konva.Circle({ radius: r.radius, fill: 'white', stroke: '#374151', strokeWidth: 1.5, shadowBlur: 8, shadowColor: 'rgba(0,0,0,0.05)', shadowOpacity: 1 }));
+      rg.add(new Konva.Text({ text: r.naam, baseFontSize: 12, fontSize: 12, fontStyle: 'bold', fill: '#1F2937', align: 'center', width: r.radius * 2, x: -r.radius, y: r.oppervlak ? -11 : -5, wrap: 'none', ellipsis: true }));
+      if (r.oppervlak) rg.add(new Konva.Text({ text: r.oppervlak + ' m²', baseFontSize: 10, fontSize: 10, fill: '#9CA3AF', align: 'center', width: r.radius * 2, x: -r.radius, y: 4, wrap: 'none', ellipsis: true }));
+      const dr = new Konva.Group({ x: r.radius - 7, y: -r.radius + 7 });
+      dr.add(new Konva.Circle({ radius: 8, fill: DANGER_LIGHT }));
+      dr.add(new Konva.Text({ text: '×', fontSize: 12, fill: DANGER, x: -4, y: -7 }));
+      dr.on('click tap', e => { e.cancelBubble = true; deleteRoom(c.id, r.id); });
+      dr.on('mouseenter', () => { stage.container().style.cursor = 'pointer'; });
+      dr.on('mouseleave', () => { stage.container().style.cursor = 'default'; });
+      rg.add(dr);
+      rg.on('dragstart', e => { e.cancelBubble = true; });
+      rg.on('dragmove', e => {
+        e.cancelBubble = true;
+        const cData = clusters.find(cl => cl.id === c.id); if (!cData) return;
+        const lx = rg.x(), ly = rg.y(), dist = Math.sqrt(lx*lx+ly*ly), maxDist = cData.radius - r.radius - 6;
+        if (dist > maxDist && dist > 0) { const ang = Math.atan2(ly,lx); rg.x(Math.cos(ang)*maxDist); rg.y(Math.sin(ang)*maxDist); }
+        const rData = cData.rooms.find(rm => rm.id === r.id); if (rData) { rData.x = rg.x(); rData.y = rg.y(); }
+        const sim = roomSims[c.id]; if (sim) { const sn = sim.nodes().find(n => n.id === r.id); if (sn) { sn.fx = rg.x(); sn.fy = rg.y(); } sim.alpha(0.1).restart(); }
+      });
+      rg.on('dragend', e => { e.cancelBubble = true; const sim = roomSims[c.id]; if (sim) { const sn = sim.nodes().find(n => n.id === r.id); if (sn) { delete sn.fx; delete sn.fy; } sim.alpha(0.3).restart(); } });
+      rg.on('dblclick', e => { e.cancelBubble = true; openEditRoom(c.id, r.id); });
+      rg.on('mouseenter', () => { stage.container().style.cursor = 'move'; });
+      rg.on('mouseleave', () => { stage.container().style.cursor = 'default'; });
+      return rg;
+    }
+    function rebuildLayer() {
+      layer.destroyChildren();
+      clusters.forEach(c => layer.add(buildClusterGroup(c)));
+      layer.batchDraw();
+      updateTextSizes(stage.scaleX());
+      updateVlekkenplanSummary();
+    }
+    function rebuildAndRestartSims() {
+      if (clusterSim) clusterSim.stop();
+      Object.values(roomSims).forEach(s => s.stop());
+      rebuildLayer();
+      setupClusterSim();
+      clusters.forEach(c => setupRoomSim(c));
+      clusterSim.alpha(0.5).restart();
+      clusters.forEach(c => { if (roomSims[c.id]) roomSims[c.id].alpha(0.5).restart(); });
+    }
+    function saveVlekkenplan() {
+      const existingRS = variant.ruimtestaat || { type: 'handmatig', vragen: {} };
+      const saveableClusters = clusters.map(c => ({ ...c, ruimtes: c.rooms.map(r => ({ naam: r.naam, aantal: 1, oppervlak: r.oppervlak })) }));
+      updateActivePveVariant({ ruimtestaat: { ...existingRS, data: { clusters: saveableClusters } } });
+      updateVlekkenplanSummary();
+    }
+
+    let vlekModalState = null;
     function openNieuwCluster() {
+      vlekModalState = { type: 'cluster' };
+      document.getElementById('modal-cluster-title').textContent = 'Nieuw cluster';
+      document.getElementById('cluster-submit-btn').textContent  = 'Maak';
       document.getElementById('cluster-naam').value = '';
+      document.getElementById('cluster-bg').checked = false;
       document.getElementById('modal-cluster').classList.remove('hidden');
       setTimeout(() => document.getElementById('cluster-naam').focus(), 50);
     }
-
-    function maakCluster() {
-      const naam = document.getElementById('cluster-naam').value.trim() || 'Cluster';
-      clusters.push({ naam, ruimtes: [] });
-      renderCanvas();
-      closeModal('modal-cluster');
+    function openEditCluster(clusterId) {
+      const c = clusters.find(cl => cl.id === clusterId); if (!c) return;
+      vlekModalState = { type: 'cluster', editId: clusterId };
+      document.getElementById('modal-cluster-title').textContent = 'Cluster bewerken';
+      document.getElementById('cluster-submit-btn').textContent  = 'Opslaan';
+      document.getElementById('cluster-naam').value = c.naam;
+      document.getElementById('cluster-bg').checked = !!c.is_begane_grond;
+      document.getElementById('modal-cluster').classList.remove('hidden');
+      setTimeout(() => document.getElementById('cluster-naam').focus(), 50);
     }
-
-    function openNieuweRuimte(ci) {
-      document.getElementById('ruimte-cluster-idx').value  = ci;
-      document.getElementById('ruimte-naam').value   = 'lokaal';
-      document.getElementById('ruimte-aantal').value = 1;
+    function submitCluster() {
+      const naam = document.getElementById('cluster-naam').value.trim() || 'Cluster';
+      const isBG = document.getElementById('cluster-bg').checked;
+      if (vlekModalState && vlekModalState.editId) {
+        const c = clusters.find(cl => cl.id === vlekModalState.editId); if (c) { c.naam = naam; c.is_begane_grond = isBG; }
+      } else {
+        clusters.push({ id: uid(), naam, x: STAGE_W/2 + (Math.random()-0.5)*200, y: STAGE_H/2 + (Math.random()-0.5)*200, radius: MIN_CLUSTER_R, is_begane_grond: isBG, rooms: [] });
+      }
+      closeModal('modal-cluster'); rebuildAndRestartSims(); saveVlekkenplan();
+    }
+    function openNieuweRuimte(clusterId) {
+      vlekModalState = { type: 'room', clusterId };
+      document.getElementById('modal-ruimte-title').textContent = 'Nieuwe ruimte';
+      document.getElementById('ruimte-submit-btn').textContent  = 'Maak';
+      document.getElementById('ruimte-cluster-id').value = clusterId;
+      document.getElementById('ruimte-room-id').value    = '';
+      document.getElementById('ruimte-naam').value       = 'lokaal';
+      document.getElementById('ruimte-aantal').value     = '1';
+      document.getElementById('ruimte-opp').value        = '';
+      document.getElementById('ruimte-aantal-row').style.display = '';
       document.getElementById('modal-ruimte').classList.remove('hidden');
       setTimeout(() => document.getElementById('ruimte-naam').focus(), 50);
     }
-
-    function maakRuimte() {
-      const ci     = parseInt(document.getElementById('ruimte-cluster-idx').value);
-      const naam   = document.getElementById('ruimte-naam').value.trim() || 'ruimte';
-      const aantal = parseInt(document.getElementById('ruimte-aantal').value) || 1;
-      clusters[ci].ruimtes.push({ naam, aantal });
-      renderCanvas();
-      closeModal('modal-ruimte');
+    function openEditRoom(clusterId, roomId) {
+      const c = clusters.find(cl => cl.id === clusterId);
+      const r = c && c.rooms.find(rm => rm.id === roomId); if (!r) return;
+      vlekModalState = { type: 'room', clusterId, editId: roomId };
+      document.getElementById('modal-ruimte-title').textContent = 'Ruimte bewerken';
+      document.getElementById('ruimte-submit-btn').textContent  = 'Opslaan';
+      document.getElementById('ruimte-cluster-id').value = clusterId;
+      document.getElementById('ruimte-room-id').value    = roomId;
+      document.getElementById('ruimte-naam').value       = r.naam;
+      document.getElementById('ruimte-opp').value        = r.oppervlak || '';
+      document.getElementById('ruimte-aantal-row').style.display = 'none';
+      document.getElementById('modal-ruimte').classList.remove('hidden');
+      setTimeout(() => document.getElementById('ruimte-naam').focus(), 50);
     }
-
+    function submitRuimte() {
+      const clusterId = document.getElementById('ruimte-cluster-id').value;
+      const naam   = document.getElementById('ruimte-naam').value.trim() || 'ruimte';
+      const opp    = parseFloat(document.getElementById('ruimte-opp').value) || 10;
+      const radius = getRoomRadius(opp);
+      const c = clusters.find(cl => cl.id === clusterId); if (!c) { closeModal('modal-ruimte'); return; }
+      if (vlekModalState && vlekModalState.editId) {
+        const r = c.rooms.find(rm => rm.id === vlekModalState.editId); if (r) { r.naam = naam; r.oppervlak = opp; r.radius = radius; }
+      } else {
+        const aantal = Math.max(1, parseInt(document.getElementById('ruimte-aantal').value) || 1);
+        for (let i = 0; i < aantal; i++) c.rooms.push({ id: uid(), naam, x: (Math.random()-0.5)*30, y: (Math.random()-0.5)*30, oppervlak: opp, radius });
+      }
+      c.radius = getClusterRadius(c.rooms);
+      closeModal('modal-ruimte'); rebuildAndRestartSims(); saveVlekkenplan();
+    }
+    function deleteCluster(clusterId) {
+      pomConfirm('Cluster verwijderen?', 'Alle ruimtes in dit cluster worden ook verwijderd.', () => {
+        if (roomSims[clusterId]) { roomSims[clusterId].stop(); delete roomSims[clusterId]; }
+        clusters = clusters.filter(c => c.id !== clusterId);
+        rebuildAndRestartSims(); saveVlekkenplan();
+      });
+    }
+    function deleteRoom(clusterId, roomId) {
+      const c = clusters.find(cl => cl.id === clusterId); if (!c) return;
+      c.rooms = c.rooms.filter(r => r.id !== roomId);
+      c.radius = getClusterRadius(c.rooms);
+      rebuildAndRestartSims(); saveVlekkenplan();
+    }
     function closeModal(id) {
       document.getElementById(id).classList.add('hidden');
+      vlekModalState = null;
+    }
+    function pomConfirm(title, body, onConfirm) {
+      const overlay = document.createElement('div');
+      overlay.className = 'pom-confirm-overlay';
+      overlay.innerHTML = `<div class="pom-confirm-dialog"><div class="pom-confirm-title">${title}</div><p class="pom-confirm-body">${body}</p><div class="pom-confirm-actions"><button class="btn-ghost" onclick="this.closest('.pom-confirm-overlay').remove()">Annuleer</button><button class="btn-danger" id="pom-confirm-ok">Verwijder</button></div></div>`;
+      document.body.appendChild(overlay);
+      overlay.querySelector('#pom-confirm-ok').onclick = () => { overlay.remove(); onConfirm(); };
     }
 
+    // Init vlekkenplan
+    if (clusters.length === 0) {
+      const calcClusters = variant.ruimtestaat && variant.ruimtestaat.type === 'berekend' ? variant.ruimtestaat.clusters : null;
+      const jsonClusters = (calcClusters && calcClusters.length) ? calcClusters : (typeof RUIMTESTAAT_DEFAULT !== 'undefined' ? RUIMTESTAAT_DEFAULT.clusters || [] : []);
+      clusters = jsonClusters.filter(c => c.name).map(c => {
+        const rooms = [];
+        (c.rooms || []).forEach(r => {
+          const opp = parseFloat(r.oppervlakte); if (!r.name || isNaN(opp) || opp <= 0) return;
+          const aantal = Math.max(1, parseInt(r.aantal) || 1);
+          for (let i = 0; i < aantal; i++) rooms.push({ id: uid(), naam: r.name, x: (Math.random()-0.5)*30, y: (Math.random()-0.5)*30, oppervlak: opp, radius: getRoomRadius(opp) });
+        });
+        return { id: uid(), naam: c.name, x: undefined, y: undefined, is_begane_grond: !!c.verdiepingrestrictie, rooms, radius: getClusterRadius(rooms) };
+      });
+    }
+    rebuildAndRestartSims();
+
+    // Correct stage width after flex layout is fully painted
+    setTimeout(() => {
+      const w = containerEl.offsetWidth;
+      if (w > 0 && w !== STAGE_W) {
+        STAGE_W = w;
+        stage.width(STAGE_W);
+        if (clusterSim) {
+          clusterSim.force('center', d3.forceCenter(STAGE_W / 2, STAGE_H / 2).strength(0.005));
+          clusterSim.alpha(0.3).restart();
+        }
+      }
+    }, 50);
+
+    window.addEventListener('resize', () => {
+      STAGE_W = containerEl.offsetWidth; stage.width(STAGE_W);
+      if (clusterSim) { clusterSim.force('center', d3.forceCenter(STAGE_W/2, STAGE_H/2).strength(0.005)); clusterSim.alpha(0.2).restart(); }
+    });
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // SECTION: Planning (from pve-stap-5-planning.html)
+    // ══════════════════════════════════════════════════════════════════════════
+    const MS_W = 128, ROW_H = 90, PHASE_TOP = [8, 8 + ROW_H, 8 + 2 * ROW_H], PILL_H = 44, DUR_H = 24;
+    const CANVAS_H = PHASE_TOP[2] + PILL_H + DUR_H + 24;
+
+    const sv = (variant && variant.planning) || {};
+    function _defaultStartDate() { const d = new Date(); d.setDate(d.getDate() + 49); return d.toISOString().slice(0, 10); }
+    const planState = {
+      besluitvormingDatum: sv.besluitvormingDatum || _defaultStartDate(),
+      aanb: sv.aanbestedingMaanden || 6,
+      ontw: sv.ontwerpMaanden      || 12,
+      uitv: sv.uitvoeringMaanden   || 12,
+    };
+    document.getElementById('inp-besluit').value = planState.besluitvormingDatum;
+
+    let pxPM = 1;
+    function addMonths(s, m) { const d = new Date(s + 'T00:00:00'); d.setMonth(d.getMonth() + m); return d.toISOString().slice(0, 10); }
+    function fmtDate(s) { if (!s) return ''; return new Date(s + 'T00:00:00').toLocaleDateString('nl-NL', { month: 'short', year: 'numeric' }); }
+
+    function renderPlanning() {
+      const canvas = document.getElementById('tl-canvas');
+      const W = canvas.offsetWidth; if (!W) return;
+      const PILL_AREA = W - 2 * MS_W, total = planState.aanb + planState.ontw + planState.uitv;
+      pxPM = PILL_AREA / total;
+      const w0 = planState.aanb * pxPM, w1 = planState.ontw * pxPM, w2 = planState.uitv * pxPM;
+      const x0 = MS_W, x1 = x0 + w0, x2 = x1 + w1, x3 = x2 + w2;
+      function pos(id, l, t, w) { const el = document.getElementById(id); el.style.left = l+'px'; el.style.top = t+'px'; el.style.width = w+'px'; }
+      pos('row-aanb', x0, PHASE_TOP[0], w0);
+      pos('row-ontw', x1, PHASE_TOP[1], w1);
+      pos('row-uitv', x2, PHASE_TOP[2], w2);
+      const msS = document.getElementById('ms-start');
+      msS.style.left = '0px'; msS.style.top = PHASE_TOP[0]+'px'; msS.style.width = MS_W+'px';
+      const msE = document.getElementById('ms-end');
+      msE.style.left = x3+'px'; msE.style.top = PHASE_TOP[2]+'px'; msE.style.width = MS_W+'px';
+      function posSep(id, x, topY) { const el = document.getElementById(id); el.style.left = x+'px'; el.style.top = topY+'px'; el.style.height = (CANVAS_H - topY - 8)+'px'; }
+      posSep('sep1', x1, PHASE_TOP[0]);
+      posSep('sep2', x2, PHASE_TOP[1]);
+      canvas.style.height = CANVAS_H + 'px';
+      document.getElementById('dur-aanb').textContent = planState.aanb;
+      document.getElementById('dur-ontw').textContent = planState.ontw;
+      document.getElementById('dur-uitv').textContent = planState.uitv;
+      const d = planState.besluitvormingDatum;
+      document.getElementById('lbl-oplevering').textContent = d ? fmtDate(addMonths(addMonths(addMonths(d, planState.aanb), planState.ontw), planState.uitv)) : '';
+    }
+
+    let planDrag = null;
+    function startDrag(e, idx) {
+      e.preventDefault();
+      document.getElementById('sep' + (idx+1)).classList.add('is-dragging');
+      planDrag = { idx, startX: e.clientX, origAanb: planState.aanb, origOntw: planState.ontw, origUitv: planState.uitv };
+    }
+    document.addEventListener('mousemove', e => {
+      if (!planDrag) return;
+      const Δ = Math.round((e.clientX - planDrag.startX) / pxPM);
+      if (planDrag.idx === 0) { const a = planDrag.origAanb + Δ, o = planDrag.origOntw - Δ; if (a >= 1 && o >= 1) { planState.aanb = a; planState.ontw = o; } }
+      else { const o = planDrag.origOntw + Δ, u = planDrag.origUitv - Δ; if (o >= 1 && u >= 1) { planState.ontw = o; planState.uitv = u; } }
+      renderPlanning();
+    });
+    document.addEventListener('mouseup', () => {
+      if (!planDrag) return;
+      document.getElementById('sep' + (planDrag.idx+1)).classList.remove('is-dragging');
+      planDrag = null;
+    });
+    function onDateChange() { planState.besluitvormingDatum = document.getElementById('inp-besluit').value; renderPlanning(); }
+    function adjAbs(phase, delta) { planState[phase] = Math.max(1, planState[phase] + delta); renderPlanning(); }
+
+    setTimeout(renderPlanning, 150);
+    window.addEventListener('load', () => setTimeout(renderPlanning, 50));
+    window.addEventListener('resize', renderPlanning);
+
+    // ── Keyboard shortcuts (modals) ──────────────────────────────────────────
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape') { closeModal('modal-cluster'); closeModal('modal-ruimte'); }
       if (e.key === 'Enter') {
-        if (!document.getElementById('modal-cluster').classList.contains('hidden')) maakCluster();
-        if (!document.getElementById('modal-ruimte').classList.contains('hidden'))  maakRuimte();
+        if (!document.getElementById('modal-cluster').classList.contains('hidden')) submitCluster();
+        else if (!document.getElementById('modal-ruimte').classList.contains('hidden'))  submitRuimte();
       }
     });
 
-    renderCanvas();
-
-    // ── Copy variant ───────────────────────────────────────────────────────
+    // ── Copy variant ─────────────────────────────────────────────────────────
     function maakKopie() {
       const cur  = getCurrentProject();
       const copy = { ...JSON.parse(JSON.stringify(variant)), id: crypto.randomUUID(), naam: variant.naam + ' (kopie)' };
@@ -603,18 +1080,19 @@
       window.location.href = 'pve-instellingen.html?id=' + copy.id;
     }
 
-    // ── Save ───────────────────────────────────────────────────────────────
+    // ── Save ─────────────────────────────────────────────────────────────────
     function opslaanInstellingen() {
       buildVoorzeningenFromInputs();
-      const naam     = document.getElementById('variant-naam').value.trim() || variant.naam;
-      const afgerondEl = document.getElementById('planning-afgerond');
-      const afgerond = afgerondEl ? afgerondEl.checked : false;
-      const planning = afgerond
-        ? { afgerond: true, datum: (variant.planning && variant.planning.datum) || new Date().toISOString() }
-        : { afgerond: false };
-      const existingRS  = variant.ruimtestaat || { type: 'handmatig', vragen: {} };
-      const ruimtestaat = { ...existingRS, data: { clusters } };
-      updatePveVariantById(variant.id, { naam, voorzieningen: V, ambities, ruimtestaat, planning });
+      const naam         = document.getElementById('variant-naam').value.trim() || variant.naam;
+      const gebruiksduur = parseInt(document.getElementById('gebruiksduur').value) || 40;
+      const planningData = {
+        besluitvormingDatum: planState.besluitvormingDatum,
+        aanbestedingMaanden: planState.aanb,
+        ontwerpMaanden:      planState.ontw,
+        uitvoeringMaanden:   planState.uitv,
+      };
+      updateCurrentProject({ gebruiksduur });
+      updatePveVariantById(variant.id, { naam, voorzieningen: V, ambities, planning: planningData });
       window.location.href = 'project-overzicht.html';
     }
   </script>
