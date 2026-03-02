@@ -438,3 +438,35 @@ window.GEBOUW_ALLE_OPTIES = window.GEBOUW_OPTIES_GROUPS.flatMap(g => g.opties);
 
 // ── Hulpfunctie: zoek optie op id ─────────────────────────────────────────────
 window.getGebouwOptie = id => window.GEBOUW_ALLE_OPTIES.find(o => o.id === id) || null;
+
+// ── Variant-combinatie → Aanbevolen groep ─────────────────────────────────────
+//
+// Rijen    = index van de gebiedVariant in project.gebiedVarianten (0-gebaseerd)
+// Kolommen = index van de pveVariant    in project.pveVarianten    (0-gebaseerd)
+// Waarden  = id van de aanbevolen GEBOUW_OPTIES_GROUPS groep
+//
+// Beschikbare groep-id's:
+//   'grondgebonden' | 'gestapeld' | 'paviljoen' | 'hybride' | 'innovatief'
+//
+// Als een combinatie ontbreekt, wordt de eerste groep als standaard gebruikt.
+window.GROEP_MATRIX = [
+  //  gebiedIndex 0            gebiedIndex 1
+  [ 'grondgebonden',           'gestapeld','grondgebonden',           'gestapeld','grondgebonden',           'gestapeld','grondgebonden',           'gestapeld'    ],  // pveIndex 0
+  [ 'paviljoen',               'hybride','paviljoen',               'hybride','paviljoen',               'hybride','paviljoen',               'hybride',      ],  // pveIndex 1
+  [ 'innovatief',              'grondgebonden','innovatief',              'grondgebonden','innovatief',              'grondgebonden','innovatief',              'grondgebonden',],  // pveIndex 2
+  [ 'grondgebonden',           'gestapeld','grondgebonden',           'gestapeld','grondgebonden',           'gestapeld','grondgebonden',           'gestapeld'    ],  // pveIndex 0
+  [ 'paviljoen',               'hybride','paviljoen',               'hybride','paviljoen',               'hybride','paviljoen',               'hybride',      ],  // pveIndex 1
+  [ 'innovatief',              'grondgebonden','innovatief',              'grondgebonden','innovatief',              'grondgebonden','innovatief',              'grondgebonden',],  // pveIndex 2
+  [ 'grondgebonden',           'gestapeld','grondgebonden',           'gestapeld','grondgebonden',           'gestapeld','grondgebonden',           'gestapeld'    ],  // pveIndex 0
+  [ 'paviljoen',               'hybride','paviljoen',               'hybride','paviljoen',               'hybride','paviljoen',               'hybride',      ],  // pveIndex 1
+  [ 'innovatief',              'grondgebonden','innovatief',              'grondgebonden','innovatief',              'grondgebonden','innovatief',              'grondgebonden',],  // pveIndex 2
+];
+
+// Hulpfunctie: geeft het groep-id terug voor een pve + gebied variant combinatie.
+// pveIndex en gebiedIndex zijn de posities in de respectievelijke variant-arrays.
+// Valt terug op de eerste groep als de combinatie niet in de matrix staat.
+window.getAanbevolenGroepId = function(pveIndex, gebiedIndex) {
+  const rij = window.GROEP_MATRIX[pveIndex];
+  if (rij && rij[gebiedIndex] !== undefined) return rij[gebiedIndex];
+  return window.GEBOUW_OPTIES_GROUPS[0].id;
+};
