@@ -194,11 +194,19 @@
     let detailGroepNaam     = '';
 
     // ── Active group state ─────────────────────────────────────────────────────
-    // Default: group that contains the currently selected option, else first group
-    let activeGroupId = GEBOUW_OPTIES_GROUPS[0].id;
+    // If an option is already selected → show that group.
+    // Otherwise → look up the recommended group from GROEP_MATRIX.
+    let activeGroupId;
     if (geselecteerdOptieId) {
       const g = GEBOUW_OPTIES_GROUPS.find(g => g.opties.some(o => o.id === geselecteerdOptieId));
-      if (g) activeGroupId = g.id;
+      activeGroupId = g ? g.id : GEBOUW_OPTIES_GROUPS[0].id;
+    } else {
+      const pveIndex    = (project.pveVarianten   || []).findIndex(v => v.id === variant.pveId);
+      const gebiedIndex = (project.gebiedVarianten || []).findIndex(g => g.id === variant.gebiedId);
+      activeGroupId = getAanbevolenGroepId(
+        pveIndex    >= 0 ? pveIndex    : 0,
+        gebiedIndex >= 0 ? gebiedIndex : 0
+      );
     }
 
     // ── Build group tabs ───────────────────────────────────────────────────────
