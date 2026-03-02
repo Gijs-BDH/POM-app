@@ -240,6 +240,66 @@ const RUIMTESTAAT_CALC = (function () {
       rooms: personeelRooms,
     });
 
+    // ── Voorschoolse educatie ────────────────────────────────────────────────
+    if (inp.voorschoolseActief) {
+      const groepen = Math.max(1, parseInt(inp.voorschoolseGroepen) || 2);
+      clusterList.push({
+        name: 'Voorschoolse educatie',
+        verdiepingrestrictie: true,
+        relations: [],
+        rooms: [
+          room('Entree/tochtportaal',         1,       12),
+          room("Stallingsruimte buggy's",     1,        4),
+          room('Garderobe; personeel',        1,        3),
+          room('Bergruimte; algemeen',        1,        6),
+          room('Toiletruimte; personeel',     1,        2.5),
+          room('Toiletruimte; kinderen',      2,        3),
+          room('Kantoor/spreekruimte',        1,       16),
+          room('Toilet/verschoonruimte',      1,       12),
+          room('Pantry groepsruimte(n)',       1,        8),
+          room('Slaapruimte',                 1,       16),
+          room('Groepsruimte',               groepen,  55),
+        ],
+      });
+    }
+
+    // ── Sport (gymzaal / sportzaal / sporthal) ────────────────────────────────
+    if (inp.sportActief) {
+      const sportType = inp.sportType || 'gymzaal';
+      const sportNaam = sportType === 'sportzaal' ? 'Sportzaal'
+                      : sportType === 'sporthal'  ? 'Sporthal'
+                      : 'Gymzaal';
+      // Scale zaal floor area proportionally to SPORT_BVO (gymzaal=600 baseline)
+      const zaalOpp   = sportType === 'sportzaal' ? round(343.42 * 2)
+                      : sportType === 'sporthal'  ? round(343.42 * 4)
+                      : 343.42;
+      clusterList.push({
+        name: sportNaam,
+        verdiepingrestrictie: false,
+        relations: [],
+        rooms: [
+          room('Meterkast',                                    1, 2),
+          room('Patchkast/netwerkruimte ICT',                  1, 2),
+          room('Techniekruimte',                               1, 6),
+          room('Toilet/doucheruimte; integraal toegankelijk',  1, 4),
+          room('Toiletruimte; leerlingen',                     3, 2.5),
+          room('Toiletruimte; leerlingen 2',                   3, 2.5),
+          room('Toiletruimte; docent',                         1, 2.5),
+          room('Doucheruimte; leerlingen',                     3, 4),
+          room('Doucheruimte; leerlingen 2',                   3, 4),
+          room('Doucheruimte; docent',                         1, 4),
+          room('Kleedruimte; leerlingen',                      1, 40),
+          room('Kleedruimte; leerlingen 2',                    1, 40),
+          room('Werkkast',                                     1, 4),
+          room('Bergruimte; toestellen',                       1, 60),
+          room('Entree/tochtportaal',                          1, 12),
+          room('Werkplek docent',                              1, 8),
+          room('EHBO-ruimte',                                  1, 10),
+          room(sportNaam + '; multifunctioneel',               1, zaalOpp),
+        ],
+      });
+    }
+
     // ── Totals ───────────────────────────────────────────────────────────────
     let totaalGebruikt = 0;
     clusterList.forEach(cl =>
