@@ -45,13 +45,15 @@
     <div class="flex items-start justify-between gap-4 mb-4">
       <div>
         <a href="project-overzicht.html" class="breadcrumb">← Project overzicht</a>
-        <h1 class="page-title">Gebiedsinstellingen</h1>
+        <h1 class="page-title">Gebied variant</h1>
+        <p class="text-sm text-gray-500 mt-1">Pas de gebiedsvariant aan en sla op als een nieuwe variant.</p>
       </div>
       <div class="flex items-center gap-3 mt-1 flex-shrink-0">
         <div class="flex items-center gap-2">
           <label class="text-xs text-gray-500 font-medium whitespace-nowrap">Naam variant</label>
           <input id="g-naam" type="text" class="input-field text-sm px-3 py-1.5" placeholder="Locatie naam" style="width:180px;"/>
         </div>
+        <a href="project-overzicht.html" class="btn-ghost text-sm px-4 py-2 flex-shrink-0">Annuleren</a>
         <button onclick="opslaanAlsNieuweVariant()" class="btn-primary text-sm px-4 py-2 flex-shrink-0">Opslaan als nieuwe variant</button>
       </div>
     </div>
@@ -799,14 +801,14 @@
     }
 
     function behoudOudeVariant() {
-      window.location.href = 'gebied-instellingen.html?id=' + nieuweVariantId;
+      window.location.href = 'project-overzicht.html';
     }
 
     function verwijderOudeVariant() {
       const cur = getCurrentProject();
       const updated = (cur.gebiedVarianten || []).filter(g => g.id !== variant.id);
       updateCurrentProject({ gebiedVarianten: updated });
-      window.location.href = 'gebied-instellingen.html?id=' + nieuweVariantId;
+      window.location.href = 'project-overzicht.html';
     }
   </script>
   <script src="js/bot.js"></script>
