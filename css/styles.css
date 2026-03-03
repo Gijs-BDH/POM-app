@@ -12,9 +12,8 @@
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: #F9FAFB;
-  background-image:
-    linear-gradient(rgba(249, 250, 251, 0.82), rgba(249, 250, 251, 0.82)),
-    url('../public/landingpage_image.png');
+  background-image: linear-gradient(rgba(249, 250, 251, 0.88), rgba(249, 250, 251, 0.68)),
+                    url('../public/general_background.png');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
@@ -23,16 +22,68 @@ body {
   margin: 0;
 }
 
+body.landing{
+  background-color: #FFFFFF; 
+  background-image: linear-gradient(rgba(249, 250, 251, 0.88), rgba(249, 250, 251, 0.28)),
+                    url('../public/landingpage_image.png');
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+body.newproject{
+  background-color: #FFFFFF; 
+  background-image: linear-gradient(rgba(249, 250, 251, 0.88), rgba(249, 250, 251, 0.68)),
+                    url('../public/landingpage_image.png');
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+
+
+
+
 /* ── Page wrapper card ─────────────────────────────────────────────────────── */
 /* flex layout is applied via .pom-has-bot (added by bot.js AFTER inline scripts
    have run), so canvas/map elements measure the correct container width first. */
-body > div[class~="mx-auto"] {
+.landing-main-card {
+  background: white;
+  border-radius: 1rem;     /* same as rounded-2xl */
+  padding: 2.5rem;         /* same as p-10 */
+  width: 55vw;              /* 70% of page width */
+  height: 70vh;            /* 60% of viewport height */
+  overflow: auto;          /* scroll inside the card if needed */
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  max-width: 80rem;        /* similar to max-w-6xl, optional */
+}
+
+
+  
+body > div[class~="overview-card"] {
   background: white;
   border-radius: 1.5rem;
   box-shadow: 0 4px 32px rgba(0, 0, 0, 0.08);
   padding: 2rem 2.5rem;
   min-height: calc(100vh - 4rem);
+  min-width: 50vw;
+  width:fit-content;
 }
+
+/* .main-card{
+  background: white;
+  border-radius: 1.5rem;
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.08);
+  padding: 2rem 2.5rem;
+  min-height: calc(100vh - 4rem);
+} */
+  
+body > div[class~="mx-auto"] {
+  /* background: white; */
+  border-radius: 1.5rem;
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.08);
+  padding: 2rem 2.5rem;
+  min-height: calc(100vh - 4rem);
+}
+
 body > div[class~="mx-auto"].pom-has-bot {
   display: flex;
   flex-direction: row;   /* override any Tailwind flex-col on the wrapper */
@@ -60,8 +111,14 @@ body > div[class~="mx-auto"].pom-no-card {
 
 /* Existing page content fills remaining space */
 #pom-page-content {
+  background: white;
+  border-radius: 1.5rem;
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.08);
+  padding: 2rem 2.5rem;
+  min-height: calc(100vh - 4rem);
   flex: 1;
-  min-width: 0;
+  width:fit-content;
+  min-width: 60vw;
 }
 
 /* ── Page layout: single centered card ─────────────────────────────────────── */
@@ -513,7 +570,7 @@ input[type="range"]::-moz-range-thumb {
 .planning-pill.active { background: var(--primary); color: white; }
 
 /* ── Leaflet override ──────────────────────────────────────────────────────── */
-.leaflet-container { border-radius: 0.75rem; }
+.leaflet-container { border-radius: 0.75rem; width: 55vw; }
 /* Force crosshair over all children (incl. interactive shapes) during draw mode */
 .leaflet-container.drawing-crosshair,
 .leaflet-container.drawing-crosshair * { cursor: crosshair !important; }
