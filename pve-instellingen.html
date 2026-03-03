@@ -521,20 +521,30 @@
       if (!window.POM_CALC || !window.POM_TCO) return;
       buildVoorzeningenFromInputs();
       const jaren = parseInt(document.getElementById('gebruiksduur').value) || 40;
-      const { bouwkosten, tco } = POM_CALC.calcDashboard(V, jaren, ambities);
+      const { totalBVO, bouwkosten, tco, tcoModel } = POM_CALC.calcDashboard(V, jaren, ambities);
+      // store for popup access
+      window._localDashData = { V: JSON.parse(JSON.stringify(V)), totalBVO, bouwkosten, tco, tcoModel, gebruiksduur: jaren };
       const fmt = n => '€\u202F' + n.toLocaleString('nl-NL');
+      const pillStyle = 'cursor:pointer;transition:background 0.15s;';
+      const onHover   = `onmouseenter="this.style.background='#F5F3FF'" onmouseleave="this.style.background=''"`;
       const badge = (color, val) =>
         `<span style="background:${color};color:white;border-radius:99px;padding:0.1rem 0.45rem;font-size:0.7rem">${val}</span>`;
       document.getElementById('dashboard-widget').innerHTML = `
-        <div class="dashboard-pill">
+        <div class="dashboard-pill" style="${pillStyle}" ${onHover}
+             onclick="if(window.showDashboardDetail)showDashboardDetail('bouwkosten',window._localDashData)"
+             title="Klik voor details">
           <span style="color:#6B7280;font-weight:500">Bouwkosten</span>
           ${badge('#7C3AED', '60%')}
           <span style="color:#374151;font-weight:600">${fmt(bouwkosten)}</span>
+          <span style="color:#C4B5FD;font-size:0.7rem;margin-left:1px">ⓘ</span>
         </div>
-        <div class="dashboard-pill">
+        <div class="dashboard-pill" style="${pillStyle}" ${onHover}
+             onclick="if(window.showDashboardDetail)showDashboardDetail('tco',window._localDashData)"
+             title="Klik voor details">
           <span style="color:#6B7280;font-weight:500">TCO (${jaren} jaar)</span>
           ${badge('#34D399', '60%')}
           <span style="color:#374151;font-weight:600">${fmt(tco)}</span>
+          <span style="color:#6EE7B7;font-size:0.7rem;margin-left:1px">ⓘ</span>
         </div>`;
     }
     (function initVoorzieningen() {
@@ -1137,6 +1147,7 @@
       window.location.href = 'project-overzicht.html';
     }
   </script>
+  <script src="js/dashboard-detail.js"></script>
   <script src="js/bot.js"></script>
 
   <!-- Modal: Opslaan als nieuwe variant -->

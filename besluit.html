@@ -202,15 +202,23 @@
           <div class="px-3 pb-2">
             <span class="metric-pill">${POM_CALC.formatM2(optie.bvo)}</span>
             <div class="dashboard-widget mt-1">
-              <div class="dashboard-pill">
+              <div class="dashboard-pill" style="cursor:pointer;transition:background 0.15s;"
+                   onmouseenter="this.style.background='#F5F3FF'" onmouseleave="this.style.background=''"
+                   onclick="showGebouwOptieDetail('bouwkosten','${v.geselecteerdeOptie}',${project.gebruiksduur||40})"
+                   title="Klik voor details">
                 <span style="color:#6B7280;font-weight:500">Bouwkosten</span>
                 <span style="background:#7C3AED;color:white;border-radius:99px;padding:0.1rem 0.45rem;font-size:0.7rem">80%</span>
                 <span style="color:#374151;font-weight:600">${POM_CALC.formatEuro(optie.bouwkosten)}</span>
+                <span style="color:#C4B5FD;font-size:0.7rem;margin-left:1px">ⓘ</span>
               </div>
-              <div class="dashboard-pill">
+              <div class="dashboard-pill" style="cursor:pointer;transition:background 0.15s;"
+                   onmouseenter="this.style.background='#F0FDF4'" onmouseleave="this.style.background=''"
+                   onclick="showGebouwOptieDetail('tco','${v.geselecteerdeOptie}',${project.gebruiksduur||40})"
+                   title="Klik voor details">
                 <span style="color:#6B7280;font-weight:500">TCO</span>
                 <span style="background:#34D399;color:white;border-radius:99px;padding:0.1rem 0.45rem;font-size:0.7rem">80%</span>
                 <span style="color:#374151;font-weight:600">${POM_CALC.formatEuro(optie.tco)}</span>
+                <span style="color:#6EE7B7;font-size:0.7rem;margin-left:1px">ⓘ</span>
               </div>
             </div>
           </div>` : `
@@ -456,6 +464,7 @@
       triggerBotMessage(msg, [{ id: 'go_to_gebouw_nieuw', label: 'Maak nieuwe variant' }]);
     }
   </script>
+  <script src="js/dashboard-detail.js"></script>
   <script src="js/bot.js"></script>
   <script>checkBesluitVarianten();</script>
 </body>
