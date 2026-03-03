@@ -181,6 +181,8 @@
         this._onSceneClick(movement);
       }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
+      this._tryLoadGebiedVariantModel();
+
       setTimeout(() => (this._events['load'] || []).forEach(cb => cb()), 0);
     }
 
@@ -190,6 +192,61 @@
     }
 
     resize() { this.viewer.resize(); }
+
+    _tryLoadGebiedVariantModel() {
+      try {
+        const currentPage = (window.location.pathname || '').split('/').pop();
+        const allowedPages = new Set([
+          'gebied-stap-2-stedenbouw.html',
+          'gebied-stap-3-programma.html',
+          'gebied-stap-4-bebouwing.html',
+          'gebied-stap-5-bouwvlak.html',
+        ]);
+        if (!allowedPages.has(currentPage)) return;
+
+        if (typeof getCurrentProject !== 'function') return;
+        const gebiedId = new URLSearchParams(window.location.search).get('id');
+        if (!gebiedId) return;
+        const project = getCurrentProject();
+        if (!project) return;
+        const variant = (project.gebiedVarianten || []).find(g => g.id === gebiedId);
+        const dataUrl = variant?.omgevingMassaDataUrl;
+        if (!dataUrl || typeof dataUrl !== 'string') return;
+
+        const t = variant?.omgevingMassaTransform || {};
+        const lng = Number.isFinite(t.lng) ? t.lng : this._center.lng;
+        const lat = Number.isFinite(t.lat) ? t.lat : this._center.lat;
+        const height = Number.isFinite(t.height) ? t.height : 0;
+        const headingDeg = Number.isFinite(t.headingDeg) ? t.headingDeg : 0;
+        const pitchDeg = Number.isFinite(t.pitchDeg) ? t.pitchDeg : 0;
+        const rollDeg = Number.isFinite(t.rollDeg) ? t.rollDeg : 0;
+
+        const position = Cesium.Cartesian3.fromDegrees(lng, lat, height);
+        const hpr = new Cesium.HeadingPitchRoll(
+          Cesium.Math.toRadians(headingDeg),
+          Cesium.Math.toRadians(pitchDeg),
+          Cesium.Math.toRadians(rollDeg)
+        );
+        const modelMatrix = Cesium.Transforms.headingPitchRollToFixedFrame(position, hpr);
+
+        Cesium.Model.fromGltfAsync({
+          url: dataUrl,
+          modelMatrix,
+          scale: 1.0,
+          minimumPixelSize: 64
+        }).then((model) => {
+          if (this._uploadedGebiedModel) {
+            this.viewer.scene.primitives.remove(this._uploadedGebiedModel);
+          }
+          this.viewer.scene.primitives.add(model);
+          this._uploadedGebiedModel = model;
+        }).catch((err) => {
+          console.warn('Omgeving massa model laden mislukt:', err);
+        });
+      } catch (err) {
+        console.warn('Omgeving massa model init mislukt:', err);
+      }
+    }
 
     _loadBagHiddenFromState() {
       try {

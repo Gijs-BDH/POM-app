@@ -60,7 +60,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>window.CESIUM_BASE_URL = 'https://cdn.jsdelivr.net/npm/cesium@1.107/Build/Cesium/';</script>
   <script src="https://cdn.jsdelivr.net/npm/cesium@1.107/Build/Cesium/Cesium.js"></script>
-  <script src="js/cesium-maplibre-shim.js?v=20261030"></script>
+  <script src="js/cesium-maplibre-shim.js?v=20261031"></script>
   <script src="js/state.js"></script>
   <script>
     const params   = new URLSearchParams(window.location.search);
@@ -237,6 +237,25 @@
       rollDeg: FIXED_MODEL_ROLL_DEG,
     };
 
+    if (variant.omgevingMassaDataUrl) {
+      omgevingMassaFileUrl = variant.omgevingMassaDataUrl;
+      omgevingMassaFileName = variant.omgevingMassaFileName || 'omgevingMassa.gltf';
+      variant.omgevingMassa = true;
+    }
+
+    function persistOmgevingMassaTransform() {
+      updateGebiedVariantById(gebiedId, {
+        omgevingMassaTransform: {
+          lng: modelTransform.lng,
+          lat: modelTransform.lat,
+          height: modelTransform.height,
+          headingDeg: modelTransform.headingDeg,
+          pitchDeg: modelTransform.pitchDeg,
+          rollDeg: modelTransform.rollDeg,
+        }
+      });
+    }
+
     function setModelSelected(selected) {
       modelSelected = !!selected;
       if (!kavelpaspoortModelPrimitive) return;
@@ -296,6 +315,7 @@
       if (!changed) return;
       e.preventDefault();
       applyModelTransform();
+      persistOmgevingMassaTransform();
       logModelTransform();
     });
 
@@ -340,10 +360,23 @@
       if (!file) return;
 
       if (key === 'omgevingMassa') {
-        if (omgevingMassaFileUrl) URL.revokeObjectURL(omgevingMassaFileUrl);
+        if (omgevingMassaFileUrl && omgevingMassaFileUrl.startsWith('blob:')) URL.revokeObjectURL(omgevingMassaFileUrl);
         omgevingMassaFileUrl = URL.createObjectURL(file);
         omgevingMassaFileName = file.name;
         kavelpaspoortModelLoaded = false;
+
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = reader.result;
+          if (typeof dataUrl === 'string') {
+            updateGebiedVariantById(gebiedId, {
+              omgevingMassa: true,
+              omgevingMassaDataUrl: dataUrl,
+              omgevingMassaFileName: file.name,
+            });
+          }
+        };
+        reader.readAsDataURL(file);
       }
 
       variant[key] = true;
@@ -358,7 +391,7 @@
 
     function clearUpload(key) {
       if (key === 'omgevingMassa') {
-        if (omgevingMassaFileUrl) URL.revokeObjectURL(omgevingMassaFileUrl);
+        if (omgevingMassaFileUrl && omgevingMassaFileUrl.startsWith('blob:')) URL.revokeObjectURL(omgevingMassaFileUrl);
         omgevingMassaFileUrl = null;
         omgevingMassaFileName = '';
         kavelpaspoortModelLoaded = false;
@@ -370,7 +403,16 @@
       }
 
       variant[key] = false;
-      updateGebiedVariantById(gebiedId, { [key]: false });
+      if (key === 'omgevingMassa') {
+        updateGebiedVariantById(gebiedId, {
+          omgevingMassa: false,
+          omgevingMassaDataUrl: null,
+          omgevingMassaFileName: null,
+          omgevingMassaTransform: null,
+        });
+      } else {
+        updateGebiedVariantById(gebiedId, { [key]: false });
+      }
       if (key === 'kavelpaspoort') renderKavelpaspoortPanel();
       renderCards();
     }
@@ -455,6 +497,16 @@
       modelTransform.pitchDeg = FIXED_MODEL_PITCH_DEG;
       modelTransform.rollDeg = FIXED_MODEL_ROLL_DEG;
 
+      const storedT = variant.omgevingMassaTransform;
+      if (storedT && typeof storedT === 'object') {
+        if (Number.isFinite(storedT.lng)) modelTransform.lng = storedT.lng;
+        if (Number.isFinite(storedT.lat)) modelTransform.lat = storedT.lat;
+        if (Number.isFinite(storedT.height)) modelTransform.height = storedT.height;
+        if (Number.isFinite(storedT.headingDeg)) modelTransform.headingDeg = storedT.headingDeg;
+        if (Number.isFinite(storedT.pitchDeg)) modelTransform.pitchDeg = storedT.pitchDeg;
+        if (Number.isFinite(storedT.rollDeg)) modelTransform.rollDeg = storedT.rollDeg;
+      }
+
       const position = Cesium.Cartesian3.fromDegrees(modelTransform.lng, modelTransform.lat, modelTransform.height);
       const hpr = new Cesium.HeadingPitchRoll(
         Cesium.Math.toRadians(modelTransform.headingDeg),
@@ -480,6 +532,7 @@
         kavelpaspoortModelPrimitive = model;
         kavelpaspoortModelLoaded = true;
         setModelSelected(true);
+        persistOmgevingMassaTransform();
         logModelTransform();
 
         map3d.viewer.camera.flyTo({
