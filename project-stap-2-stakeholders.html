@@ -25,11 +25,14 @@
     .mm-add:hover { background:#F5F3FF; transform:scale(1.07); }
     svg.mm-lines { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; }
     .mm-node { z-index:1; }
+    /* Center the content card within the bot-layout column */
+    #pom-page-content { display:flex; justify-content:center; align-items:flex-start; }
   </style>
 </head>
 <body class="min-h-screen bg-gray-50 p-8">
 
-  <div class="max-w-5xl mx-auto flex flex-col gap-6">
+  <div class="mx-auto pom-no-card">
+  <div class="max-w-5xl flex flex-col gap-6 pom-card">
 
     <!-- Top row: persoon toevoegen + mindmap + info -->
     <div class="flex gap-6 items-start">
@@ -86,6 +89,7 @@
       <button onclick="volgendeStap()" class="btn-primary px-6 py-2">maak project</button>
     </div>
   </div>
+  </div><!-- /pom-no-card outer wrapper -->
 
   <script src="js/state.js"></script>
   <script>

@@ -6,10 +6,14 @@
   <title>POM – Gebied Overzicht</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="css/styles.css"/>
+  <style>
+    #pom-page-content { display:flex; justify-content:center; align-items:flex-start; }
+  </style>
 </head>
 <body class="min-h-screen bg-gray-50 p-8">
 
-  <div class="max-w-5xl mx-auto">
+  <div class="mx-auto pom-no-card">
+  <div class="max-w-5xl">
     <a href="project-overzicht.html" class="text-xs text-gray-400 hover:text-violet-600">← Project overzicht</a>
     <h1 id="project-titel" class="text-xl font-semibold text-gray-700 mt-1 mb-2"></h1>
 
@@ -31,6 +35,7 @@
       </div>
     </div>
   </div>
+  </div><!-- /pom-no-card outer wrapper -->
 
   <script src="js/state.js"></script>
   <script>

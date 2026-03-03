@@ -11,9 +11,57 @@
 
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background: #F9FAFB;
+  background-color: #F9FAFB;
+  background-image:
+    linear-gradient(rgba(249, 250, 251, 0.82), rgba(249, 250, 251, 0.82)),
+    url('../public/landingpage_image.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
   min-height: 100vh;
   margin: 0;
+}
+
+/* ── Page wrapper card ─────────────────────────────────────────────────────── */
+/* flex layout is applied via .pom-has-bot (added by bot.js AFTER inline scripts
+   have run), so canvas/map elements measure the correct container width first. */
+body > div[class~="mx-auto"] {
+  background: white;
+  border-radius: 1.5rem;
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.08);
+  padding: 2rem 2.5rem;
+  min-height: calc(100vh - 4rem);
+}
+body > div[class~="mx-auto"].pom-has-bot {
+  display: flex;
+  flex-direction: row;   /* override any Tailwind flex-col on the wrapper */
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+/* Transparent layout-only wrapper (used when the white card lives on a child) */
+body > div[class~="mx-auto"].pom-no-card {
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0;
+  min-height: auto;
+}
+
+/* White card class — use on an inner div when the mx-auto wrapper is pom-no-card */
+.pom-card {
+  background: white;
+  border-radius: 1.5rem;
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.08);
+  padding: 2rem 2.5rem;
+  min-height: calc(100vh - 4rem);
+}
+
+/* Existing page content fills remaining space */
+#pom-page-content {
+  flex: 1;
+  min-width: 0;
 }
 
 /* ── Page layout: single centered card ─────────────────────────────────────── */
@@ -600,15 +648,20 @@ input[type="range"]::-moz-range-thumb {
 .btn-danger:hover { background: #DC2626; }
 
 /* ── POM Scripted Bot ────────────────────────────────────────────────────────── */
-#pom-bot-wrap.pom-bot-visible {
-  display: block;
-  animation: pom-bot-slide-in 0.2s ease;
+#pom-bot-wrap {
+  width: 22rem;
+  flex-shrink: 0;
+  align-self: flex-start;
+  position: sticky;
+  top: 1.5rem;
 }
-#pom-bot-wrap.pom-bot-hidden { display: none; }
-
-@keyframes pom-bot-slide-in {
-  from { opacity: 0; transform: translateY(0.75rem); }
-  to   { opacity: 1; transform: translateY(0); }
+/* Fallback: on pages without a page card (walkthroughs, print, landing)
+   the bot lands directly on body — keep it out of the way. */
+body > #pom-bot-wrap {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 9000;
 }
 #pom-bot-panel {
   background: white;
@@ -633,21 +686,12 @@ input[type="range"]::-moz-range-thumb {
   flex-shrink: 0; letter-spacing: 0.03em;
 }
 #pom-bot-title { flex: 1; font-size: 0.85rem; font-weight: 600; color: white; }
-#pom-bot-close {
-  background: transparent; border: none;
-  color: rgba(255,255,255,0.7); font-size: 1.3rem; line-height: 1;
-  cursor: pointer; padding: 0;
-  display: flex; align-items: center; justify-content: center;
-  width: 1.5rem; height: 1.5rem; border-radius: 50%;
-  transition: background 0.15s, color 0.15s;
-}
-#pom-bot-close:hover { background: rgba(255,255,255,0.2); color: white; }
 
 /* Scrollable message log */
 #pom-bot-log {
   display: flex; flex-direction: column; gap: 0.55rem;
   padding: 0.875rem 1rem;
-  max-height: 18rem; overflow-y: auto;
+  max-height: calc(100vh - 14rem); overflow-y: auto;
 }
 .pom-bot-msg-bot {
   align-self: flex-start; max-width: 92%;
@@ -690,49 +734,3 @@ input[type="range"]::-moz-range-thumb {
   transition: background 0.15s; flex-shrink: 0;
 }
 #pom-bot-send:hover { background: var(--primary-hover); }
-
-/* Trigger button (top-right, always visible) */
-#pom-bot-btn {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  z-index: 9001;
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 50%;
-  background: var(--primary);
-  color: white;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 10px rgba(124,58,237,0.35);
-  transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
-}
-#pom-bot-btn:hover { background: var(--primary-hover); box-shadow: 0 4px 16px rgba(124,58,237,0.45); }
-#pom-bot-btn:active { transform: scale(0.93); }
-#pom-bot-btn.pom-bot-btn-active { background: var(--primary-hover); }
-
-/* Notification badge dot */
-.pom-bot-badge {
-  position: absolute;
-  top: 0.1rem;
-  right: 0.1rem;
-  width: 0.55rem;
-  height: 0.55rem;
-  border-radius: 50%;
-  background: #EF4444;
-  border: 1.5px solid white;
-}
-.pom-bot-badge.hidden { display: none; }
-
-/* Panel: drops down from top-right below the button */
-#pom-bot-wrap {
-  position: fixed;
-  top: 3.75rem;
-  right: 1rem;
-  z-index: 9000;
-  width: 22rem;
-  display: none;
-}

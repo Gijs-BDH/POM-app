@@ -15,19 +15,22 @@
     }
     .cat-pill.active { border-color: #7C3AED; color: #7C3AED; box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
     .cat-pill.done   { border-color: #D1FAE5; background: #ECFDF5; color: #059669; cursor: default; }
+    #pom-page-content { display:flex; align-items:flex-start; gap:1.5rem; }
   </style>
 </head>
 <body class="min-h-screen bg-gray-50 p-8">
 
-  <div class="mx-auto">
-    <a href="project-overzicht.html" class="breadcrumb">← Project overzicht</a>
-    <h1 id="project-titel" class="page-title"></h1>
-    <div id="step-indicator" class="mb-6"></div>
+  <div class="mx-auto pom-no-card">
+    <div id="nav-panel" class="nav-panel"></div>
 
-    <div class="flex gap-6">
-      <div id="nav-panel" class="nav-panel"></div>
+    <div class="flex-1 min-w-0 flex flex-col gap-5">
+      <div>
+        <a href="project-overzicht.html" class="breadcrumb">← Project overzicht</a>
+        <h1 id="project-titel" class="page-title"></h1>
+        <div id="step-indicator"></div>
+      </div>
 
-      <div class="flex-1 flex gap-5">
+      <div class="flex gap-5">
 
         <!-- Left: visual placeholder -->
         <div class="flex-1 flex flex-col gap-3">
@@ -60,8 +63,8 @@
         </div>
 
       </div>
-    </div>
-  </div>
+    </div><!-- /flex-1 inner column -->
+  </div><!-- /pom-no-card outer wrapper -->
 
   <script src="js/state.js"></script>
   <script src="js/gebouw-opties.js"></script>

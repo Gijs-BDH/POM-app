@@ -5,7 +5,7 @@
    to find the most relevant scripted response. No AI inference is performed.
 
    Public API:
-     triggerBot('event_id')          → open panel + show scripted message
+     triggerBot('event_id')          → show scripted message in the fixed card
      handleBotAction('action_id')    → run the matching placeholder action
 ──────────────────────────────────────────────────────────────────────────── */
 
@@ -79,17 +79,12 @@ const BOT_SCRIPTS = {
 
   "gebouw_geen_opties": {
     message: "Er zijn geen valide gebouwopties gevonden die binnen de huidige specificaties vallen. Probeer een andere PVE- of gebiedvariant te maken.",
-    // actions: [
-    //   { id: "go_to_pve_nieuw",    label: "Maak nieuwe PVE variant" },
-    //   { id: "go_to_gebied_nieuw", label: "Maak nieuwe gebiedvariant" }
-    // ]
+    actions: []
   }
 
 };
 
 // ── 2. Keyword → script mapping (for typed user input) ────────────────────────
-//    Keywords are matched case-insensitively against the user's typed message.
-//    First match wins. Add entries here to teach the bot new phrases.
 
 const BOT_KEYWORD_MAP = [
   { keywords: ['kavel', 'perceel', 'selecteer', 'kaart'],     scriptId: 'gebied_no_kavel' },
@@ -104,7 +99,7 @@ const BOT_KEYWORD_MAP = [
 const BOT_NO_MATCH =
   "Daar heb ik geen kant-en-klaar antwoord op. Ga door met het formulier — ik laat het weten als er iets aandacht nodig heeft.";
 
-// First message shown when user opens the panel manually
+// Idle message shown on page load and after reset
 const BOT_IDLE =
   "Hallo! Ik help u als er iets aandacht nodig heeft. U kunt ook een vraag typen hieronder.";
 
@@ -112,31 +107,29 @@ const BOT_IDLE =
 // ── 3. Inject HTML ────────────────────────────────────────────────────────────
 
 (function injectBotUI() {
+  // On standard pages, the page card is body > div.mx-auto.
+  // Wrap all its existing children in #pom-page-content so the bot can be
+  // a consistent right-column sibling — always at the same position.
+  const pageCard = document.querySelector('body > div[class~="mx-auto"]');
+  if (pageCard) {
+    const contentWrap = document.createElement('div');
+    contentWrap.id = 'pom-page-content';
+    while (pageCard.firstChild) contentWrap.appendChild(pageCard.firstChild);
+    pageCard.appendChild(contentWrap);
+  }
+
   const el = document.createElement('div');
   el.innerHTML = `
-    <!-- Trigger button (top-right) -->
-    <button id="pom-bot-btn" onclick="toggleBot()" title="POM Assistent" aria-label="POM Assistent openen">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-      </svg>
-      <span id="pom-bot-badge" class="pom-bot-badge hidden"></span>
-    </button>
-
-    <!-- Panel -->
     <div id="pom-bot-wrap" aria-live="polite" aria-label="POM Assistent">
-      <div id="pom-bot-panel" role="dialog" aria-modal="false">
+      <div id="pom-bot-panel" role="complementary">
 
         <div id="pom-bot-header">
           <div id="pom-bot-avatar">P</div>
           <span id="pom-bot-title">POM Assistent</span>
-          <button id="pom-bot-close" title="Sluiten" onclick="closeBot()">&times;</button>
         </div>
 
-        <!-- Scrollable message log -->
         <div id="pom-bot-log"></div>
 
-        <!-- Input row -->
         <div id="pom-bot-input-row">
           <input id="pom-bot-input" type="text" placeholder="Typ een vraag…"
                  onkeydown="if(event.key==='Enter') sendBotMessage()" autocomplete="off"/>
@@ -151,32 +144,36 @@ const BOT_IDLE =
       </div>
     </div>`;
 
-  while (el.firstChild) document.body.appendChild(el.firstChild);
+  // Append bot as right-column sibling inside the page card.
+  // Falls back to body on special pages (walkthroughs, print, landing).
+  const target = pageCard || document.body;
+  while (el.firstChild) target.appendChild(el.firstChild);
 
-  // Show idle greeting on first open
+  // Activate the flex layout NOW (after all inline scripts have already run
+  // and canvas/map sizes have been measured), then fire resize so any
+  // Konva stages, Leaflet maps, or other sized elements re-measure correctly.
+  if (pageCard) {
+    pageCard.classList.add('pom-has-bot');
+    window.dispatchEvent(new Event('resize'));
+  }
+
   _appendBotMessage(BOT_IDLE);
 })();
 
 
-// ── 4. Open / close ───────────────────────────────────────────────────────────
+// ── 4. Reset ──────────────────────────────────────────────────────────────────
 
-function toggleBot() {
-  const wrap = document.getElementById('pom-bot-wrap');
-  if (wrap.classList.contains('pom-bot-visible')) {
-    closeBot();
-  } else {
-    _clearBadge();
-    wrap.classList.remove('pom-bot-hidden');
-    wrap.classList.add('pom-bot-visible');
-    document.getElementById('pom-bot-input').focus();
+// Kept for backward compat — called by action handlers
+function closeBot() {
+  const log = document.getElementById('pom-bot-log');
+  if (log) {
+    log.innerHTML = '';
+    _appendBotMessage(BOT_IDLE);
   }
 }
 
-function closeBot() {
-  const wrap = document.getElementById('pom-bot-wrap');
-  wrap.classList.remove('pom-bot-visible');
-  wrap.classList.add('pom-bot-hidden');
-}
+// No-op — panel is always visible
+function toggleBot() {}
 
 
 // ── 5. triggerBot(eventId) / triggerBotMessage(message, actions) ──────────────
@@ -184,10 +181,6 @@ function closeBot() {
 function triggerBotMessage(message, actions) {
   _appendBotMessage(message);
   if (actions && actions.length) _appendActions(actions);
-  _showBadge();
-  const wrap = document.getElementById('pom-bot-wrap');
-  wrap.classList.remove('pom-bot-hidden');
-  wrap.classList.add('pom-bot-visible');
 }
 
 function triggerBot(eventId) {
@@ -198,10 +191,6 @@ function triggerBot(eventId) {
   }
   _appendBotMessage(script.message);
   if (script.actions && script.actions.length) _appendActions(script.actions);
-  _showBadge();
-  const wrap = document.getElementById('pom-bot-wrap');
-  wrap.classList.remove('pom-bot-hidden');
-  wrap.classList.add('pom-bot-visible');
 }
 
 
@@ -215,7 +204,6 @@ function sendBotMessage() {
 
   _appendUserMessage(text);
 
-  // Keyword match (case-insensitive)
   const lower = text.toLowerCase();
   const match = BOT_KEYWORD_MAP.find(entry =>
     entry.keywords.some(k => lower.includes(k))
@@ -251,7 +239,6 @@ function handleBotAction(actionId) {
 
     case 'open_settings':
       closeBot();
-      // window.location.href = 'instellingen.html';
       console.info('[POM Bot] Action: open_settings');
       break;
 
@@ -268,7 +255,6 @@ function handleBotAction(actionId) {
 
     case 'go_to_pve':
       closeBot();
-      // window.location.href = 'pve-stap-1-invoer.html';
       console.info('[POM Bot] Action: go_to_pve');
       break;
 
@@ -281,7 +267,6 @@ function handleBotAction(actionId) {
 
     case 'go_to_gebouw':
       closeBot();
-      // window.location.href = 'gebouw-overzicht.html';
       console.info('[POM Bot] Action: go_to_gebouw');
       break;
 
@@ -322,19 +307,19 @@ function handleBotAction(actionId) {
 function _appendBotMessage(text) {
   const log = document.getElementById('pom-bot-log');
   const el  = document.createElement('div');
-  el.className     = 'pom-bot-msg-bot';
-  el.innerHTML     = text;
+  el.className = 'pom-bot-msg-bot';
+  el.innerHTML = text;
   log.appendChild(el);
-  log.scrollTop    = log.scrollHeight;
+  log.scrollTop = log.scrollHeight;
 }
 
 function _appendUserMessage(text) {
   const log = document.getElementById('pom-bot-log');
   const el  = document.createElement('div');
-  el.className     = 'pom-bot-msg-user';
-  el.textContent   = text;
+  el.className   = 'pom-bot-msg-user';
+  el.textContent = text;
   log.appendChild(el);
-  log.scrollTop    = log.scrollHeight;
+  log.scrollTop  = log.scrollHeight;
 }
 
 function _appendActions(actions) {
@@ -350,14 +335,4 @@ function _appendActions(actions) {
   });
   log.appendChild(wrap);
   log.scrollTop = log.scrollHeight;
-}
-
-function _showBadge() {
-  document.getElementById('pom-bot-badge')?.classList.remove('hidden');
-  document.getElementById('pom-bot-btn')?.classList.add('pom-bot-btn-active');
-}
-
-function _clearBadge() {
-  document.getElementById('pom-bot-badge')?.classList.add('hidden');
-  document.getElementById('pom-bot-btn')?.classList.remove('pom-bot-btn-active');
 }

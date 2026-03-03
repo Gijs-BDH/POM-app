@@ -7,6 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="css/styles.css"/>
   <style>
+    #pom-page-content { display:flex; align-items:flex-start; gap:1.5rem; }
     .variant-sel-card {
       position: relative;
       border: 2px solid #E5E7EB; border-radius: 1rem;
@@ -33,58 +34,55 @@
 </head>
 <body class="min-h-screen bg-gray-50 p-8">
 
-  <div class="mx-auto">
-    <a href="project-overzicht.html" class="breadcrumb">← Project overzicht</a>
-    <h1 id="project-titel" class="page-title"></h1>
-    <div id="step-indicator" class="mb-6"></div>
+  <div class="mx-auto pom-no-card">
+    <div id="nav-panel" class="nav-panel"></div>
 
-    <div class="flex gap-6">
-      <div id="nav-panel" class="nav-panel"></div>
-
-      <div class="flex-1 flex flex-col gap-6">
+    <div class="card flex-1 min-w-0 flex flex-col gap-6">
+      <div>
+        <a href="project-overzicht.html" class="breadcrumb">← Project overzicht</a>
+        <h1 id="project-titel" class="page-title"></h1>
+        <div id="step-indicator" class="mb-2"></div>
         <h2 class="text-xl font-semibold text-gray-700">Uitganspunten</h2>
-
-        <!-- PVE variants -->
-        <div class="card flex flex-col gap-4">
-          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">PVE Variant</h3>
-          <div id="pve-row" class="flex gap-3 flex-wrap"></div>
-          <p id="pve-empty" class="text-sm text-gray-400 hidden">
-            Nog geen PVE aangemaakt.
-            <a href="pve-stap-1-invoer.html" class="text-violet-600 hover:underline">Maak een PVE →</a>
-          </p>
-        </div>
-
-        <!-- Gebied variants -->
-        <div class="card flex flex-col gap-4">
-          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Gebied Variant</h3>
-          <div id="gebied-row" class="flex gap-3 flex-wrap"></div>
-          <p id="gebied-empty" class="text-sm text-gray-400 hidden">
-            Nog geen gebied aangemaakt.
-            <a href="gebied-stap-1b-kavels.html" class="text-violet-600 hover:underline">Maak een gebied →</a>
-          </p>
-        </div>
       </div>
 
-      <!-- Right panel -->
-      <div class="w-64 flex-shrink-0 flex flex-col gap-4">
-        <div class="card-outlined p-5 flex flex-col gap-4">
-          <p class="text-sm text-gray-500 leading-relaxed">
-            Selecteer zowel een <strong>PVE variant</strong> als ook een
-            <strong>Gebied variant</strong> om gebouwopties te kunnen bekijken.
-          </p>
-          <button id="bekijk-btn" onclick="maakGebouwVariant()" class="btn-primary w-full" disabled>
-            Bekijk gebouw opties
-          </button>
+      <div class="flex gap-6">
+        <div class="flex-1 flex flex-col gap-6">
+          <!-- PVE variants -->
+          <div class="card flex flex-col gap-4">
+            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">PVE Variant</h3>
+            <div id="pve-row" class="flex gap-3 flex-wrap"></div>
+            <p id="pve-empty" class="text-sm text-gray-400 hidden">
+              Nog geen PVE aangemaakt.
+              <a href="pve-stap-1-invoer.html" class="text-violet-600 hover:underline">Maak een PVE →</a>
+            </p>
+          </div>
+
+          <!-- Gebied variants -->
+          <div class="card flex flex-col gap-4">
+            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Gebied Variant</h3>
+            <div id="gebied-row" class="flex gap-3 flex-wrap"></div>
+            <p id="gebied-empty" class="text-sm text-gray-400 hidden">
+              Nog geen gebied aangemaakt.
+              <a href="gebied-stap-1b-kavels.html" class="text-violet-600 hover:underline">Maak een gebied →</a>
+            </p>
+          </div>
         </div>
 
-        <!-- Existing gebouw variants -->
-        <div id="gebouw-variants-section" class="hidden flex-col gap-3">
-          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">Bestaande varianten</h3>
-          <div id="gebouw-variant-list" class="flex flex-col gap-2"></div>
+        <!-- Right panel -->
+        <div class="w-64 flex-shrink-0">
+          <div class="card-outlined p-5 flex flex-col gap-4">
+            <p class="text-sm text-gray-500 leading-relaxed">
+              Selecteer zowel een <strong>PVE variant</strong> als ook een
+              <strong>Gebied variant</strong> om gebouwopties te kunnen bekijken.
+            </p>
+            <button id="bekijk-btn" onclick="maakGebouwVariant()" class="btn-primary w-full" disabled>
+              Bekijk gebouw opties
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  </div><!-- /pom-no-card outer wrapper -->
 
   <script src="js/state.js"></script>
   <script src="js/tco-model.js"></script>
@@ -148,24 +146,6 @@
           <div class="text-xs text-gray-400 mt-0.5">${(g.opp || 0).toLocaleString('nl-NL')} m²</div>`;
         card.onclick = () => selectGebied(g.id);
         row.appendChild(card);
-      });
-    }
-
-    // ── Existing gebouw variants ──────────────────────────────────────────────
-    const gebouwVarianten = project.gebouwVarianten || [];
-    if (gebouwVarianten.length > 0) {
-      const sec = document.getElementById('gebouw-variants-section');
-      sec.classList.remove('hidden');
-      sec.classList.add('flex');
-      const list = document.getElementById('gebouw-variant-list');
-      gebouwVarianten.forEach(gv => {
-        const item = document.createElement('a');
-        item.href = 'gebouw-stap-2-opties.html?id=' + gv.id;
-        item.className = 'project-list-item text-sm';
-        item.innerHTML = `
-          <div><div class="font-semibold text-gray-700">${gv.naam}</div></div>
-          <span class="text-violet-500 text-xs">→</span>`;
-        list.appendChild(item);
       });
     }
 

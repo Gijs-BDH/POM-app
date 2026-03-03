@@ -8,6 +8,8 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="css/styles.css"/>
   <style>
+    #pom-page-content { display:flex; justify-content:center; align-items:flex-start; }
+
     /* ── Ambitie dimension labels ────────────────────────────────────── */
     .dim-lbl {
       font-size:0.7rem; padding:0.25rem 0.6rem; border-radius:99px;
@@ -106,7 +108,8 @@
 </head>
 <body class="min-h-screen bg-gray-50 p-8">
 
-  <div class="max-w-4xl mx-auto flex flex-col gap-6">
+  <div class="mx-auto pom-no-card">
+  <div class="max-w-4xl flex flex-col gap-6">
 
     <!-- Header -->
     <div class="flex items-start justify-between gap-4">
@@ -342,7 +345,7 @@
     </div>
 
     <!-- ── Footer actions ────────────────────────────────────────────── -->
-    <div class="flex justify-between items-end pb-4">
+    <div class="flex justify-end items-end pb-4">
       <div id="dashboard-widget" class="dashboard-widget"></div>
       <div class="flex gap-3">
         <a href="project-overzicht.html" class="btn-ghost px-6 py-2">Annuleren</a>
@@ -350,6 +353,7 @@
       </div>
     </div>
   </div>
+  </div><!-- /pom-no-card outer wrapper -->
 
   <!-- Modal: Cluster -->
   <div id="modal-cluster" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
@@ -1149,6 +1153,16 @@
   </script>
   <script src="js/dashboard-detail.js"></script>
   <script src="js/bot.js"></script>
+  <script>
+    (function() {
+      const botWrap = document.getElementById('pom-bot-wrap');
+      const dash    = document.getElementById('dashboard-widget');
+      if (botWrap && dash) {
+        dash.style.marginTop = '1rem';
+        botWrap.appendChild(dash);
+      }
+    })();
+  </script>
 
   <!-- Modal: Opslaan als nieuwe variant -->
   <div id="modal-nieuwe-variant" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center" style="z-index:9999">

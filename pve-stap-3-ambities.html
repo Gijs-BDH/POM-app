@@ -218,10 +218,10 @@
       DIM_ITEMS[selectedDim].forEach(item => {
         const current = ambities[selectedDim][item.key];
         const row = document.createElement('div');
-        row.className = 'flex items-center gap-2 text-sm';
+        row.className = 'flex flex-col gap-1 text-sm';
         row.innerHTML = `
-          <span class="text-gray-600 flex-1 text-sm">${item.label}</span>
-          <div class="flex gap-1">
+          <span class="text-gray-600 text-sm">${item.label}</span>
+          <div class="flex flex-wrap gap-1">
             ${item.opts.map(o => `
               <button class="sel-btn ${current===o?'active':''}"
                       onclick="setAmbitie('${selectedDim}','${item.key}','${o}',this)">

@@ -7,6 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="css/styles.css"/>
   <style>
+    #pom-page-content { display:flex; align-items:flex-start; gap:1.5rem; }
     .metric-pill {
       display: inline-flex; align-items: center;
       font-size: 0.7rem; border-radius: 99px;
@@ -70,51 +71,50 @@
 </head>
 <body class="min-h-screen bg-gray-50 p-8">
 
-  <div class="mx-auto">
-    <a href="project-overzicht.html" class="breadcrumb">← Project overzicht</a>
-    <h1 id="project-titel" class="page-title"></h1>
+  <div class="mx-auto pom-no-card">
+    <div id="nav-panel" class="nav-panel"></div>
 
-    <div class="flex gap-6">
-      <div id="nav-panel" class="nav-panel"></div>
-
-      <div class="flex-1 min-w-0 flex flex-col gap-5">
-
-        <!-- Controls row: toggle left, download right -->
-        <div class="flex items-center justify-between gap-4">
-          <div class="flex gap-2">
-            <button class="view-pill active" id="pill-kwaliteit" onclick="setView('kwaliteit')">kwaliteit</button>
-            <button class="view-pill"        id="pill-kosten"    onclick="setView('kosten')">kosten</button>
-          </div>
-          <div class="flex flex-col gap-2 items-end">
-            <a href="besluit-rapport.html" class="dl-btn">Download besluit-document</a>
-            <button class="dl-btn">Download aanvraag documenten</button>
-            <a href="project-stap-3-beoordeling.html" class="dl-btn text-center">Wegingen instellen</a>
-          </div>
-        </div>
-
-        <!-- Scrollable area: cards + tables share the same horizontal scroll -->
-        <div id="cmp-scroll">
-          <div id="cmp-scroll-inner" class="flex flex-col gap-5">
-
-            <!-- Gebouw optie cards -->
-            <div id="optie-cards"></div>
-
-            <!-- Kwaliteit comparison table -->
-            <div id="view-kwaliteit" class="card p-0">
-              <div id="kwal-table"></div>
-            </div>
-
-            <!-- Kosten comparison table -->
-            <div id="view-kosten" class="card p-0 hidden">
-              <div id="kost-table"></div>
-            </div>
-
-          </div>
-        </div>
-
+    <div class="card flex-1 min-w-0 flex flex-col gap-5">
+      <div>
+        <a href="project-overzicht.html" class="breadcrumb">← Project overzicht</a>
+        <h1 id="project-titel" class="page-title"></h1>
       </div>
+
+      <!-- Controls row: toggle left, download right -->
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex gap-2">
+          <button class="view-pill active" id="pill-kwaliteit" onclick="setView('kwaliteit')">kwaliteit</button>
+          <button class="view-pill"        id="pill-kosten"    onclick="setView('kosten')">kosten</button>
+        </div>
+        <div class="flex flex-col gap-2 items-end">
+          <a href="besluit-rapport.html" class="dl-btn">Download besluit-document</a>
+          <button class="dl-btn">Download aanvraag documenten</button>
+          <a href="project-stap-3-beoordeling.html" class="dl-btn text-center">Wegingen instellen</a>
+        </div>
+      </div>
+
+      <!-- Scrollable area: cards + tables share the same horizontal scroll -->
+      <div id="cmp-scroll">
+        <div id="cmp-scroll-inner" class="flex flex-col gap-5">
+
+          <!-- Gebouw optie cards -->
+          <div id="optie-cards"></div>
+
+          <!-- Kwaliteit comparison table -->
+          <div id="view-kwaliteit" class="card p-0">
+            <div id="kwal-table"></div>
+          </div>
+
+          <!-- Kosten comparison table -->
+          <div id="view-kosten" class="card p-0 hidden">
+            <div id="kost-table"></div>
+          </div>
+
+        </div>
+      </div>
+
     </div>
-  </div>
+  </div><!-- /pom-no-card outer wrapper -->
 
   <script src="js/state.js"></script>
   <script src="js/tco-model.js"></script>

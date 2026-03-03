@@ -101,18 +101,12 @@
 
         function volgendeStap() {
             const naam = document.getElementById('naam').value.trim();
-            // const huidigeStap = document.getElementById('huidigeStap').value;
-            // const rollen = [...document.querySelectorAll('#rol .sel-btn.active')]
-            //     .map(b => b.dataset.rol);
-            // const ervaring = document.getElementById('ervaring').value;
+            const rol  = document.getElementById('rol').value;
 
             if (!naam) { alert('Vul een projectnaam in.'); return; }
-            // if (!huidigeStap) { alert('Selecteer de huidige stap.'); return; }
-            if (!rol) { alert('Selecteer een rol.'); return; }
-            // if (!ervaring) { alert('Selecteer uw ervaringsniveau.'); return; }
+            if (!rol)  { alert('Selecteer een rol.'); return; }
 
-            // setDraft({ naam, huidigeStap, rol: rollen.join(', '), ervaring });
-            setDraft({ naam, rol: rol});
+            setDraft({ naam, rol });
             window.location.href = 'project-stap-2-stakeholders.html';
         }
     </script>
