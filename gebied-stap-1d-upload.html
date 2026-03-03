@@ -425,7 +425,13 @@
         activeCard = CARDS[currentIdx + 1];
         renderCards();
       } else {
-        laadKavelpaspoortModelIn3D();
+          if (!omgevingMassaFileUrl) {
+              laadKavelpaspoortModelIn3D();
+          }
+          else {
+              window.location.href = 'gebied-stap-2-stedenbouw.html?id=' + gebiedId;
+          }
+        
       }
     }
 
