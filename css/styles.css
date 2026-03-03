@@ -30,6 +30,56 @@ body.landing{
   background-attachment: fixed;
   background-repeat: no-repeat;
 }
+
+body.voorzieningen{
+  background-color: #FFFFFF; 
+  background-image: linear-gradient(rgba(249, 250, 251, 0.88), rgba(249, 250, 251, 0.28)),
+                    url('../public/voorschools.png');
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+body.ruimtedefinities{
+  background-color: #FFFFFF; 
+  background-image: linear-gradient(rgba(249, 250, 251, 0.88), rgba(249, 250, 251, 0.28)),
+                    url('../public/ruimten.png');
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+body.ambities{
+  background-color: #FFFFFF; 
+  background-image: linear-gradient(rgba(249, 250, 251, 0.88), rgba(249, 250, 251, 0.28)),
+                    url('../public/ambities.png');
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+body.gebied{
+  background-color: #FFFFFF; 
+  background-image: linear-gradient(rgba(249, 250, 251, 0.88), rgba(249, 250, 251, 0.28)),
+                    url('../public/gebied.png');
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+body.gebouw{
+  background-color: #FFFFFF; 
+  background-image: linear-gradient(rgba(249, 250, 251, 0.88), rgba(249, 250, 251, 0.28)),
+                    url('../public/gebouw.png');
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+body.besluit{
+  background-color: #FFFFFF; 
+  background-image: linear-gradient(rgba(249, 250, 251, 0.88), rgba(249, 250, 251, 0.28)),
+                    url('../public/landingpage_image.png');
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+
 body.newproject{
   background-color: #FFFFFF; 
   background-image: linear-gradient(rgba(249, 250, 251, 0.88), rgba(249, 250, 251, 0.68)),
