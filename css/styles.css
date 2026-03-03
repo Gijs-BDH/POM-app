@@ -466,6 +466,9 @@ input[type="range"]::-moz-range-thumb {
 
 /* ── Leaflet override ──────────────────────────────────────────────────────── */
 .leaflet-container { border-radius: 0.75rem; }
+/* Force crosshair over all children (incl. interactive shapes) during draw mode */
+.leaflet-container.drawing-crosshair,
+.leaflet-container.drawing-crosshair * { cursor: crosshair !important; }
 
 /* ── PVE new-variant button (inline with cards, stretches to card height) ───── */
 .pve-new-btn {

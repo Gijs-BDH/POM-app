@@ -245,7 +245,9 @@
     let drawPoly    = null;
     let plotGeo     = null;
     let plotOpp     = 0;
-    let tekenActief = false;
+    let tekenActief      = false;
+    let rubberbandLine   = null;
+    let firstPointCircle = null;
 
     function toggleTekenen() {
       tekenActief = true;
@@ -253,6 +255,7 @@
       btn.disabled = true;
       btn.className = 'w-full text-xs font-medium py-1.5 px-3 rounded-lg border border-gray-200 text-gray-300 cursor-default';
       map.getContainer().style.cursor = 'crosshair';
+      map.getContainer().classList.add('drawing-crosshair');
       document.getElementById('map-hint').textContent = 'Klik om punten te plaatsen op de kaart';
     }
 
@@ -306,6 +309,8 @@
     }
 
     function clearTekening() {
+      if (rubberbandLine)   { map.removeLayer(rubberbandLine);   rubberbandLine   = null; }
+      if (firstPointCircle) { map.removeLayer(firstPointCircle); firstPointCircle = null; }
       if (drawPoly) { map.removeLayer(drawPoly); drawPoly = null; }
       drawPoints = []; plotGeo = null; plotOpp = 0;
       document.getElementById('opp-display').textContent = '— m²';
@@ -318,13 +323,39 @@
       btn.textContent = 'Teken gebied';
       btn.className = 'w-full text-xs font-medium py-1.5 px-3 rounded-lg border border-violet-300 text-violet-600 hover:bg-violet-50 transition-all';
       map.getContainer().style.cursor = '';
+      map.getContainer().classList.remove('drawing-crosshair');
       document.getElementById('map-hint').textContent = 'Druk op "Teken gebied" om te beginnen';
     }
 
     // ── Map click: add draw point ─────────────────────────────────────────────
     map.on('click', e => {
       if (!tekenActief || plotGeo) return;
+
+      // Snap-to-close: clicking near the first point (≥3 placed) finalizes the polygon
+      if (drawPoints.length >= 3) {
+        const firstPx = map.latLngToContainerPoint([drawPoints[0][0], drawPoints[0][1]]);
+        const clickPx = map.latLngToContainerPoint(e.latlng);
+        if (Math.hypot(firstPx.x - clickPx.x, firstPx.y - clickPx.y) < 15) {
+          if (rubberbandLine)   { map.removeLayer(rubberbandLine);   rubberbandLine   = null; }
+          if (firstPointCircle) { map.removeLayer(firstPointCircle); firstPointCircle = null; }
+          tekenActief = false;
+          map.getContainer().style.cursor = '';
+          map.getContainer().classList.remove('drawing-crosshair');
+          document.getElementById('map-hint').textContent = 'Gebied getekend — klik Volgende stap om verder te gaan';
+          return;
+        }
+      }
+
       drawPoints.push([e.latlng.lat, e.latlng.lng]);
+
+      // First point: show anchor circle
+      if (drawPoints.length === 1) {
+        firstPointCircle = L.circleMarker([drawPoints[0][0], drawPoints[0][1]], {
+          radius: 5, color: '#7C3AED', fillColor: '#7C3AED',
+          fillOpacity: 1, weight: 2, interactive: false
+        }).addTo(map);
+      }
+
       if (drawPoints.length >= 3) {
         if (drawPoly) map.removeLayer(drawPoly);
         drawPoly = L.polygon(drawPoints, {
@@ -336,6 +367,35 @@
         document.getElementById('volgende-btn').disabled = false;
         plotOpp = opp;
         updatePveCompatList(opp);
+      }
+    });
+
+    // ── Rubber-band line: follows cursor from last placed point ───────────────
+    map.on('mousemove', e => {
+      if (!tekenActief || plotGeo || drawPoints.length === 0) return;
+      let target   = e.latlng;
+      let snapping = false;
+      if (drawPoints.length >= 3) {
+        const firstPx = map.latLngToContainerPoint([drawPoints[0][0], drawPoints[0][1]]);
+        const curPx   = map.latLngToContainerPoint(e.latlng);
+        if (Math.hypot(firstPx.x - curPx.x, firstPx.y - curPx.y) < 15) {
+          target = L.latLng(drawPoints[0][0], drawPoints[0][1]);
+          snapping = true;
+        }
+      }
+      const from = [drawPoints[drawPoints.length - 1][0], drawPoints[drawPoints.length - 1][1]];
+      if (!rubberbandLine) {
+        rubberbandLine = L.polyline([from, [target.lat, target.lng]], {
+          color: '#7C3AED', weight: 1.5, dashArray: '6 4', opacity: 0.7, interactive: false
+        }).addTo(map);
+      } else {
+        rubberbandLine.setLatLngs([from, [target.lat, target.lng]]);
+      }
+      if (firstPointCircle) {
+        firstPointCircle.setStyle({
+          color:     snapping ? '#10B981' : '#7C3AED',
+          fillColor: snapping ? '#10B981' : '#7C3AED',
+        });
       }
     });
     updatePveCompatList(0);

@@ -590,6 +590,8 @@
     let drawingMode           = false;
     let drawPoints            = [];
     let currentPoly           = null;
+    let rubberbandLine        = null;
+    let firstPointCircle      = null;
     let stampingObstacleType  = null; // typeKey being stamped, or null
 
     function calcAreaM2(latlngs) {
@@ -735,16 +737,36 @@
       }
       if (!drawingMode) return;
       const latlng = e.latlng;
+      // Snap-to-close check (≥3 points)
+      if (drawPoints.length >= 3) {
+        const firstPx = map.latLngToContainerPoint([drawPoints[0][0], drawPoints[0][1]]);
+        const curPx   = map.latLngToContainerPoint(latlng);
+        if (Math.hypot(firstPx.x - curPx.x, firstPx.y - curPx.y) < 15) {
+          clearTimeout(clickTimer);
+          finishDrawing();
+          return;
+        }
+      }
       clearTimeout(clickTimer);
       clickTimer = setTimeout(() => {
         drawPoints.push([latlng.lat, latlng.lng]);
-        if (drawPoints.length >= 3) {
+        if (drawPoints.length === 1) {
+          firstPointCircle = L.circleMarker([latlng.lat, latlng.lng], {
+            radius: 5, color: activeTab.color, fillColor: activeTab.color,
+            fillOpacity: 1, weight: 2, interactive: false
+          }).addTo(map);
+        } else if (drawPoints.length === 2) {
+          if (currentPoly) map.removeLayer(currentPoly);
+          currentPoly = L.polyline(drawPoints, {
+            color: activeTab.color, weight: 2, dashArray: '5 4'
+          }).addTo(map);
+        } else {
           if (currentPoly) map.removeLayer(currentPoly);
           currentPoly = L.polygon(drawPoints, {
             color: activeTab.color, fillColor: activeTab.color,
             fillOpacity: 0.2, weight: 2, dashArray: '5 4'
           }).addTo(map);
-          const liveOpp = calcAreaM2(currentPoly.getLatLngs()[0]);
+          const liveOpp = calcAreaM2(drawPoints.map(p => L.latLng(p[0], p[1])));
           const liveEl = document.getElementById('live-draw-opp');
           if (liveEl) liveEl.textContent = liveOpp.toLocaleString('nl-NL') + ' m²';
           const voltooienBtn = document.getElementById('btn-voltooien');
@@ -753,14 +775,42 @@
       }, 250);
     });
 
+    map.on('mousemove', e => {
+      if (!drawingMode || drawPoints.length === 0) return;
+      let target = e.latlng;
+      let snapping = false;
+      if (drawPoints.length >= 3) {
+        const firstPx = map.latLngToContainerPoint([drawPoints[0][0], drawPoints[0][1]]);
+        const curPx   = map.latLngToContainerPoint(e.latlng);
+        if (Math.hypot(firstPx.x - curPx.x, firstPx.y - curPx.y) < 15) {
+          target = L.latLng(drawPoints[0][0], drawPoints[0][1]);
+          snapping = true;
+        }
+      }
+      const from = [drawPoints[drawPoints.length - 1][0], drawPoints[drawPoints.length - 1][1]];
+      if (!rubberbandLine) {
+        rubberbandLine = L.polyline([from, [target.lat, target.lng]], {
+          color: activeTab ? activeTab.color : '#7C3AED',
+          weight: 1.5, dashArray: '6 4', opacity: 0.7, interactive: false
+        }).addTo(map);
+      } else {
+        rubberbandLine.setLatLngs([from, [target.lat, target.lng]]);
+      }
+      if (firstPointCircle) {
+        const col = snapping ? '#10B981' : (activeTab ? activeTab.color : '#7C3AED');
+        firstPointCircle.setStyle({ color: col, fillColor: col });
+      }
+    });
+
     function finishDrawing() {
-      if (!drawingMode || !currentPoly || drawPoints.length < 3) return;
+      if (!drawingMode || drawPoints.length < 3) return;
       clearTimeout(clickTimer);
+      if (rubberbandLine)   { map.removeLayer(rubberbandLine);   rubberbandLine   = null; }
+      if (firstPointCircle) { map.removeLayer(firstPointCircle); firstPointCircle = null; }
       const tab = activeTab;
-      const latlngs = currentPoly.getLatLngs()[0];
-      const geo = latlngs.map(p => [p.lat, p.lng]);
-      const opp = calcAreaM2(latlngs);
-      map.removeLayer(currentPoly);
+      const geo = drawPoints.slice();
+      const opp = calcAreaM2(drawPoints.map(p => L.latLng(p[0], p[1])));
+      if (currentPoly) map.removeLayer(currentPoly);
       const finalPoly = L.polygon(geo, {
         color: tab.color, fillColor: tab.color, fillOpacity: 0.3, weight: 2
       }).addTo(layers[tab.key]);
@@ -769,6 +819,7 @@
       currentPoly = null;
       drawPoints = [];
       map.getContainer().style.cursor = '';
+      map.getContainer().classList.remove('drawing-crosshair');
       document.getElementById('map-hint').classList.add('hidden');
       saveTabZones(tab.key);
       renderTabs();
@@ -813,11 +864,14 @@
 
     function stopDrawing() {
       clearTimeout(clickTimer);
+      if (rubberbandLine)   { map.removeLayer(rubberbandLine);   rubberbandLine   = null; }
+      if (firstPointCircle) { map.removeLayer(firstPointCircle); firstPointCircle = null; }
       if (currentPoly) { map.removeLayer(currentPoly); currentPoly = null; }
       drawingMode = false;
       drawPoints = [];
       stampingObstacleType = null;
       map.getContainer().style.cursor = '';
+      map.getContainer().classList.remove('drawing-crosshair');
       document.getElementById('map-hint').classList.add('hidden');
     }
 
@@ -831,6 +885,7 @@
         drawPoints = [];
         currentPoly = null;
         map.getContainer().style.cursor = 'crosshair';
+        map.getContainer().classList.add('drawing-crosshair');
         document.getElementById('map-hint').classList.remove('hidden');
       }
       renderTabs();

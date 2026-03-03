@@ -26,7 +26,7 @@
             </div>
 
             <!-- Rol -->
-            <div class="flex items-start gap-4">
+            <!-- <div class="flex items-start gap-4">
                 <label class="text-sm text-gray-500 w-32 text-right flex-shrink-0 pt-1">Wat is jouw rol</label>
                 <div id="rol-btns" class="flex flex-wrap gap-2">
                     <button type="button" class="sel-btn" data-rol="Schoolbestuur">Schoolbestuurder</button>
@@ -38,7 +38,28 @@
                     <button type="button" class="sel-btn" data-rol="Sociaal beleid">Beleidsadviseur Sociaal domein</button>
                     <button type="button" class="sel-btn" data-rol="Sociaal beleid">Anders</button>
                 </div>
+            </div> -->
+
+            
+            <!-- Rol -->
+            <div class="flex items-center gap-4">
+                <label class="text-sm text-gray-500 w-32 text-right flex-shrink-0 pt-1">
+                    Wat is jouw rol
+                </label>
+
+                <select id="rol" name="rol" class="border rounded px-3 py-2 text-sm input-field">
+                    <option value="">Maak een keuze...</option>
+                    <option value="Schoolbestuur">Schoolbestuurder</option>
+                    <option value="Architect">Architect</option>
+                    <option value="Onderwijshuisvesting">Beleidsadviseur Onderwijshuisvesting</option>
+                    <option value="Stedenbouw beleid">Stedenbouwkundige</option>
+                    <option value="Sport beleid">Beleidsadviseur Sport</option>
+                    <option value="Sport beleid">Beleidsadviseur mobiliteit</option>
+                    <option value="Sociaal beleid">Beleidsadviseur Sociaal domein</option>
+                    <option value="Sociaal beleid">Anders</option>
+                </select>
             </div>
+
 
             <!-- Ervaring -->
             <!-- <div class="flex items-center gap-4">
@@ -68,29 +89,30 @@
         // Pre-fill from draft if returning
         const draft = getDraft();
         if (draft.naam) document.getElementById('naam').value = draft.naam;
+        if (draft.rol) document.getElementById('rol').value = draft.rol;
         if (draft.huidigeStap) document.getElementById('huidigeStap').value = draft.huidigeStap;
-        if (draft.ervaring) document.getElementById('ervaring').value = draft.ervaring;
-        if (draft.rol) {
-            const selected = draft.rol.split(', ');
-            document.querySelectorAll('#rol-btns .sel-btn').forEach(btn => {
-                if (selected.includes(btn.dataset.rol)) btn.classList.add('active');
-            });
-        }
+        // if (draft.ervaring) document.getElementById('ervaring').value = draft.ervaring;
+        // if (draft.rol) {
+        //     const selected = draft.rol.split(', ');
+        //     document.querySelectorAll('#rol .sel-btn').forEach(btn => {
+        //         if (selected.includes(btn.dataset.rol)) btn.classList.add('active');
+        //     });
+        // }
 
         function volgendeStap() {
             const naam = document.getElementById('naam').value.trim();
             // const huidigeStap = document.getElementById('huidigeStap').value;
-            const rollen = [...document.querySelectorAll('#rol-btns .sel-btn.active')]
-                .map(b => b.dataset.rol);
+            // const rollen = [...document.querySelectorAll('#rol .sel-btn.active')]
+            //     .map(b => b.dataset.rol);
             // const ervaring = document.getElementById('ervaring').value;
 
             if (!naam) { alert('Vul een projectnaam in.'); return; }
             // if (!huidigeStap) { alert('Selecteer de huidige stap.'); return; }
-            if (!rollen.length) { alert('Selecteer minimaal één rol.'); return; }
+            if (!rol) { alert('Selecteer een rol.'); return; }
             // if (!ervaring) { alert('Selecteer uw ervaringsniveau.'); return; }
 
             // setDraft({ naam, huidigeStap, rol: rollen.join(', '), ervaring });
-            setDraft({ naam, rol: rollen.join(', ') });
+            setDraft({ naam, rol: rol});
             window.location.href = 'project-stap-2-stakeholders.html';
         }
     </script>
