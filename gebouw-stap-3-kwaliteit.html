@@ -33,16 +33,23 @@
         <div class="flex-1 flex flex-col gap-3">
           <h2 class="text-xl font-semibold text-gray-700">Kwaliteit beoordeling</h2>
           <div id="visual-area" class="card p-4 flex flex-col gap-3">
-            <!-- Alternates between 3D view and floor plan based on category -->
-            <div id="visual-3d" class="flex-1 rounded-xl overflow-hidden" >              
+            <div id="visual-massa" class="rounded-xl overflow-hidden" style="height:700px;">
+              <img id="detail-img-massa" src="" class="w-full h-full object-cover"/>
+            </div>
+            <div id="visual-plat" class="hidden rounded-xl overflow-hidden" style="height:700px;">
+              <img id="detail-img-floorplan" src="" class="w-full h-full object-cover"/>
+            </div>
+            <div id="visual-impressie" class="hidden rounded-xl overflow-hidden" style="height:700px;">
+              <img id="detail-img-impressie" src="" class="w-full h-full object-cover"/>
+            </div>
+            <div id="visual-3d" class="hidden rounded-xl overflow-hidden">
               <iframe src="walkthrough.html" class="w-full h-full object-cover" style="height:700px;"></iframe>
             </div>
-            <div id="visual-plat" class="flex-1 hidden rounded-xl overflow-hidden" >
-              <img id="detail-img-floorplan" src="" style="max-height:700px;"/>
-            </div>
             <div class="flex gap-2">
-              <button onclick="setVisual('3d')"   id="vis-3d"   class="metric-pill active-vis" style="border-color:#7C3AED;color:#7C3AED;font-size:0.7rem;padding:0.2rem 0.5rem;border-radius:99px;border:1px solid #E5E7EB;cursor:pointer;">Walkthrough</button>
-              <button onclick="setVisual('plat')" id="vis-plat" class="metric-pill"            style="font-size:0.7rem;padding:0.2rem 0.5rem;border-radius:99px;border:1px solid #E5E7EB;cursor:pointer;color:#6B7280;">Plattegrond</button>
+              <button onclick="setVisual('massa')"    id="vis-massa"    style="font-size:0.7rem;padding:0.2rem 0.5rem;border-radius:99px;border:1px solid #7C3AED;cursor:pointer;color:#7C3AED;">Massa-studie</button>
+              <button onclick="setVisual('plat')"     id="vis-plat"     style="font-size:0.7rem;padding:0.2rem 0.5rem;border-radius:99px;border:1px solid #E5E7EB;cursor:pointer;color:#6B7280;">Plattegrond</button>
+              <button onclick="setVisual('impressie')" id="vis-impressie" style="font-size:0.7rem;padding:0.2rem 0.5rem;border-radius:99px;border:1px solid #E5E7EB;cursor:pointer;color:#6B7280;">Impressie</button>
+              <button onclick="setVisual('3d')"       id="vis-3d"       style="font-size:0.7rem;padding:0.2rem 0.5rem;border-radius:99px;border:1px solid #E5E7EB;cursor:pointer;color:#6B7280;">Walkthrough</button>
             </div>
           </div>
         </div>
@@ -59,6 +66,7 @@
   <script src="js/state.js"></script>
   <script src="js/gebouw-opties.js"></script>
   <script>
+    setVisual('3d');
     const params   = new URLSearchParams(window.location.search);
     const gebouwId = params.get('id');
     const project  = getCurrentProject();
@@ -72,7 +80,9 @@
     document.getElementById('project-titel').textContent = project.naam;
     document.getElementById('step-indicator').innerHTML  = renderStepIndicator(3, 5, ['gebouw-stap-1-uitgangspunten.html', 'gebouw-stap-2-opties.html?id=' + gebouwId]);
     document.getElementById('nav-panel').innerHTML       = renderNavPanel('gebouw', project);
-    document.getElementById('detail-img-floorplan').src  = detailOptie.afbeelding_floorplan;
+    document.getElementById('detail-img-massa').src       = detailOptie.afbeelding;
+    document.getElementById('detail-img-floorplan').src   = detailOptie.afbeelding_floorplan;
+    document.getElementById('detail-img-impressie').src   = detailOptie.afbeelding_impression;
 
     // ── Categories ────────────────────────────────────────────────────────────
     const CATEGORIEEN = [
@@ -129,14 +139,14 @@
     const doneSet = new Set();
 
     function setVisual(type) {
-      document.getElementById('visual-3d').classList.toggle('hidden', type !== '3d');
-      document.getElementById('visual-plat').classList.toggle('hidden', type !== 'plat');
-      document.getElementById('visual-3d').classList.toggle('flex', type === '3d');
-      document.getElementById('visual-plat').classList.toggle('flex', type === 'plat');
-      document.getElementById('vis-3d').style.borderColor  = type === '3d'   ? '#7C3AED' : '#E5E7EB';
-      document.getElementById('vis-3d').style.color        = type === '3d'   ? '#7C3AED' : '#6B7280';
-      document.getElementById('vis-plat').style.borderColor = type === 'plat' ? '#7C3AED' : '#E5E7EB';
-      document.getElementById('vis-plat').style.color       = type === 'plat' ? '#7C3AED' : '#6B7280';
+      ['massa', 'plat', 'impressie', '3d'].forEach(v => {
+        document.getElementById('visual-' + v).classList.toggle('hidden', v !== type);
+        const btn = document.getElementById('vis-' + v);
+        if (btn) {
+          btn.style.borderColor = v === type ? '#7C3AED' : '#E5E7EB';
+          btn.style.color       = v === type ? '#7C3AED' : '#6B7280';
+        }
+      });
     }
 
     function renderCategorieen() {
