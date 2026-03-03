@@ -98,6 +98,78 @@ function closeDashboardDetail() {
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDashboardDetail(); });
 
+// ── Year-by-year cost chart ──────────────────────────────────────────────────
+
+function _renderYearChart(m, jaren) {
+  const capex  = m.investeringskosten;
+  const opexJr = m.opexPerJaar;          // total euros per year
+
+  const W = 460, H = 140;
+  const padT = 20, padB = 22;
+  const cH = H - padT - padB;
+  const n  = jaren;
+  const bW = W / (n + 1);
+  const gap   = Math.max(0.5, Math.min(bW * 0.18, 2));
+  const drawW = Math.max(1, bW - gap);
+
+  // Square-root scale (compresses CAPEX/OPEX ratio of ~35:1 to ~6:1)
+  const sqrtMax = Math.sqrt(capex);
+  const barPx   = v => (Math.sqrt(Math.max(0, v)) / sqrtMax) * cH;
+
+  // Bars
+  let bars = '';
+  for (let i = 0; i <= n; i++) {
+    const val = i === 0 ? capex : opexJr;
+    const bh  = Math.max(1.5, barPx(val));
+    bars += `<rect x="${(i * bW + gap / 2).toFixed(1)}" y="${(padT + cH - bh).toFixed(1)}"` +
+      ` width="${drawW.toFixed(1)}" height="${bh.toFixed(1)}"` +
+      ` fill="${i === 0 ? '#7C3AED' : '#34D399'}" rx="${Math.min(1.5, drawW / 3).toFixed(1)}"/>`;
+  }
+
+  // X-axis line
+  const axisY = padT + cH;
+  const xAxis = `<line x1="0" y1="${axisY}" x2="${W}" y2="${axisY}" stroke="#E5E7EB" stroke-width="1"/>`;
+
+  // Dashed OPEX reference line (years 1–N)
+  const opexLineY = (padT + cH - barPx(opexJr)).toFixed(1);
+  const opexRef   = `<line x1="${bW.toFixed(1)}" y1="${opexLineY}" x2="${W}" y2="${opexLineY}"` +
+    ` stroke="#34D399" stroke-width="0.75" stroke-dasharray="3,2" opacity="0.55"/>`;
+
+  // X-axis labels
+  const step = n <= 15 ? 5 : 10;
+  const labelYrs = [0];
+  for (let y = step; y < n; y += step) labelYrs.push(y);
+  labelYrs.push(n);
+  const xLabels = labelYrs.map(yr => {
+    const cx = (yr + 0.5) * bW;
+    return `<text x="${cx.toFixed(1)}" y="${(axisY + 14).toFixed(1)}"` +
+      ` text-anchor="middle" font-size="8" fill="#9CA3AF">${yr === 0 ? 'jr\u202F0' : yr}</text>`;
+  }).join('');
+
+  // Value labels
+  const fmt = v => v >= 1e6 ? (v / 1e6).toFixed(1) + '\u202FM' : Math.round(v / 1e3) + '\u202Fk';
+  const capexLy = Math.max(10, padT + cH - barPx(capex) - 3).toFixed(1);
+  const opexLy  = Math.max(10, padT + cH - barPx(opexJr) - 3).toFixed(1);
+
+  const capexLabel = `<text x="${(0.5 * bW).toFixed(1)}" y="${capexLy}"` +
+    ` text-anchor="middle" font-size="8.5" fill="#7C3AED" font-weight="700">\u20AC\u202F${fmt(capex)}</text>`;
+  const opexLabel  = `<text x="${(W - 0.5 * bW).toFixed(1)}" y="${opexLy}"` +
+    ` text-anchor="end" font-size="8" fill="#059669">\u20AC\u202F${fmt(opexJr)}/jr</text>`;
+
+  return `
+    <div style="margin:0.75rem 0 0.25rem">
+      <div style="font-size:0.68rem;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:0.4rem">Kosten per jaar — gebruiksperiode ${n} jaar</div>
+      <svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block;overflow:visible">
+        ${xAxis}${opexRef}${bars}${xLabels}${capexLabel}${opexLabel}
+      </svg>
+      <div style="display:flex;gap:1.25rem;font-size:0.67rem;color:#6B7280;margin-top:0.2rem">
+        <span><span style="display:inline-block;width:9px;height:9px;background:#7C3AED;border-radius:2px;margin-right:3px;vertical-align:middle"></span>Investeringskosten (jaar 0)</span>
+        <span><span style="display:inline-block;width:9px;height:9px;background:#34D399;border-radius:2px;margin-right:3px;vertical-align:middle"></span>Exploitatiekosten (per jaar)</span>
+        <span style="margin-left:auto;font-style:italic;color:#C4B5FD;font-size:0.63rem">√-schaal</span>
+      </div>
+    </div>`;
+}
+
 // ── Section header helper ────────────────────────────────────────────────────
 
 function _hdr(label, color) {
@@ -348,6 +420,7 @@ function _renderUnified(tcoModel, vis, jaren, isRef) {
     ${table4}
     ${table5}
     ${tcoBar}
+    ${_renderYearChart(m, jaren)}
 
     <p style="font-size:0.68rem;color:#9CA3AF;margin:0.5rem 0 0">
       * CAPEX inclusief bijkomende kosten en standaard kwaliteitstoeslagen (energieneutraal, frisse scholen, ICT e.a.).
