@@ -87,6 +87,7 @@
   </div>
 
   <script src="js/state.js"></script>
+  <script src="js/tco-model.js"></script>
   <script src="js/calculations.js"></script>
   <script>
     const project = getCurrentProject();
@@ -106,7 +107,7 @@
     } else {
       const row = document.getElementById('pve-row');
       pveVarianten.forEach(v => {
-        const { bouwkosten, tco } = POM_CALC.calcDashboard(v.voorzieningen);
+        const { bouwkosten, tco } = POM_CALC.calcDashboard(v.voorzieningen, project.gebruiksduur, v.ambities);
         const card = document.createElement('div');
         card.className = 'variant-sel-card';
         card.dataset.id = v.id;

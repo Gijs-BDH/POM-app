@@ -33,6 +33,7 @@
   </div>
 
   <script src="js/state.js"></script>
+  <script src="js/tco-model.js"></script>
   <script src="js/calculations.js"></script>
   <script>
     const project = getCurrentProject();
@@ -49,7 +50,7 @@
       p.pveVarianten.forEach(variant => {
         const isActive   = variant.id === p.activePveId;
         const isAfgerond = variant.planning && variant.planning.afgerond;
-        const { totalBVO, bouwkosten, tco } = POM_CALC.calcDashboard(variant.voorzieningen);
+        const { totalBVO, bouwkosten, tco } = POM_CALC.calcDashboard(variant.voorzieningen, p.gebruiksduur, variant.ambities);
         const V  = variant.voorzieningen;
         const po = V.primairOnderwijs;
         const vs = V.voorschoolseOpvang;

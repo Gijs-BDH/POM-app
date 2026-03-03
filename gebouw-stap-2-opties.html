@@ -154,8 +154,10 @@
   </div>
 
   <script src="js/state.js"></script>
+  <script src="js/tco-model.js"></script>
   <script src="js/calculations.js"></script>
   <script src="js/gebouw-opties.js"></script>
+  <script src="js/dashboard-detail.js"></script>
   <script src="js/bot.js"></script>
   <script>
     const params     = new URLSearchParams(window.location.search);
@@ -260,9 +262,26 @@
             <div class="flex gap-1 flex-wrap" style="margin-top:0.1rem;">
               ${(opt.eigenschappen || []).map(e => `<span class="eigenschap-tag">${e}</span>`).join('')}
             </div>
-            <div class="flex gap-1 flex-wrap">
-              <span class="metric-pill">BVO: ${opt.bvo.toLocaleString('nl-NL')} m²</span>
-              <span class="metric-pill" style="color:#7C3AED;">${POM_CALC.formatEuro(opt.bouwkosten)}</span>
+            <span class="metric-pill">BVO: ${opt.bvo.toLocaleString('nl-NL')} m²</span>
+            <div class="dashboard-widget">
+              <div class="dashboard-pill" style="cursor:pointer;transition:background 0.15s;"
+                   onmouseenter="this.style.background='#F5F3FF'" onmouseleave="this.style.background=''"
+                   onclick="event.stopPropagation();showGebouwOptieDetail('bouwkosten','${opt.id}',getCurrentProject()?.gebruiksduur||40)"
+                   title="Klik voor details">
+                <span style="color:#6B7280;font-weight:500">Bouwkosten</span>
+                <span style="background:#7C3AED;color:white;border-radius:99px;padding:0.1rem 0.45rem;font-size:0.7rem">80%</span>
+                <span style="color:#374151;font-weight:600">${POM_CALC.formatEuro(opt.bouwkosten)}</span>
+                <span style="color:#C4B5FD;font-size:0.7rem;margin-left:1px">ⓘ</span>
+              </div>
+              <div class="dashboard-pill" style="cursor:pointer;transition:background 0.15s;"
+                   onmouseenter="this.style.background='#F0FDF4'" onmouseleave="this.style.background=''"
+                   onclick="event.stopPropagation();showGebouwOptieDetail('tco','${opt.id}',getCurrentProject()?.gebruiksduur||40)"
+                   title="Klik voor details">
+                <span style="color:#6B7280;font-weight:500">TCO</span>
+                <span style="background:#34D399;color:white;border-radius:99px;padding:0.1rem 0.45rem;font-size:0.7rem">80%</span>
+                <span style="color:#374151;font-weight:600">${POM_CALC.formatEuro(opt.tco)}</span>
+                <span style="color:#6EE7B7;font-size:0.7rem;margin-left:1px">ⓘ</span>
+              </div>
             </div>
             <div class="flex gap-2 mt-1">
               <button onclick="event.stopPropagation(); openDetail('${opt.id}', '${group.naam}')"

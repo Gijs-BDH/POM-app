@@ -115,6 +115,7 @@
   </div>
 
   <script src="js/state.js"></script>
+  <script src="js/tco-model.js"></script>
   <script src="js/calculations.js"></script>
   <script src="js/gebouw-opties.js"></script>
   <script>
@@ -314,8 +315,26 @@
               <div>PVE: <span class="font-medium ${linkedPve ? 'text-gray-700' : 'text-red-400'}">${linkedPve ? linkedPve.naam : 'niet gekoppeld'}</span></div>
               <div>Gebied: <span class="font-medium ${linkedGebied ? 'text-gray-700' : 'text-red-400'}">${linkedGebied ? linkedGebied.naam : 'niet gekoppeld'}</span></div>
               ${optie ? `
-              <div>Kosten: <span class="font-medium text-violet-600">${POM_CALC.formatEuro(optie.bouwkosten)}</span></div>
-              <div>TCO: <span class="font-medium text-green-600">${POM_CALC.formatEuro(optie.tco)}</span></div>` : ''}
+              <div class="dashboard-widget mt-1">
+                <div class="dashboard-pill" style="cursor:pointer;transition:background 0.15s;"
+                     onmouseenter="this.style.background='#F5F3FF'" onmouseleave="this.style.background=''"
+                     onclick="event.stopPropagation();showGebouwOptieDetail('bouwkosten','${v.geselecteerdeOptie}',${project.gebruiksduur||40})"
+                     title="Klik voor details">
+                  <span style="color:#6B7280;font-weight:500">Bouwkosten</span>
+                  <span style="background:#7C3AED;color:white;border-radius:99px;padding:0.1rem 0.45rem;font-size:0.7rem">80%</span>
+                  <span style="color:#374151;font-weight:600">${POM_CALC.formatEuro(optie.bouwkosten)}</span>
+                  <span style="color:#C4B5FD;font-size:0.7rem;margin-left:1px">ⓘ</span>
+                </div>
+                <div class="dashboard-pill" style="cursor:pointer;transition:background 0.15s;"
+                     onmouseenter="this.style.background='#F0FDF4'" onmouseleave="this.style.background=''"
+                     onclick="event.stopPropagation();showGebouwOptieDetail('tco','${v.geselecteerdeOptie}',${project.gebruiksduur||40})"
+                     title="Klik voor details">
+                  <span style="color:#6B7280;font-weight:500">TCO</span>
+                  <span style="background:#34D399;color:white;border-radius:99px;padding:0.1rem 0.45rem;font-size:0.7rem">80%</span>
+                  <span style="color:#374151;font-weight:600">${POM_CALC.formatEuro(optie.tco)}</span>
+                  <span style="color:#6EE7B7;font-size:0.7rem;margin-left:1px">ⓘ</span>
+                </div>
+              </div>` : ''}
             </div>
           </div>`;
 
@@ -350,7 +369,7 @@
       project.pveVarianten.forEach(variant => {
         const card = document.createElement('div');
         card.className = 'pve-variant-card' + (variant.id === project.activePveId ? ' selected' : '');
-        const { bouwkosten, tco } = POM_CALC.calcDashboard(variant.voorzieningen);
+        const { bouwkosten, tco } = POM_CALC.calcDashboard(variant.voorzieningen, project.gebruiksduur, variant.ambities);
         card.innerHTML = `
           <div class="pve-variant-card-header">${variant.naam}</div>
           <div class="pve-variant-card-body">

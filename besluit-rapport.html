@@ -246,6 +246,7 @@
   <div style="height:2rem;"></div>
 
   <script src="js/state.js"></script>
+  <script src="js/tco-model.js"></script>
   <script src="js/calculations.js"></script>
   <script src="js/gebouw-opties.js"></script>
   <script>
@@ -389,7 +390,7 @@
         let bvoTotal = null, bouwkostenCalc = null, tcoCalc = null;
         if (window.POM_CALC && typeof POM_CALC.calcDashboard === 'function') {
           try {
-            const r = POM_CALC.calcDashboard(vz);
+            const r = POM_CALC.calcDashboard(vz, project.gebruiksduur, v.ambities);
             bvoTotal = r.totalBVO;
             bouwkostenCalc = r.bouwkosten;
             tcoCalc  = r.tco;
@@ -658,7 +659,8 @@
           const inrichting  = Math.round(optie.bouwkosten * 0.10);
           const onvoorzien  = Math.round(optie.bouwkosten * 0.05);
           const stichting   = Math.round(optie.bouwkosten * 1.15);
-          const exploitPj   = Math.round((optie.tco - optie.bouwkosten) / 40);
+          const jaren       = project.gebruiksduur || 40;
+          const exploitPj   = Math.round((optie.tco - optie.bouwkosten) / jaren);
           const onderhoudPj = Math.round(optie.bouwkosten * 0.01);
           const energiePj   = Math.round(optie.bvo * 25);
           gebouwHtml += `<table class="data-table" style="margin-bottom:0.9rem;">
@@ -673,7 +675,7 @@
               <tr><td>Exploitatiekosten</td>      <td></td><td class="euro">${fmt(exploitPj)}/jr</td></tr>
               <tr><td>Onderhoudskosten (1%)</td>  <td></td><td class="euro">${fmt(onderhoudPj)}/jr</td></tr>
               <tr><td>Energiekosten (€25/m²)</td> <td></td><td class="euro">${fmt(energiePj)}/jr</td></tr>
-              <tr class="total-row"><td>TCO (40 jaar)</td><td></td><td class="euro">${fmt(optie.tco)}</td></tr>
+              <tr class="total-row"><td>TCO (${jaren} jaar)</td><td></td><td class="euro">${fmt(optie.tco)}</td></tr>
             </tbody>
           </table>`;
         } else {
@@ -744,7 +746,7 @@
         { label: 'BVO',             fn: v => { const o = getOptie(v.geselecteerdeOptie); return o ? fmtM2(o.bvo) : '—'; }, type: 'text' },
         { label: 'Bouwkosten',      fn: v => { const o = getOptie(v.geselecteerdeOptie); return o ? fmt(o.bouwkosten) : '—'; }, type: 'euro', bestId: bestKosten },
         { label: 'Stichtingskosten',fn: v => { const o = getOptie(v.geselecteerdeOptie); return o ? fmt(Math.round(o.bouwkosten*1.15)) : '—'; }, type: 'euro' },
-        { label: 'TCO (40 jr)',     fn: v => { const o = getOptie(v.geselecteerdeOptie); return o ? fmt(o.tco) : '—'; }, type: 'euro', bestId: bestTco },
+        { label: `TCO (${project.gebruiksduur || 40} jr)`, fn: v => { const o = getOptie(v.geselecteerdeOptie); return o ? fmt(o.tco) : '—'; }, type: 'euro', bestId: bestTco },
         { label: 'Kwaliteit gem.',  fn: v => { const a = avgKwal(v.kwaliteitsBeoordeling); return a !== null ? `${a.toFixed(1)}/4` : '—'; }, type: 'kwal', bestId: bestKwal },
         { label: 'Gekoppeld PVE',   fn: v => { const p = pveVarianten.find(x => x.id === v.pveId); return p ? p.naam : '—'; }, type: 'text' },
         { label: 'Gekoppeld Gebied',fn: v => { const g = gebiedVarianten.find(x => x.id === v.gebiedId); return g ? g.naam : '—'; }, type: 'text' },

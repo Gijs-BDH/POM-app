@@ -47,6 +47,7 @@
               <!-- <button onclick="selectDimensie('adaptieveSchool')"  id="dim-adaptieveSchool"  class="dim-lbl">Adaptieve school</button> -->
               <button onclick="selectDimensie('veiligSchool')"     id="dim-veiligSchool"     class="dim-lbl">Veilige school</button>
               <button onclick="selectDimensie('digitaleSchool')"   id="dim-digitaleSchool"   class="dim-lbl">Digitale school</button>
+              <button onclick="selectDimensie('inclusiefSchool')"  id="dim-inclusiefSchool"  class="dim-lbl">Inclusieve school</button>
             </div>
           </div>
 
@@ -77,6 +78,7 @@
   </style>
 
   <script src="js/state.js"></script>
+  <script src="js/tco-model.js"></script>
   <script src="js/calculations.js"></script>
   <script>
     const project = getCurrentProject();
@@ -90,13 +92,14 @@
     document.getElementById('dashboard-widget').innerHTML = renderDashboard(project);
 
     // const DIMS = ['gezondSchool','duurzameSchool','adaptieveSchool','veiligSchool','digitaleSchool'];
-    const DIMS = ['gezondSchool','duurzameSchool','veiligSchool','digitaleSchool'];
+    const DIMS = ['gezondSchool','duurzameSchool','veiligSchool','digitaleSchool','inclusiefSchool'];
     const DIM_LABELS = {
       gezondSchool:    'Gezonde school',
       duurzameSchool:  'Duurzame school',
       // adaptieveSchool: 'Adaptieve school',
       veiligSchool:    'Veilige school',
       digitaleSchool:  'Digitale school',
+      inclusiefSchool: 'Inclusieve school',
     };
 
     // Sub-items per dimension
@@ -132,6 +135,9 @@
       digitaleSchool: [
         { key:'technischeIntegratie', label:'Slim gebouw', opts:['Geen','Wel'] },
       ],
+      inclusiefSchool: [
+        { key:'nen9120', label:'Voldoen aan de NEN9120 norm', opts:['Nee','Ja'] },
+      ],
     };
 
     let ambities = pveV ? pveV.ambities : defaultPve().ambities;
@@ -146,8 +152,9 @@
     function getScores() {
       return DIMS.map(d => {
         const items = DIM_ITEMS[d];
-        const vals  = items.map(it => POM_CALC.selectionScore(ambities[d][it.key]));
-        return Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
+        const vals  = items.map(it => POM_CALC.itemScore(it.opts, ambities[d] && ambities[d][it.key]));
+        const avg   = vals.reduce((a, b) => a + b, 0) / vals.length;
+        return POM_CALC.toRadarScore(avg);
       });
     }
 
@@ -230,9 +237,10 @@
       // Update button states in panel
       btn.closest('.flex.gap-1').querySelectorAll('.sel-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      // Save and update chart
+      // Save and update chart + dashboard
       updateActivePveVariant({ ambities });
       updateChart();
+      document.getElementById('dashboard-widget').innerHTML = renderDashboard(getCurrentProject());
     }
 
     function volgendeStap() {
