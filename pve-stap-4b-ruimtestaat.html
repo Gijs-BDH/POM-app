@@ -160,8 +160,8 @@
               <label class="qlabel">Onderwijsclusters</label>
               <select id="q-clusters" class="select-field" style="max-width:230px" onchange="onClustersChange()">
                 <option value="1 cluster">1 cluster</option>
-                <option value="2 clusters OB+BB" selected>2 clusters (OB + BB)</option>
-                <option value="3 clusters OB+MB+BB">3 clusters (OB + MB + BB)</option>
+                <option value="2 clusters OB+BB" >2 clusters (OB + BB)</option>
+                <option value="3 clusters OB+MB+BB" selected>3 clusters (OB + MB + BB)</option>
               </select>
             </div>
             <div class="qrow">
@@ -185,17 +185,17 @@
             <div id="row-ob" class="qrow">
               <label class="qlabel">Lokalen onderbouw</label>
               <input type="number" id="q-ob-lokalen" class="num-field"
-                     value="4" min="0" max="30" oninput="recalculate(); updateLokalenInfo()"/>
+                     value="6" min="0" max="30" oninput="recalculate(); updateLokalenInfo()"/>
             </div>
             <div id="row-mb" class="qrow" style="display:none">
               <label class="qlabel">Lokalen middenbouw</label>
               <input type="number" id="q-mb-lokalen" class="num-field"
-                     value="4" min="0" max="30" oninput="recalculate(); updateLokalenInfo()"/>
+                     value="6" min="0" max="30" oninput="recalculate(); updateLokalenInfo()"/>
             </div>
             <div id="row-bb" class="qrow">
               <label class="qlabel">Lokalen bovenbouw</label>
               <input type="number" id="q-bb-lokalen" class="num-field"
-                     value="4" min="0" max="30" oninput="recalculate(); updateLokalenInfo()"/>
+                     value="6" min="0" max="30" oninput="recalculate(); updateLokalenInfo()"/>
             </div>
             <div class="flex justify-between mt-2">
               <button class="btn-ghost px-4 py-2 text-sm" onclick="goToStep(1)">← Vorige</button>
@@ -213,8 +213,8 @@
             <div class="qrow">
               <label class="qlabel">Centrale ontmoetingsruimte</label>
               <select id="q-cor" class="select-field" style="max-width:230px" onchange="recalculate()">
-                <option>Hele klas</option>
-                <option selected>Hele cluster</option>
+                <option selected>Hele klas</option>
+                <option >Hele cluster</option>
                 <option>Hele school</option>
               </select>
             </div>
@@ -227,8 +227,8 @@
             <div class="qrow">
               <label class="qlabel">Speellokaal</label>
               <div class="flex gap-2">
-                <button class="sel-btn active" id="btn-speellokaal-ja"  onclick="setJN('speellokaal','ja',this)">Ja</button>
-                <button class="sel-btn"        id="btn-speellokaal-nee" onclick="setJN('speellokaal','nee',this)">Nee</button>
+                <button class="sel-btn " id="btn-speellokaal-ja"  onclick="setJN('speellokaal','ja',this)">Ja</button>
+                <button class="sel-btn active"        id="btn-speellokaal-nee" onclick="setJN('speellokaal','nee',this)">Nee</button>
               </div>
             </div>
             <div class="flex justify-between mt-2">
@@ -389,7 +389,7 @@
         const o = document.createElement('option');
         o.value = (p / 100).toFixed(2);
         o.textContent = p + '%';
-        if (p === 30) o.selected = true;
+        if (p === 5) o.selected = true;
         sel.appendChild(o);
       }
     })();
@@ -433,7 +433,7 @@
     function updateLokalenInfo() {
       const po         = (pveV && pveV.voorzieningen && pveV.voorzieningen.primairOnderwijs) || {};
       const leerlingen = po.leerlingen || 0;
-      const base       = Math.ceil(leerlingen / 30);
+      const base       = Math.ceil(leerlingen / 30*(18/14));
       const clusters   = document.getElementById('q-clusters').value;
 
       let entered = 0;
@@ -481,13 +481,13 @@
 
     // ── Ja/Nee state ──────────────────────────────────────────────────────────
     const JN = {
-      speellokaal:      'ja',
+      speellokaal:      'nee',
       bibliotheek:      'nee',
       creatieftechniek: 'nee',
       zorgbehandel:     'nee',
       wasdroog:         'nee',
-      printKopie:       'ja',
-      ehboKolfRust:     'ja',
+      printKopie:       'nee',
+      ehboKolfRust:     'nee',
     };
 
     function setJN(key, val, btn) {
@@ -570,6 +570,7 @@
     function renderPreview(result) {
       const budgetEl   = document.getElementById('preview-budget');
       const usedPct    = Math.min(100, Math.round((result.totaalGebruikt / result.budget) * 100));
+      const usedpercentageAvailable =  Math.round((result.totaalGebruikt / result.netBudget) * 100);
       const overBudget = result.totaalGebruikt > result.netBudget;
       const barCol     = overBudget ? '#EF4444' : '#7C3AED';
 
@@ -581,11 +582,11 @@
           <span>Beschikbaar voor ruimten (70%)</span><span>${result.netBudget.toLocaleString('nl-NL')} m²</span>
         </div>
         <div style="background:#F3F4F6;border-radius:99px;height:7px;overflow:hidden">
-          <div style="background:${barCol};width:${usedPct}%;height:100%;border-radius:99px;transition:width 0.3s"></div>
+          <div style="background:${barCol};width:${usedpercentageAvailable}%;height:100%;border-radius:99px;transition:width 0.3s"></div>
         </div>
         <div style="display:flex;justify-content:space-between;margin-top:0.4rem;font-size:0.73rem;font-weight:600">
           <span style="color:${barCol}">Ingedeeld: ${result.totaalGebruikt.toLocaleString('nl-NL')} m²</span>
-          <span style="color:#9CA3AF">${usedPct}%</span>
+          <span style="color:#9CA3AF">${usedpercentageAvailable}%</span>
         </div>
         ${overBudget ? '<p style="font-size:0.67rem;color:#EF4444;margin-top:0.4rem">Meer m² dan beschikbaar. Verklein ruimten of pas het programma aan.</p>' : ''}
       `;
@@ -623,6 +624,7 @@
 
     // ── Restore saved state ───────────────────────────────────────────────────
     function restoreState() {
+      updateLokalenInfo();
       const saved = pveV && pveV.ruimtestaat && pveV.ruimtestaat.type === 'berekend'
         ? pveV.ruimtestaat.vragen : null;
 
@@ -667,15 +669,15 @@
         // Initialise OB/MB/BB defaults from the calculated base count
         const po         = (pveV && pveV.voorzieningen && pveV.voorzieningen.primairOnderwijs) || {};
         const leerlingen = po.leerlingen || 0;
-        const base       = Math.ceil(leerlingen / 30) || 8; // fallback to 8 if leerlingen unknown
+        const base       = Math.ceil(leerlingen / 30*(18/14)) || 8; // fallback to 8 if leerlingen unknown
         const clusterVal = document.getElementById('q-clusters').value;
         if (clusterVal === '2 clusters OB+BB') {
           document.getElementById('q-ob-lokalen').value = Math.ceil(base / 2);
           document.getElementById('q-bb-lokalen').value = Math.floor(base / 2);
         } else if (clusterVal === '3 clusters OB+MB+BB') {
-          document.getElementById('q-ob-lokalen').value = Math.ceil(base / 3);
-          document.getElementById('q-mb-lokalen').value = Math.round(base / 3);
-          document.getElementById('q-bb-lokalen').value = Math.floor(base / 3);
+          document.getElementById('q-ob-lokalen').value = Math.ceil(base/3);
+          document.getElementById('q-mb-lokalen').value = Math.round(base/3);
+          document.getElementById('q-bb-lokalen').value = Math.floor(base/3);
         }
       }
 
