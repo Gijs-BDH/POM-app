@@ -98,14 +98,14 @@
                 <div class="flex items-center gap-2">
                   <span id="vs-bvo-calc" class="font-semibold text-violet-700 w-20">230 m²</span>
                   <input id="vs-bvo-hand" type="number" placeholder="handmatig" class="input-field w-28 text-xs"
-                         oninput="saveAll()"/>
+                         oninput="updateVS()"/>
                 </div>
 
                 <label class="form-label self-center">Plein</label>
                 <div class="flex items-center gap-2">
                   <span id="vs-plein-calc" class="font-semibold text-violet-700 w-20">100 m²</span>
                   <input id="vs-plein-hand" type="number" placeholder="handmatig" class="input-field w-28 text-xs"
-                         oninput="saveAll()"/>
+                         oninput="updateVS()"/>
                 </div>
 
                 
@@ -120,7 +120,7 @@
                 <div class="flex items-center gap-2">
                   <span id="vs-fietsen-calc" class="font-semibold text-violet-700 w-20">15 m²</span>
                   <input id="vs-fietsen-hand" type="number" placeholder="handmatig" class="input-field w-28 text-xs"
-                         oninput="saveAll()"/>
+                         oninput="updateVS()"/>
                 </div>
               </div>
             </div>
@@ -146,7 +146,7 @@
                 <div class="flex items-center gap-2">
                   <span id="sp-bvo-calc" class="font-semibold text-violet-700 w-20">600 m²</span>
                   <input id="sp-bvo-hand" type="number" placeholder="handmatig" class="input-field w-28 text-xs"
-                         oninput="saveAll()"/>
+                         oninput="updateSP()"/>
                 </div>
               </div>
             </div>
@@ -213,29 +213,46 @@
       return { po: 'primairOnderwijs', vs: 'voorschoolseOpvang', sp: 'sport' }[k];
     }
 
+
+
+    function updateDisplayValue(calc_element, manual_element,calcval){
+
+      // NEW: prefer manual BVO if present
+      const valManual = parseInt(document.getElementById(manual_element).value);
+      // const valDisplay = Number.isFinite(valManual) ? valManual : POM_CALC.calcPrimairBVO(ll);
+      const valDisplay = Number.isFinite(valManual) ? valManual : calcval;
+      document.getElementById(calc_element).textContent = POM_CALC.formatM2(valDisplay);
+
+    }
     // ── PO updates ─────────────────────────────────────────────────────────────
     function updatePO() {
       const ll = parseInt(document.getElementById('po-leerlingen').value) || 0;
-      document.getElementById('po-bvo-calc').textContent    = POM_CALC.formatM2(POM_CALC.calcPrimairBVO(ll));
-      document.getElementById('po-kleuter-calc').textContent = POM_CALC.formatM2(POM_CALC.calcOnderbouwplein(ll));
-      document.getElementById('po-kinder-calc').textContent  = POM_CALC.formatM2(POM_CALC.calcBovenbouwplein(ll));
       const poFietsen = parseInt(document.getElementById('po-fietsen').value) || 0;
-      document.getElementById('po-fietsen-calc').textContent = POM_CALC.formatM2(poFietsen);
+
+      updateDisplayValue('po-bvo-calc','po-bvo-hand',POM_CALC.calcPrimairBVO(ll));
+      updateDisplayValue('po-kleuter-calc','po-kleuter-hand',POM_CALC.calcOnderbouwplein(ll));
+      updateDisplayValue('po-kinder-calc','po-kinder-hand',POM_CALC.calcBovenbouwplein(ll));
+      updateDisplayValue('po-fietsen-calc','po-fietsen-hand',poFietsen);
+
       saveAll();
     }
 
     function updateVS() {
       const gr = parseInt(document.getElementById('vs-groepen').value) || 0;
-      document.getElementById('vs-bvo-calc').textContent    = POM_CALC.formatM2(POM_CALC.calcVoorschoolseBVO(gr));
-      document.getElementById('vs-plein-calc').textContent  = POM_CALC.formatM2(POM_CALC.calcVoorschoolsePlein(gr));
       const vsFietsen = parseInt(document.getElementById('vs-fietsen').value) || 0;
-      document.getElementById('vs-fietsen-calc').textContent = POM_CALC.formatM2(vsFietsen);
+      
+      updateDisplayValue('vs-bvo-calc','vs-bvo-hand',POM_CALC.calcVoorschoolseBVO(gr));
+      updateDisplayValue('vs-plein-calc','vs-plein-hand',POM_CALC.calcVoorschoolsePlein(gr));
+      updateDisplayValue('vs-fietsen-calc','vs-fietsen-hand',vsFietsen);
+
       saveAll();
     }
 
     function updateSP() {
       const type = document.getElementById('sp-type').value;
-      document.getElementById('sp-bvo-calc').textContent = POM_CALC.formatM2(POM_CALC.calcSportBVO(type));
+
+      updateDisplayValue('sp-bvo-calc','sp-bvo-hand',POM_CALC.calcSportBVO(type));
+
       saveAll();
     }
 
