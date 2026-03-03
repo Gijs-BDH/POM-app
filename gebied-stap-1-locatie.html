@@ -89,9 +89,13 @@
 
     // ── Map init ─────────────────────────────────────────────────────────────
     const INITIAL_CENTER = [52.2, 5.3];
-      const INITIAL_ZOOM = 8;
-      const MAP_VIEW_KEY = 'pom_map_view_gebied_' + project.id;
-    const map = L.map('map').setView(INITIAL_CENTER, INITIAL_ZOOM);
+    const INITIAL_ZOOM = 8;
+    const MAP_VIEW_KEY = 'pom_map_view_gebied_' + project.id;
+    const savedView = JSON.parse(localStorage.getItem(MAP_VIEW_KEY) || 'null');
+    const map = L.map('map').setView(
+      savedView ? [savedView.lat, savedView.lng] : INITIAL_CENTER,
+      savedView ? savedView.zoom : INITIAL_ZOOM
+    );
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 19

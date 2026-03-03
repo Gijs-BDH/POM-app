@@ -5,7 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>POM – Kavel keuze</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <link rel="stylesheet" href="css/styles.css"/>
+  <style>
+    #map { height: 700px; border-radius: 0.75rem; }
+  </style>
 </head>
 <body class="min-h-screen bg-gray-50 p-8">
 
@@ -16,8 +20,14 @@
     <div class="flex gap-6">
       <div id="nav-panel" class="nav-panel"></div>
 
+      <!-- Map -->
       <div class="flex-1">
-        <div class="card max-w-2xl">
+        <div id="map"></div>
+      </div>
+
+      <!-- Right: choice card -->
+      <div class="w-80 flex-shrink-0">
+        <div class="card">
           <h2 class="text-2xl font-bold text-gray-800 mb-1">Kavel selecteren</h2>
           <p class="text-sm text-gray-500 mb-6">
             Hoe wilt u de geselecteerde kavel(s) gebruiken?
@@ -63,12 +73,37 @@
     </div>
   </div>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="js/state.js"></script>
   <script>
     const project = getCurrentProject();
     if (!project) { window.location.href = 'index.html'; }
     document.getElementById('project-titel').textContent = project.naam;
     document.getElementById('nav-panel').innerHTML = renderNavPanel('gebied', project);
+
+    // ── Map init ─────────────────────────────────────────────────────────────
+    const MAP_VIEW_KEY = 'pom_map_view_gebied_' + project.id;
+    const savedView = JSON.parse(localStorage.getItem(MAP_VIEW_KEY) || 'null');
+    const map = L.map('map', { zoomControl: true }).setView(
+      savedView ? [savedView.lat, savedView.lng] : [52.2, 5.3],
+      savedView ? savedView.zoom : 8
+    );
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19
+    }).addTo(map);
+    map.on('moveend', () => {
+      const c = map.getCenter();
+      localStorage.setItem(MAP_VIEW_KEY, JSON.stringify({ lat: c.lat, lng: c.lng, zoom: map.getZoom() }));
+    });
+
+    // Show existing variants as context
+    (project.gebiedVarianten || []).forEach(g => {
+      const geo = (g.bouwbaarGebied && g.bouwbaarGebied.geo && g.bouwbaarGebied.geo.length >= 3)
+                  ? g.bouwbaarGebied.geo
+                  : (g.geo && g.geo.length >= 3 ? g.geo : null);
+      if (geo) L.polygon(geo, { color: '#9CA3AF', fillColor: '#9CA3AF', fillOpacity: 0.15, weight: 1.5 }).addTo(map);
+    });
   </script>
   <script src="js/bot.js"></script>
 </body>
