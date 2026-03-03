@@ -12,9 +12,8 @@
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: #F9FAFB;
-  background-image:
-    linear-gradient(rgba(249, 250, 251, 0.82), rgba(249, 250, 251, 0.82)),
-    url('../public/landingpage_image.png');
+  background-image: linear-gradient(rgba(249, 250, 251, 0.88), rgba(249, 250, 251, 0.88)),
+                    url('../public/landingpage_image.png');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
