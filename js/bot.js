@@ -146,17 +146,21 @@ const BOT_IDLE =
 
   // Append bot as right-column sibling inside the page card.
   // Falls back to body on special pages (walkthroughs, print, landing).
-  const target = pageCard || document.body;
+  //////////////////////////////////////////////////////////////////////////////////////herooooo/////////////////////
+  
+  // const target = pageCard || document.body;
+  const target = document.body;
   while (el.firstChild) target.appendChild(el.firstChild);
 
   // Activate the flex layout NOW (after all inline scripts have already run
   // and canvas/map sizes have been measured), then fire resize so any
   // Konva stages, Leaflet maps, or other sized elements re-measure correctly.
   if (pageCard) {
-    pageCard.classList.add('pom-has-bot');
+    pageCard.classList.add('pom-no-card');
+    // pageCard.classList.add('pom-has-bot');
     window.dispatchEvent(new Event('resize'));
   }
-
+ 
   _appendBotMessage(BOT_IDLE);
 })();
 
