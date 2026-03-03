@@ -108,7 +108,7 @@
                          oninput="updateVS()"/>
                 </div>
 
-                
+
 
                 <label class="form-label self-center">Aantal Fietsen</label>
                 <div class="flex items-center gap-2">
@@ -175,6 +175,7 @@
   </div>
 
   <script src="js/state.js"></script>
+  <script src="js/tco-model.js"></script>
   <script src="js/calculations.js"></script>
   <script>
     const project = getCurrentProject();
@@ -240,7 +241,7 @@
     function updateVS() {
       const gr = parseInt(document.getElementById('vs-groepen').value) || 0;
       const vsFietsen = parseInt(document.getElementById('vs-fietsen').value) || 0;
-      
+
       updateDisplayValue('vs-bvo-calc','vs-bvo-hand',POM_CALC.calcVoorschoolseBVO(gr));
       updateDisplayValue('vs-plein-calc','vs-plein-hand',POM_CALC.calcVoorschoolsePlein(gr));
       updateDisplayValue('vs-fietsen-calc','vs-fietsen-hand',vsFietsen);

@@ -162,11 +162,21 @@ function defaultPve() {
       sport: { actief: false, type: 'gymzaal', bvoHandmatig: null }
     },
     ambities: {
-      gezondSchool: { geluid: 'B', temperatuur: 'B', licht: 'B', lucht: 'B', kwaliteitsborging: 'B', comfortNietOnderwijs: 'B' },
-      duurzameSchool: { energiegebruik: 'Beter', materiaalgebruik: 'Beter', watergebruik: 'Beter', natuurInclusiviteit: 'Beter', klimaatAdaptie: 'Beter' },
-      adaptieveSchool: { adaptievePlattegrond: 'Beter', adaptieveTechniek: 'Beter' },
-      veiligSchool: { bouwkundigInbraak: 'Beter', technischInbraak: 'Beter', bouwkundigVandalisme: 'Beter', technischVandalisme: 'Beter' },
-      digitaleSchool: { technischeIntegratie: 'Beter' }
+      gezondSchool: { geluid: 'C', temperatuur: 'C', licht: 'C', lucht: 'C', kwaliteitsborging: 'C', comfortNietOnderwijs: 'BBL' },
+      duurzameSchool: {
+        energiegebruik: 'BENG',
+        materiaalgebruik: '15%',
+        meteriaalhergebruik: '30%',
+        'Subbemetering': 'Geen',
+        'afvalwater hergebruik': 'Geen',
+        grijswatersysteem: 'Geen',
+        natuurInclusiviteit: 'Geen',
+        klimaatAdaptie: 'Geen',
+      },
+      adaptieveSchool: { adaptievePlattegrond: 'Goed', adaptieveTechniek: 'Goed' },
+      veiligSchool: { bouwkundigInbraak: 'Geen', technischInbraak: 'Geen', bouwkundigVandalisme: 'Geen', technischVandalisme: 'Geen' },
+      digitaleSchool: { technischeIntegratie: 'Geen' },
+      inclusiefSchool: { nen9120: 'Nee' },
     },
     ruimtestaat: null,
     planning: {}
@@ -338,19 +348,25 @@ function renderDashboard(project) {
   if (!activeVariant) return '';
 
   const { bouwkosten, tco, totalBVO } = window.POM_CALC
-    ? window.POM_CALC.calcDashboard(activeVariant.voorzieningen)
+    ? window.POM_CALC.calcDashboard(activeVariant.voorzieningen, project.gebruiksduur, activeVariant.ambities)
     : { bouwkosten: 0, tco: 0, totalBVO: 0 };
 
   const fmt = n => '€\u202F' + n.toLocaleString('nl-NL');
-  const pct = (a, b) => b > 0 ? Math.round((a / b) * 100) : 0;
 
-  // placeholder % relative to a budget of 10 000 000
-  const budget = 10_000_000;
-  const bPct = Math.min(pct(bouwkosten, budget), 100);
-  const tPct = Math.min(pct(tco, budget * 2), 100);
+  const BETROUWBAARHEID = {
+    'pve-stap-1-invoer.html': 50, 'pve-stap-1b-gebruiksduur.html': 50,
+    'pve-stap-2-voorzieningen.html': 50,
+    'pve-stap-4b-ruimtestaat.html': 50, 'pve-stap-4c-vlekkenplan.html': 50,
+    'pve-stap-3-ambities.html': 60, 'pve-stap-5-planning.html': 60,
+    'gebouw-stap-2-opties.html': 80,
+  };
+  const page = window.location.pathname.split('/').pop();
+  const betrouwbaarheid = BETROUWBAARHEID[page] ?? null;
+  const bPct = betrouwbaarheid !== null ? betrouwbaarheid + '%' : null;
 
-  const badge = (color, val) =>
-    `<span style="background:${color};color:white;border-radius:99px;padding:0.1rem 0.45rem;font-size:0.7rem">${val}</span>`;
+  const badge = (color, val) => val !== null
+    ? `<span style="background:${color};color:white;border-radius:99px;padding:0.1rem 0.45rem;font-size:0.7rem">${val}</span>`
+    : '';
 
   const pillStyle = 'cursor:pointer;transition:background 0.15s;';
   const onHover   = `onmouseenter="this.style.background='#F5F3FF'" onmouseleave="this.style.background=''"`;
@@ -360,7 +376,7 @@ function renderDashboard(project) {
          onclick="if(window.showDashboardDetail)showDashboardDetail('bouwkosten')"
          title="Klik voor details">
       <span style="color:#6B7280;font-weight:500">Bouwkosten</span>
-      ${badge('#7C3AED', bPct + '%')}
+      ${badge('#7C3AED', bPct)}
       <span style="color:#374151;font-weight:600">${fmt(bouwkosten)}</span>
       <span style="color:#C4B5FD;font-size:0.7rem;margin-left:1px">ⓘ</span>
     </div>
@@ -368,7 +384,7 @@ function renderDashboard(project) {
          onclick="if(window.showDashboardDetail)showDashboardDetail('tco')"
          title="Klik voor details">
       <span style="color:#6B7280;font-weight:500">TCO</span>
-      ${badge('#34D399', tPct + '%')}
+      ${badge('#34D399', bPct)}
       <span style="color:#374151;font-weight:600">${fmt(tco)}</span>
       <span style="color:#6EE7B7;font-size:0.7rem;margin-left:1px">ⓘ</span>
     </div>`;
