@@ -149,12 +149,16 @@
       const vals = keys.map(k => obj[k] || 2);
       return vals.reduce((a, b) => a + b, 0) / vals.length;
     }
-    function bar(score, h) {
+    const weights = project.sliders || {};
+    const getWeight = key => key ? (weights[key] ?? 3) : 3;
+
+    function bar(score, h, weightKey) {
       const c   = scoreColor(score);
       const pct = Math.round((score / 4) * 100);
-      return `<div class="px-4">
-        <div class="w-full rounded-full bg-gray-100" style="height:${h}px;">
-          <div style="width:${pct}%;background:${c};height:${h}px;border-radius:99px;min-width:${h}px;"></div>
+      const wh  = weightKey ? Math.max(3, Math.round(h * getWeight(weightKey) / 3)) : h;
+      return `<div class="px-4" style="display:flex;align-items:center;">
+        <div class="w-full rounded-full bg-gray-100" style="height:${wh}px;">
+          <div style="width:${pct}%;background:${c};height:${wh}px;border-radius:99px;min-width:${wh}px;"></div>
         </div>
       </div>`;
     }
@@ -249,7 +253,7 @@
 
     // ── Ambitie helpers ─────────────────────────────────────────────────────────
     const AMBITIE_DIMS = [
-      { id: 'gezondSchool',    label: 'Gezonde school',    items: [
+      { id: 'gezondSchool',    label: 'Gezonde school',    weightKey: 'gezondSchool',    items: [
         { key:'geluid',               opts:['C','B','A'],               label:'Geluid' },
         { key:'temperatuur',          opts:['C','B','A'],               label:'Temperatuur' },
         { key:'licht',                opts:['C','B','A'],               label:'Licht' },
@@ -257,7 +261,7 @@
         { key:'kwaliteitsborging',    opts:['C','B','A'],               label:'Kwaliteitsborging' },
         { key:'comfortNietOnderwijs', opts:['BBL','C','B','A'],         label:'Comfort niet-onderwijsruimten' },
       ]},
-      { id: 'duurzameSchool',  label: 'Duurzame school',  items: [
+      { id: 'duurzameSchool',  label: 'Duurzame school',  weightKey: 'duurzameSchool',  items: [
         { key:'energiegebruik',       opts:['BENG','C','B','A','ENG','E-neutraal'], label:'Energiegebruik' },
         { key:'materiaalgebruik',     opts:['15%','25%','35%'],         label:'Duurzame materialen' },
         { key:'meteriaalhergebruik',  opts:['30%','40%','50%'],         label:'Materiaalhergebruik' },
@@ -267,16 +271,16 @@
         { key:'natuurInclusiviteit',  opts:['Geen','Wel'],              label:'Groendak' },
         { key:'klimaatAdaptie',       opts:['Geen','Wel'],              label:'Waterretentie' },
       ]},
-      { id: 'veiligSchool',    label: 'Veilige school',   items: [
+      { id: 'veiligSchool',    label: 'Veilige school',   weightKey: 'veiligSchool',   items: [
         { key:'bouwkundigInbraak',    opts:['Geen','Wel'],              label:'Bouwkundige beveiliging' },
         { key:'technischInbraak',     opts:['Geen','Wel'],              label:'Toegangscontrole' },
         { key:'bouwkundigVandalisme', opts:['Geen','Wel'],              label:'Camerasysteem' },
         { key:'technischVandalisme',  opts:['Geen','Wel'],              label:'Vandalismebestendigheid' },
       ]},
-      { id: 'digitaleSchool',  label: 'Digitale school',  items: [
+      { id: 'digitaleSchool',  label: 'Digitale school',  weightKey: 'digitaleSchool',  items: [
         { key:'technischeIntegratie', opts:['Geen','Wel'],              label:'Slim gebouw' },
       ]},
-      { id: 'inclusiefSchool', label: 'Inclusieve school', items: [
+      { id: 'inclusiefSchool', label: 'Inclusieve school', weightKey: 'inclusieveSchool', items: [
         { key:'nen9120',              opts:['Nee','Ja'],                label:'NEN9120 norm' },
       ]},
     ];
@@ -303,25 +307,25 @@
     // ── Kwaliteit table ─────────────────────────────────────────────────────────
     // Rows that expand show per-slider sub-rows; noExpand rows have only 1 value.
     const KWAL_ROWS = [
-      { id: 'locatie',                  label: 'Kenmerken locatie',
+      { id: 'locatie',                  label: 'Kenmerken locatie',         weightKey: 'functioneleSchool',
         sliders: ['verkeer','parkeren','fietsenstalling','buitenruimte'],
         sub: { verkeer:'Verkeer', parkeren:'Parkeren', fietsenstalling:'Fietsenstalling', buitenruimte:'Buitenruimte' } },
-      { id: 'kenmerkenSchool',          label: 'Kenmerken school',
+      { id: 'kenmerkenSchool',          label: 'Kenmerken school',          weightKey: 'betereSchool',
         sliders: ['structuur','aanvullendeFuncties','combinatieFuncties'],
         sub: { structuur:'Structuur', aanvullendeFuncties:'Aanvullende functies', combinatieFuncties:'Combinatiefuncties' } },
-      { id: 'huisvestingConcept',       label: 'Huisvesting concept',
+      { id: 'huisvestingConcept',       label: 'Huisvesting concept',       weightKey: 'functioneleSchool',
         sliders: ['algemeen','ruimtelijkeIndeling','logistiek','gemeenschappelijkeRuimtes','typologieLokalen'],
         sub: { algemeen:'Algemeen', ruimtelijkeIndeling:'Ruimtelijke indeling', logistiek:'Logistiek', gemeenschappelijkeRuimtes:'Gem. ruimtes', typologieLokalen:'Lokalen' } },
-      { id: 'uitstraling',              label: 'Uitstraling exterieur',
+      { id: 'uitstraling',              label: 'Uitstraling exterieur',     weightKey: 'aantrekkelijkeSchool',
         sliders: ['exterieur'],
         sub: { exterieur:'Exterieur' }, noExpand: true },
-      { id: 'uitstraling',              label: 'Uitstraling interieur',
+      { id: 'uitstraling',              label: 'Uitstraling interieur',     weightKey: 'aantrekkelijkeSchool',
         sliders: ['interieur'],
         sub: { interieur:'Interieur' }, noExpand: true },
-      { id: 'vandalismeBestendig',      label: 'Vandalisme bestendig',
+      { id: 'vandalismeBestendig',      label: 'Vandalisme bestendig',      weightKey: 'veiligSchool',
         sliders: ['overzichtEnControle'],
         sub: { overzichtEnControle:'Overzicht en controle' }, noExpand: true },
-      { id: 'gebruiksvriendelijkheid',  label: 'Gebruiksvriendelijkheid',
+      { id: 'gebruiksvriendelijkheid',  label: 'Gebruiksvriendelijkheid',   weightKey: 'inclusieveSchool',
         sliders: ['hoogteverschillen','socialeVeiligheid'],
         sub: { hoogteverschillen:'Hoogteverschillen', socialeVeiligheid:'Sociale veiligheid' } },
     ];
@@ -358,7 +362,7 @@
           ${variants.length
             ? variants.map(v => {
                 const cat   = (v.kwaliteitsBeoordeling || {})[row.id] || {};
-                return bar(avg(cat, row.sliders), 8);
+                return bar(avg(cat, row.sliders), 8, row.weightKey);
               }).join('')
             : '<div></div>'}
         </div>`;
@@ -371,7 +375,7 @@
               ${variants.length
                 ? variants.map(v => {
                     const cat = (v.kwaliteitsBeoordeling || {})[row.id] || {};
-                    return bar(cat[k] || 2, 6);
+                    return bar(cat[k] || 2, 6, row.weightKey);
                   }).join('')
                 : '<div></div>'}
             </div>`;
@@ -396,7 +400,7 @@
             ? variants.map(v => {
                 const linkedPve = (project.pveVarianten || []).find(p => p.id === v.pveId);
                 const score = ambitieDimScore(linkedPve?.ambities?.[dim.id], dim.items);
-                return bar(score, 8);
+                return bar(score, 8, dim.weightKey);
               }).join('')
             : '<div></div>'}
         </div>`;
@@ -410,7 +414,7 @@
                     const linkedPve = (project.pveVarianten || []).find(p => p.id === v.pveId);
                     const val = linkedPve?.ambities?.[dim.id]?.[item.key];
                     const score = ambitieScore(item.opts, val);
-                    return bar(score, 6);
+                    return bar(score, 6, dim.weightKey);
                   }).join('')
                 : '<div></div>'}
             </div>`;
