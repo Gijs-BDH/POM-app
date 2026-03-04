@@ -244,7 +244,7 @@
         TABS.forEach(t => { if (!variant[t.key]) variant[t.key] = { geo: [], opp: 0 }; });
 
         document.getElementById('project-titel').textContent = project.naam;
-        document.getElementById('step-indicator').innerHTML = renderStepIndicator(3, 6, ['gebied-stap-1-locatie.html', 'gebied-stap-1-kavels.html']);
+        document.getElementById('step-indicator').innerHTML = renderStepIndicator(3, 6, ['gebied-stap-1-locatie.html','gebied-stap-1-kavels.html', 'gebied-stap-1-kavels.html']);
         document.getElementById('nav-panel').innerHTML = renderNavPanel('gebied', project);
 
         // ── Map ───────────────────────────────────────────────────────────────────
