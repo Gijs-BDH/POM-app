@@ -104,7 +104,164 @@
 
     // ── Upload state ──────────────────────────────────────────────────────────
     let pendingKavelpaspoort = { blobUrl: null, fileName: null, dataUrl: null };
-    let pendingOmgevingMassa = { blobUrl: null, fileName: null, dataUrl: null };
+    let pendingOmgevingMassa = { blobUrl: null, fileName: null, dataUrl: null, transform: null };
+
+    // ── 3D model state (omgevingMassa) ────────────────────────────────────────
+    let kavelpaspoortModelLoaded    = false;
+    let kavelpaspoortModelPrimitive = null;
+    let modelSelected               = false;
+    let selectedModelPosition       = null;
+    let placementDebugHandler       = null;
+    const FIXED_MODEL_LNG           = 4.946407;
+    const FIXED_MODEL_LAT           = 52.304218;
+    const FIXED_MODEL_HEIGHT        = 3.8;
+    const FIXED_MODEL_HEADING_DEG   = -268;
+    const FIXED_MODEL_PITCH_DEG     = 0;
+    const FIXED_MODEL_ROLL_DEG      = 0;
+    const modelTransform = {
+      lng: FIXED_MODEL_LNG, lat: FIXED_MODEL_LAT, height: FIXED_MODEL_HEIGHT,
+      headingDeg: FIXED_MODEL_HEADING_DEG, pitchDeg: FIXED_MODEL_PITCH_DEG, rollDeg: FIXED_MODEL_ROLL_DEG,
+    };
+
+    function persistOmgevingMassaTransform() {
+      pendingOmgevingMassa.transform = {
+        lng: modelTransform.lng, lat: modelTransform.lat, height: modelTransform.height,
+        headingDeg: modelTransform.headingDeg, pitchDeg: modelTransform.pitchDeg, rollDeg: modelTransform.rollDeg,
+      };
+    }
+
+    function setModelSelected(selected) {
+      modelSelected = !!selected;
+      if (!kavelpaspoortModelPrimitive) return;
+      try {
+        kavelpaspoortModelPrimitive.silhouetteColor = Cesium.Color.fromCssColorString('#7C3AED');
+        kavelpaspoortModelPrimitive.silhouetteSize  = modelSelected ? 2.2 : 0.0;
+      } catch { }
+    }
+
+    function applyModelTransform() {
+      if (!kavelpaspoortModelPrimitive || !window.Cesium) return;
+      const pos = Cesium.Cartesian3.fromDegrees(modelTransform.lng, modelTransform.lat, modelTransform.height);
+      const hpr = new Cesium.HeadingPitchRoll(
+        Cesium.Math.toRadians(modelTransform.headingDeg),
+        Cesium.Math.toRadians(modelTransform.pitchDeg),
+        Cesium.Math.toRadians(modelTransform.rollDeg)
+      );
+      kavelpaspoortModelPrimitive.modelMatrix = Cesium.Transforms.headingPitchRollToFixedFrame(pos, hpr);
+    }
+
+    function logModelTransform() {
+      console.log('[Model transform]', {
+        lng: Number(modelTransform.lng.toFixed(6)), lat: Number(modelTransform.lat.toFixed(6)),
+        height: Number(modelTransform.height.toFixed(2)),
+        headingDeg: Number(modelTransform.headingDeg.toFixed(1)),
+        pitchDeg: Number(modelTransform.pitchDeg.toFixed(1)),
+        rollDeg: Number(modelTransform.rollDeg.toFixed(1)),
+      });
+    }
+
+    document.addEventListener('keydown', (e) => {
+      const tag = e.target?.tagName?.toUpperCase() || '';
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target?.isContentEditable) return;
+      if (!modelSelected || !kavelpaspoortModelPrimitive) return;
+      const stepM = 0.4, rotStep = 4;
+      const latRad = modelTransform.lat * Math.PI / 180;
+      const mToLat = 1 / 111320;
+      const mToLng = 1 / (111320 * Math.max(Math.cos(latRad), 0.0001));
+      let changed = false;
+      if (e.shiftKey) {
+        if (e.key === 'ArrowLeft')  { modelTransform.headingDeg -= rotStep; changed = true; }
+        if (e.key === 'ArrowRight') { modelTransform.headingDeg += rotStep; changed = true; }
+        if (e.key === 'ArrowUp')    { modelTransform.height += 0.2;         changed = true; }
+        if (e.key === 'ArrowDown')  { modelTransform.height -= 0.2;         changed = true; }
+      } else {
+        if (e.key === 'ArrowUp')    { modelTransform.lat  += stepM * mToLat; changed = true; }
+        if (e.key === 'ArrowDown')  { modelTransform.lat  -= stepM * mToLat; changed = true; }
+        if (e.key === 'ArrowLeft')  { modelTransform.lng  -= stepM * mToLng; changed = true; }
+        if (e.key === 'ArrowRight') { modelTransform.lng  += stepM * mToLng; changed = true; }
+      }
+      if (!changed) return;
+      e.preventDefault();
+      applyModelTransform();
+      persistOmgevingMassaTransform();
+      logModelTransform();
+    });
+
+    function init3DClickLogger() {
+      if (!window.Cesium || !map3d?.viewer || placementDebugHandler) return;
+      const viewer = map3d.viewer;
+      placementDebugHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+      placementDebugHandler.setInputAction((movement) => {
+        const picked      = viewer.scene.pick(movement.position);
+        const isModelPick = !!(picked && picked.primitive === kavelpaspoortModelPrimitive);
+        setModelSelected(isModelPick);
+        let cartesian = viewer.camera.pickEllipsoid(movement.position, viewer.scene.globe.ellipsoid);
+        if (!cartesian && viewer.scene.pickPositionSupported) {
+          try { cartesian = viewer.scene.pickPosition(movement.position); } catch { }
+        }
+        if (!cartesian) return;
+        const carto = Cesium.Cartographic.fromCartesian(cartesian);
+        selectedModelPosition = {
+          lng:    Cesium.Math.toDegrees(carto.longitude),
+          lat:    Cesium.Math.toDegrees(carto.latitude),
+          height: Number.isFinite(carto.height) ? carto.height : 0,
+        };
+      }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+    }
+
+    async function laadKavelpaspoortModelIn3D() {
+      if (!window.Cesium || !map3d?.viewer) return;
+      if (!pendingOmgevingMassa.blobUrl) return;
+      if (kavelpaspoortModelLoaded) { setMapMode('3d'); return; }
+
+      modelTransform.lng        = FIXED_MODEL_LNG;
+      modelTransform.lat        = FIXED_MODEL_LAT;
+      modelTransform.height     = FIXED_MODEL_HEIGHT;
+      modelTransform.headingDeg = FIXED_MODEL_HEADING_DEG;
+      modelTransform.pitchDeg   = FIXED_MODEL_PITCH_DEG;
+      modelTransform.rollDeg    = FIXED_MODEL_ROLL_DEG;
+
+      const position = Cesium.Cartesian3.fromDegrees(modelTransform.lng, modelTransform.lat, modelTransform.height);
+      const hpr = new Cesium.HeadingPitchRoll(
+        Cesium.Math.toRadians(modelTransform.headingDeg),
+        Cesium.Math.toRadians(modelTransform.pitchDeg),
+        Cesium.Math.toRadians(modelTransform.rollDeg)
+      );
+      const modelMatrix = Cesium.Transforms.headingPitchRollToFixedFrame(position, hpr);
+      try {
+        setMapMode('3d');
+        const model = await Cesium.Model.fromGltfAsync({
+          url: pendingOmgevingMassa.blobUrl, modelMatrix, scale: 1.0, minimumPixelSize: 64
+        });
+        if (kavelpaspoortModelPrimitive) map3d.viewer.scene.primitives.remove(kavelpaspoortModelPrimitive);
+        map3d.viewer.scene.primitives.add(model);
+        kavelpaspoortModelPrimitive = model;
+        kavelpaspoortModelLoaded    = true;
+        setModelSelected(true);
+        persistOmgevingMassaTransform();
+        logModelTransform();
+        map3d.viewer.camera.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees(FIXED_MODEL_LNG, FIXED_MODEL_LAT, 220),
+          orientation: { heading: Cesium.Math.toRadians(-15), pitch: Cesium.Math.toRadians(-45), roll: 0 },
+          duration: 1.2
+        });
+      } catch (err) {
+        console.warn('omgevingMassa model laden mislukt:', err);
+      }
+    }
+
+    function clearOmgevingMassaModel() {
+      if (pendingOmgevingMassa.blobUrl) URL.revokeObjectURL(pendingOmgevingMassa.blobUrl);
+      pendingOmgevingMassa = { blobUrl: null, fileName: null, dataUrl: null, transform: null };
+      kavelpaspoortModelLoaded = false;
+      if (kavelpaspoortModelPrimitive && map3d?.viewer) {
+        map3d.viewer.scene.primitives.remove(kavelpaspoortModelPrimitive);
+        kavelpaspoortModelPrimitive = null;
+        setModelSelected(false);
+      }
+      renderCards();
+    }
+    window.clearOmgevingMassaModel = clearOmgevingMassaModel;
 
     // ── PDF viewer ────────────────────────────────────────────────────────────
     const PDF_ZOOMS = [50, 75, 100, 125, 150, 175, 200];
@@ -167,8 +324,10 @@
         if (pendingOmgevingMassa.blobUrl) URL.revokeObjectURL(pendingOmgevingMassa.blobUrl);
         pendingOmgevingMassa.blobUrl  = URL.createObjectURL(file);
         pendingOmgevingMassa.fileName = file.name;
+        kavelpaspoortModelLoaded = false;
         reader.onload = e => { pendingOmgevingMassa.dataUrl = e.target.result; };
         reader.readAsDataURL(file);
+        laadKavelpaspoortModelIn3D();
       }
       renderCards();
     }
@@ -278,7 +437,7 @@
           paint: { 'line-color': ['coalesce', ['get', 'lineColor'], '#4C1D95'], 'line-width': ['coalesce', ['get', 'lineWidth'], 1.5] } });
       }
     }
-    map3d.on('load', () => { map3dReady = true; syncLeafletTo3D(); });
+    map3d.on('load', () => { map3dReady = true; syncLeafletTo3D(); init3DClickLogger(); });
     map.on('layeradd',    syncLeafletTo3D);
     map.on('layerremove', syncLeafletTo3D);
 
@@ -703,7 +862,8 @@
       if (pendingOmgevingMassa.blobUrl) {
         updates.omgevingMassa         = true;
         updates.omgevingMassaFileName = pendingOmgevingMassa.fileName;
-        if (pendingOmgevingMassa.dataUrl) updates.omgevingMassaDataUrl = pendingOmgevingMassa.dataUrl;
+        if (pendingOmgevingMassa.dataUrl)  updates.omgevingMassaDataUrl  = pendingOmgevingMassa.dataUrl;
+        if (pendingOmgevingMassa.transform) updates.omgevingMassaTransform = pendingOmgevingMassa.transform;
       }
       updateGebiedVariantById(variant.id, updates);
       window.location.href = 'gebied-stap-2-stedenbouw.html?id=' + variant.id;
@@ -723,7 +883,8 @@
       if (pendingOmgevingMassa.blobUrl) {
         updates.omgevingMassa         = true;
         updates.omgevingMassaFileName = pendingOmgevingMassa.fileName;
-        if (pendingOmgevingMassa.dataUrl) updates.omgevingMassaDataUrl = pendingOmgevingMassa.dataUrl;
+        if (pendingOmgevingMassa.dataUrl)  updates.omgevingMassaDataUrl  = pendingOmgevingMassa.dataUrl;
+        if (pendingOmgevingMassa.transform) updates.omgevingMassaTransform = pendingOmgevingMassa.transform;
       }
       updateGebiedVariantById(variant.id, updates);
       window.location.href = 'gebied-stap-2-stedenbouw.html?id=' + variant.id;
@@ -754,14 +915,19 @@
 
         case 'omgevingMassa':
           return `
-            <div class="flex flex-col gap-1">
-              <label class="text-xs text-gray-500">Omgeving massa (PDF)</label>
-              <label class="flex items-center justify-center gap-2 cursor-pointer border border-dashed border-violet-300 rounded-lg py-3 px-2 text-xs text-violet-500 hover:bg-violet-50 transition-colors">
-                <span>📄</span>
-                <span>${pendingOmgevingMassa.fileName || 'Kies bestand…'}</span>
-                <input type="file" accept=".pdf" class="hidden" onchange="handleUpload(event,'omgevingMassa')"/>
+            <div class="flex flex-col gap-1.5">
+              ${pendingOmgevingMassa.fileName
+                ? `<p class="text-xs text-emerald-600">✓ Bestand geüpload</p>
+                   <p class="text-[11px] text-gray-400 break-all">${pendingOmgevingMassa.fileName}</p>`
+                : `<p class="text-xs text-gray-300">Nog geen bestand geüpload</p>`}
+              <label class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border border-violet-300 text-violet-600 hover:bg-violet-50 transition-all cursor-pointer text-center">
+                ↑ ${pendingOmgevingMassa.fileName ? 'Vervangen' : 'Upload model'}
+                <input type="file" accept=".obj,.fbx,.glb,.gltf,.3ds" class="hidden" onchange="handleUpload(event,'omgevingMassa')"/>
               </label>
-              ${pendingOmgevingMassa.fileName ? `<p class="text-xs text-emerald-600 truncate" title="${pendingOmgevingMassa.fileName}">✓ ${pendingOmgevingMassa.fileName}</p>` : ''}
+              ${pendingOmgevingMassa.fileName ? `<button onclick="clearOmgevingMassaModel()"
+                class="text-xs text-gray-400 hover:text-red-500 transition-colors text-left">
+                ✕ Verwijder bestand
+              </button>` : ''}
             </div>
             <button onclick="naarKavels()" class="btn-secondary w-full">Overslaan</button>
             <button onclick="naarKavels()" class="btn-primary w-full">Volgende →</button>`;

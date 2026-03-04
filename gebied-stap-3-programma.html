@@ -19,6 +19,18 @@
     .tab-pill.active  { border-color: #7C3AED; color: #7C3AED; box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
     .tab-pill.done    { border-color: #D1FAE5; background: #ECFDF5; color: #059669; cursor: default; }
     .tab-pill.pending { color: #D1D5DB; border-color: #F3F4F6; cursor: default; }
+    .rubberband-label {
+      background: rgba(255,255,255,0.93); border: 1px solid #7C3AED;
+      border-radius: 4px; padding: 1px 5px; font-size: 11px; font-weight: 500;
+      color: #7C3AED; white-space: nowrap; pointer-events: none;
+      transform: translate(-50%, -50%);
+    }
+    .area-label {
+      background: rgba(255,255,255,0.85); border: 1px solid #9CA3AF;
+      border-radius: 4px; padding: 2px 7px; font-size: 12px; font-weight: 600;
+      color: #374151; white-space: nowrap; pointer-events: none;
+      transform: translate(-50%, -50%);
+    }
   </style>
 </head>
 <body class="min-h-screen bg-gray-50 p-8 gebied">
@@ -348,6 +360,8 @@
     let drawPoints       = [];
     let currentPoly      = null;
     let rubberbandLine   = null;
+    let rubberbandLabel  = null;
+    let areaLabel        = null;
     let firstPointCircle = null;
 
     function calcAreaM2(latlngs) {
@@ -502,9 +516,31 @@
       }
       clearTimeout(clickTimer);
       clickTimer = setTimeout(() => {
-        drawPoints.push([latlng.lat, latlng.lng]);
+        // Snap placement to 0.5 m steps along direction from last point
+        let placedLatlng = latlng;
+        if (drawPoints.length > 0) {
+          const from2     = [drawPoints[drawPoints.length - 1][0], drawPoints[drawPoints.length - 1][1]];
+          const DEG_TO_M2 = 111320;
+          const cosLat2   = Math.cos(from2[0] * Math.PI / 180);
+          const dLatM2    = (latlng.lat - from2[0]) * DEG_TO_M2;
+          const dLngM2    = (latlng.lng - from2[1]) * DEG_TO_M2 * cosLat2;
+          const rawDist2  = Math.hypot(dLatM2, dLngM2);
+          const snapDist2 = Math.round(rawDist2 / 0.5) * 0.5;
+          if (rawDist2 > 0.001 && snapDist2 > 0) {
+            const r = snapDist2 / rawDist2;
+            placedLatlng = L.latLng(from2[0] + (latlng.lat - from2[0]) * r,
+                                    from2[1] + (latlng.lng - from2[1]) * r);
+          }
+        }
+        drawPoints.push([placedLatlng.lat, placedLatlng.lng]);
+        // Re-anchor rubber-band from new last point to current cursor immediately
+        // (keeps it visible; snapping + label refresh on next mousemove)
+        if (rubberbandLine) {
+          rubberbandLine.setLatLngs([[placedLatlng.lat, placedLatlng.lng], [latlng.lat, latlng.lng]]);
+        }
+        if (rubberbandLabel) { map.removeLayer(rubberbandLabel); rubberbandLabel = null; }
         if (drawPoints.length === 1) {
-          firstPointCircle = L.circleMarker([latlng.lat, latlng.lng], {
+          firstPointCircle = L.circleMarker([placedLatlng.lat, placedLatlng.lng], {
             radius: 5, color: activeTab.color, fillColor: activeTab.color,
             fillOpacity: 1, weight: 2, interactive: false
           }).addTo(map);
@@ -528,19 +564,46 @@
       }, 250);
     });
 
-    map.on('mousemove', e => {
+    document.addEventListener('mousemove', e => {
       if (!drawingMode || drawPoints.length === 0) return;
-      let target = e.latlng;
+      // Only process events when cursor is over the 2D map container
+      const mapEl   = document.getElementById('map');
+      if (!mapEl || mapEl.classList.contains('hidden')) return;
+      const rect    = mapEl.getBoundingClientRect();
+      if (e.clientX < rect.left || e.clientX > rect.right ||
+          e.clientY < rect.top  || e.clientY > rect.bottom) return;
+      // Convert screen position → Leaflet LatLng
+      let target = map.containerPointToLatLng(
+        L.point(e.clientX - rect.left, e.clientY - rect.top)
+      );
       let snapping = false;
       if (drawPoints.length >= 3) {
         const firstPx = map.latLngToContainerPoint([drawPoints[0][0], drawPoints[0][1]]);
-        const curPx   = map.latLngToContainerPoint(e.latlng);
+        const curPx   = map.latLngToContainerPoint(target);
         if (Math.hypot(firstPx.x - curPx.x, firstPx.y - curPx.y) < 15) {
           target = L.latLng(drawPoints[0][0], drawPoints[0][1]);
           snapping = true;
         }
       }
       const from = [drawPoints[drawPoints.length - 1][0], drawPoints[drawPoints.length - 1][1]];
+
+      // ── Snap line length to 0.5 m steps ───────────────────────────────────
+      let snappedDistM = 0;
+      if (!snapping) {
+        const DEG_TO_M = 111320;
+        const cosLat   = Math.cos(from[0] * Math.PI / 180);
+        const dLatM    = (target.lat - from[0]) * DEG_TO_M;
+        const dLngM    = (target.lng - from[1]) * DEG_TO_M * cosLat;
+        const rawDistM = Math.hypot(dLatM, dLngM);
+        snappedDistM   = Math.round(rawDistM / 0.5) * 0.5;
+        if (rawDistM > 0.001 && snappedDistM > 0) {
+          const ratio = snappedDistM / rawDistM;
+          target = L.latLng(from[0] + (target.lat - from[0]) * ratio,
+                            from[1] + (target.lng - from[1]) * ratio);
+        }
+      }
+
+      // Update rubber-band line
       if (!rubberbandLine) {
         rubberbandLine = L.polyline([from, [target.lat, target.lng]], {
           color: activeTab ? activeTab.color : '#7C3AED',
@@ -549,6 +612,50 @@
       } else {
         rubberbandLine.setLatLngs([from, [target.lat, target.lng]]);
       }
+
+      // ── Length label at midpoint ───────────────────────────────────────────
+      const midLat   = (from[0] + target.lat) / 2;
+      const midLng   = (from[1] + target.lng) / 2;
+      const labelTxt = snapping ? 'sluiten' : (snappedDistM >= 0.5 ? snappedDistM.toFixed(1) + ' m' : '');
+      if (labelTxt) {
+        const icon = L.divIcon({
+          html: `<div class="rubberband-label">${labelTxt}</div>`,
+          className: '', iconSize: [0, 0], iconAnchor: [0, 0]
+        });
+        if (!rubberbandLabel) {
+          rubberbandLabel = L.marker([midLat, midLng], { icon, interactive: false, zIndexOffset: 1000 }).addTo(map);
+        } else {
+          rubberbandLabel.setLatLng([midLat, midLng]);
+          rubberbandLabel.setIcon(icon);
+        }
+      } else if (rubberbandLabel) {
+        map.removeLayer(rubberbandLabel); rubberbandLabel = null;
+      }
+
+      // ── Area label at centroid of preview polygon ──────────────────────────
+      if (drawPoints.length >= 2) {
+        const allPts  = [...drawPoints, [target.lat, target.lng]];
+        const liveArea = calcAreaM2(allPts.map(p => L.latLng(p[0], p[1])));
+        const cLat = allPts.reduce((s, p) => s + p[0], 0) / allPts.length;
+        const cLng = allPts.reduce((s, p) => s + p[1], 0) / allPts.length;
+        if (liveArea > 0) {
+          const areaIcon = L.divIcon({
+            html: `<div class="area-label">${liveArea.toLocaleString('nl-NL')} m²</div>`,
+            className: '', iconSize: [0, 0], iconAnchor: [0, 0]
+          });
+          if (!areaLabel) {
+            areaLabel = L.marker([cLat, cLng], { icon: areaIcon, interactive: false, zIndexOffset: 999 }).addTo(map);
+          } else {
+            areaLabel.setLatLng([cLat, cLng]);
+            areaLabel.setIcon(areaIcon);
+          }
+        } else if (areaLabel) {
+          map.removeLayer(areaLabel); areaLabel = null;
+        }
+      } else if (areaLabel) {
+        map.removeLayer(areaLabel); areaLabel = null;
+      }
+
       if (firstPointCircle) {
         const col = snapping ? '#10B981' : (activeTab ? activeTab.color : '#7C3AED');
         firstPointCircle.setStyle({ color: col, fillColor: col });
@@ -559,6 +666,8 @@
       if (!drawingMode || drawPoints.length < 3) return;
       clearTimeout(clickTimer);
       if (rubberbandLine)   { map.removeLayer(rubberbandLine);   rubberbandLine   = null; }
+      if (rubberbandLabel)  { map.removeLayer(rubberbandLabel);  rubberbandLabel  = null; }
+      if (areaLabel)        { map.removeLayer(areaLabel);        areaLabel        = null; }
       if (firstPointCircle) { map.removeLayer(firstPointCircle); firstPointCircle = null; }
       const tab = activeTab;
       const geo = drawPoints.slice();
@@ -616,6 +725,8 @@
     function stopDrawing() {
       clearTimeout(clickTimer);
       if (rubberbandLine)   { map.removeLayer(rubberbandLine);   rubberbandLine   = null; }
+      if (rubberbandLabel)  { map.removeLayer(rubberbandLabel);  rubberbandLabel  = null; }
+      if (areaLabel)        { map.removeLayer(areaLabel);        areaLabel        = null; }
       if (firstPointCircle) { map.removeLayer(firstPointCircle); firstPointCircle = null; }
       if (currentPoly) { map.removeLayer(currentPoly); currentPoly = null; }
       drawingMode = false;
