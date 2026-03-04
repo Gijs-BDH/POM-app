@@ -70,6 +70,11 @@ const BOT_SCRIPTS = {
         ]
     },
 
+    "gebruiksduur_intro": {
+        message: "Vul hier het aantal jaar dat de school in gebruik zal zijn. Dit wordt gebruikt in het berekenen van de Total Cost of Ownership (TCO): een langere gebruiksduur verlaagt de gemiddelde jaarlijkse kosten maar verhoogt de totale onderhoudslasten.",
+        actions: []
+    },
+
     "planning_intro": {
         message: "Welkom bij de planning! POM helpt je om in <strong style=\"color:var(--primary)\">7 weken</strong> van start naar uitvraag te gaan. Stel snel meerdere scenario's op en bespreek ze tweewekelijks met alle stakeholders. Zo werk je efficiënt toe naar de volgende stap en krijg je direct inzicht in de haalbaarheid van de businesscase.",
         actions: [
