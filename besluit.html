@@ -247,6 +247,59 @@
       });
     }
 
+    // ── Ambitie helpers ─────────────────────────────────────────────────────────
+    const AMBITIE_DIMS = [
+      { id: 'gezondSchool',    label: 'Gezonde school',    items: [
+        { key:'geluid',               opts:['C','B','A'],               label:'Geluid' },
+        { key:'temperatuur',          opts:['C','B','A'],               label:'Temperatuur' },
+        { key:'licht',                opts:['C','B','A'],               label:'Licht' },
+        { key:'lucht',                opts:['C','B','A'],               label:'Lucht' },
+        { key:'kwaliteitsborging',    opts:['C','B','A'],               label:'Kwaliteitsborging' },
+        { key:'comfortNietOnderwijs', opts:['BBL','C','B','A'],         label:'Comfort niet-onderwijsruimten' },
+      ]},
+      { id: 'duurzameSchool',  label: 'Duurzame school',  items: [
+        { key:'energiegebruik',       opts:['BENG','C','B','A','ENG','E-neutraal'], label:'Energiegebruik' },
+        { key:'materiaalgebruik',     opts:['15%','25%','35%'],         label:'Duurzame materialen' },
+        { key:'meteriaalhergebruik',  opts:['30%','40%','50%'],         label:'Materiaalhergebruik' },
+        { key:'Subbemetering',        opts:['Geen','Wel'],              label:'Subbemetering' },
+        { key:'afvalwater hergebruik',opts:['Geen','Wel'],              label:'Afvalwater hergebruik' },
+        { key:'grijswatersysteem',    opts:['Geen','Wel'],              label:'Grijswatersysteem' },
+        { key:'natuurInclusiviteit',  opts:['Geen','Wel'],              label:'Groendak' },
+        { key:'klimaatAdaptie',       opts:['Geen','Wel'],              label:'Waterretentie' },
+      ]},
+      { id: 'veiligSchool',    label: 'Veilige school',   items: [
+        { key:'bouwkundigInbraak',    opts:['Geen','Wel'],              label:'Bouwkundige beveiliging' },
+        { key:'technischInbraak',     opts:['Geen','Wel'],              label:'Toegangscontrole' },
+        { key:'bouwkundigVandalisme', opts:['Geen','Wel'],              label:'Camerasysteem' },
+        { key:'technischVandalisme',  opts:['Geen','Wel'],              label:'Vandalismebestendigheid' },
+      ]},
+      { id: 'digitaleSchool',  label: 'Digitale school',  items: [
+        { key:'technischeIntegratie', opts:['Geen','Wel'],              label:'Slim gebouw' },
+      ]},
+      { id: 'inclusiefSchool', label: 'Inclusieve school', items: [
+        { key:'nen9120',              opts:['Nee','Ja'],                label:'NEN9120 norm' },
+      ]},
+    ];
+
+    // Convert an ambitie option value to a 2-4 score (50-100% bar) based on position in opts
+    function ambitieScore(opts, value) {
+      if (!value || !opts || !opts.length) return 2;
+      // Special ordering for letter grades
+      const letterOrder = ['BENG','C','B','A','ENG','E-neutraal'];
+      if (opts.some(o => letterOrder.includes(o))) {
+        const idx = letterOrder.indexOf(value);
+        if (idx !== -1) return 2 + (idx / (letterOrder.length - 1)) * 2;
+      }
+      const idx = opts.indexOf(value);
+      return idx === -1 ? 2 : 2 + (idx / Math.max(opts.length - 1, 1)) * 2;
+    }
+
+    function ambitieDimScore(ambities, items) {
+      if (!ambities) return 0;
+      const scores = items.map(item => ambitieScore(item.opts, ambities[item.key]));
+      return scores.reduce((a, b) => a + b, 0) / scores.length;
+    }
+
     // ── Kwaliteit table ─────────────────────────────────────────────────────────
     // Rows that expand show per-slider sub-rows; noExpand rows have only 1 value.
     const KWAL_ROWS = [
@@ -319,6 +372,45 @@
                 ? variants.map(v => {
                     const cat = (v.kwaliteitsBeoordeling || {})[row.id] || {};
                     return bar(cat[k] || 2, 6);
+                  }).join('')
+                : '<div></div>'}
+            </div>`;
+          });
+        }
+      });
+
+      // ── Ambitie section header ─────────────────────────────────────────────
+      html += `${variants.map(() => '<div></div>').join('') || '<div></div>'}
+      </div>`;
+
+      AMBITIE_DIMS.forEach(dim => {
+        const dimKey = 'ambitie|' + dim.id;
+        const isOpen = openKwal.has(dimKey);
+
+        html += `<div class="cmp-row" style="${grd}cursor:pointer;" onclick="toggleKwal('ambitie','${dim.id}')">
+          <div class="flex items-center gap-1.5">
+            <span class="chev" style="transform:rotate(${isOpen ? '0' : '-90'}deg)">▼</span>
+            <span class="text-sm text-gray-700">${dim.label}</span>
+          </div>
+          ${variants.length
+            ? variants.map(v => {
+                const linkedPve = (project.pveVarianten || []).find(p => p.id === v.pveId);
+                const score = ambitieDimScore(linkedPve?.ambities?.[dim.id], dim.items);
+                return bar(score, 8);
+              }).join('')
+            : '<div></div>'}
+        </div>`;
+
+        if (isOpen) {
+          dim.items.forEach(item => {
+            html += `<div class="cmp-row sub-row" style="${grd}">
+              <div class="text-xs text-gray-400 pl-5">${item.label}</div>
+              ${variants.length
+                ? variants.map(v => {
+                    const linkedPve = (project.pveVarianten || []).find(p => p.id === v.pveId);
+                    const val = linkedPve?.ambities?.[dim.id]?.[item.key];
+                    const score = ambitieScore(item.opts, val);
+                    return bar(score, 6);
                   }).join('')
                 : '<div></div>'}
             </div>`;
