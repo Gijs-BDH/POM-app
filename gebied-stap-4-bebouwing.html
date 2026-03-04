@@ -397,9 +397,19 @@
           };
         })
       };
+      const zoneFeatures = tabZones[OBSTAKEL_KEY]
+        .filter(z => z.geo && z.geo.length >= 3 && z.verdiepingen > 0)
+        .map(z => ({
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [[ ...z.geo.map(c => [c[1], c[0]]), [z.geo[0][1], z.geo[0][0]] ]]
+          },
+          properties: { color: '#F59E0B', h: z.verdiepingen * 3.5, b: 0, op: 0.7 }
+        }));
       const volumeFc = {
         type: 'FeatureCollection',
-        features: obstacleItems.flatMap(obstacleVolumeFeatures)
+        features: [...obstacleItems.flatMap(obstacleVolumeFeatures), ...zoneFeatures]
       };
 
       if (!map3d.getSource(obstacle3dPointSourceId)) {
@@ -514,7 +524,7 @@
       zonesData.forEach(z => {
         if (z.geo && z.geo.length >= 3) {
           const poly = L.polygon(z.geo, { color: t.color, fillColor: t.color, fillOpacity: 0.3, weight: 2 }).addTo(layers[t.key]);
-          tabZones[t.key].push({ id: nextZoneId++, geo: z.geo, opp: z.opp || 0, poly });
+          tabZones[t.key].push({ id: nextZoneId++, geo: z.geo, opp: z.opp || 0, verdiepingen: Math.round(z.verdiepingen || 0), poly });
         }
       });
     });
@@ -574,7 +584,7 @@
         const t = getObstacleType(o.type);
         return sum + (t.opp || 0);
       }, 0);
-      const zones = tabZones[OBSTAKEL_KEY].map(z => ({ geo: z.geo, opp: z.opp }));
+      const zones = tabZones[OBSTAKEL_KEY].map(z => ({ geo: z.geo, opp: z.opp, verdiepingen: Math.round(z.verdiepingen || 0) }));
       const zonesOpp = tabZones[OBSTAKEL_KEY].reduce((s, z) => s + z.opp, 0);
       const totalOpp = markersOpp + zonesOpp;
       if (!variant[OBSTAKEL_KEY]) variant[OBSTAKEL_KEY] = {};
@@ -991,7 +1001,7 @@
       const finalPoly = L.polygon(geo, {
         color: tab.color, fillColor: tab.color, fillOpacity: 0.3, weight: 2
       }).addTo(layers[tab.key]);
-      tabZones[tab.key].push({ id: nextZoneId++, geo, opp, poly: finalPoly });
+      tabZones[tab.key].push({ id: nextZoneId++, geo, opp, verdiepingen: 0, poly: finalPoly });
       drawingMode = false;
       currentPoly = null;
       drawPoints = [];
@@ -1016,7 +1026,7 @@
     });
 
     function saveTabZones(key) {
-      const zones = tabZones[key].map(z => ({ geo: z.geo, opp: z.opp }));
+      const zones = tabZones[key].map(z => ({ geo: z.geo, opp: z.opp, verdiepingen: Math.round(z.verdiepingen || 0) }));
       let totalOpp = tabZones[key].reduce((s, z) => s + z.opp, 0);
       const updates = {};
       if (key === OBSTAKEL_KEY) {
@@ -1035,6 +1045,15 @@
       variant[key].geo = updates[key].geo;
       updateGebiedVariantById(gebiedId, updates);
       updateSummary();
+      if (key === OBSTAKEL_KEY) syncObstaclesTo3D();
+    }
+
+    function setZoneVerdiepingen(key, id, val) {
+      const z = tabZones[key].find(z => z.id === id);
+      if (!z) return;
+      z.verdiepingen = Math.max(0, Math.round(parseFloat(val) || 0));
+      if (key === OBSTAKEL_KEY) saveObstacleItems();
+      else saveTabZones(key);
     }
 
     function removeZone(key, id) {
@@ -1110,12 +1129,19 @@
               </button>`;
             }).join('');
             const zonesHtml = zones.map((z, i) => `
-              <div class="flex items-center gap-1 text-xs">
-                <span class="text-gray-600 flex-1">Vlak ${i + 1}</span>
-                <span class="text-gray-400 flex-shrink-0">${z.opp.toLocaleString('nl-NL')} m²</span>
-                <button onclick="removeZone('${tab.key}', ${z.id})"
-                  class="text-gray-300 hover:text-red-400 transition-colors leading-none flex-shrink-0"
-                  title="Verwijderen">×</button>
+              <div class="flex flex-col gap-1 text-xs">
+                <div class="flex items-center gap-1">
+                  <span class="text-gray-600 flex-1">Vlak ${i + 1} &nbsp;·&nbsp; ${z.opp.toLocaleString('nl-NL')} m²</span>
+                  <button onclick="removeZone('${tab.key}', ${z.id})"
+                    class="text-gray-300 hover:text-red-400 transition-colors leading-none flex-shrink-0"
+                    title="Verwijderen">×</button>
+                </div>
+                <div class="flex items-center gap-1 pl-0.5">
+                  <span class="text-gray-400 flex-shrink-0">Verdiepingen</span>
+                  <input type="number" min="0" step="1" value="${z.verdiepingen || 0}"
+                    onchange="setZoneVerdiepingen('${tab.key}', ${z.id}, this.value)"
+                    class="w-12 text-xs border border-gray-200 rounded px-1 py-0.5 text-right focus:outline-none focus:border-violet-400">
+                </div>
               </div>`).join('');
             const listHtml = obstacleItems.map((o, i) => {
               const t = getObstacleType(o.type);

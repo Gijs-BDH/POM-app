@@ -72,9 +72,7 @@
         </div>
         <div id="map"></div>
         <div id="map3d" class="hidden"></div>
-        <p id="map-hint" class="text-xs text-gray-400 mt-2 text-center hidden">
-          Klik om punten te plaatsen &nbsp;·&nbsp; dubbelklik of druk op Enter om te voltooien
-        </p>
+        <p id="map-hint" class="text-xs text-gray-400 mt-2 text-center hidden"></p>
       </div>
 
       </div><!-- end pdf+map wrapper -->
@@ -107,6 +105,10 @@
             <div class="flex justify-between text-xs" style="color:#0EA5E9">
                 <span>· Bovenbouwplein</span>
                 <span id="opp-summary-bovenbouwPlein">— m²</span>
+            </div>
+            <div class="flex justify-between text-xs" style="color:#F59E0B">
+                <span>· Geen lesfunctie</span>
+                <span id="opp-summary-geenLesfunctie">— m²</span>
             </div>
             <div class="flex justify-between text-xs" style="color:#00fff2">
                 <span>· Vrije loopruimte</span>
@@ -299,9 +301,10 @@
 
     // Show stap-2 context layers (read-only)
     const CTX = [
-      { key: 'onbebouwdGebied', color: '#F97316' },
-      { key: 'uitsluiting',    color: '#EF4444' },
-      { key: 'parkeren',       color: '#3B82F6' },
+      { key: 'onbebouwdGebied',  color: '#F97316' },
+      { key: 'uitsluiting',      color: '#EF4444' },
+      { key: 'parkeren',         color: '#3B82F6' },
+      { key: 'fietsenstalling',  color: '#A855F7' },
     ];
     let hasBounds = false;
     CTX.forEach(c => {
@@ -324,17 +327,22 @@
     const TABS = [
       { key: 'onderbouwplein',  label: 'Voorkeurgebied onderbouwplein',   color: '#22C55E' },
       { key: 'bovenbouwPlein',  label: 'Voorkeurgebied bovenbouw plein',  color: '#0EA5E9' },
-      // { key: 'loopruimte',  label: 'Vrije loopruimte',  color: '#00fff2' },
+      { key: 'geenLesfunctie',  label: 'Geen lesfunctie',                 color: '#F59E0B' },
+      { key: 'entree',          label: 'Entree',                          color: '#EC4899', kind: 'point' },
     ];
-    TABS.forEach(t => { if (!variant[t.key]) variant[t.key] = { geo: [], opp: 0 }; });
+    TABS.forEach(t => {
+      if (t.kind === 'point') return;
+      if (!variant[t.key]) variant[t.key] = { geo: [], opp: 0 };
+    });
 
     const layers = {};
-    TABS.forEach(t => { layers[t.key] = L.layerGroup().addTo(map); });
+    TABS.forEach(t => { if (t.kind !== 'point') layers[t.key] = L.layerGroup().addTo(map); });
 
     // ── Multi-zone state per tab ──────────────────────────────────────────────
     const tabZones = {};
     let nextZoneId = 1;
     TABS.forEach(t => {
+      if (t.kind === 'point') return;
       tabZones[t.key] = [];
       const data = variant[t.key];
       if (!data) return;
@@ -358,6 +366,56 @@
     let rubberbandLabel  = null;
     let areaLabel        = null;
     let firstPointCircle = null;
+
+    // ── Entree point state ────────────────────────────────────────────────────
+    let entreeMode   = false;
+    let entreeMarker = null;
+
+    function entreeDoorIcon() {
+      return L.divIcon({
+        html: `<div style="font-size:22px;line-height:1;transform:translate(-50%,-100%);filter:drop-shadow(0 1px 3px rgba(0,0,0,0.35))">🚪</div>`,
+        className: '', iconSize: [0, 0], iconAnchor: [0, 0]
+      });
+    }
+
+    if (variant.entree && variant.entree.lat != null) {
+      entreeMarker = L.marker([variant.entree.lat, variant.entree.lng],
+        { icon: entreeDoorIcon(), interactive: false }).addTo(map);
+    }
+
+    function placeEntree(latlng) {
+      if (entreeMarker) map.removeLayer(entreeMarker);
+      entreeMarker = L.marker([latlng.lat, latlng.lng],
+        { icon: entreeDoorIcon(), interactive: false }).addTo(map);
+      variant.entree = { lat: latlng.lat, lng: latlng.lng };
+      updateGebiedVariantById(gebiedId, { entree: { lat: latlng.lat, lng: latlng.lng } });
+      entreeMode = false;
+      map.getContainer().style.cursor = '';
+      document.getElementById('map-hint').classList.add('hidden');
+      renderTabs();
+    }
+
+    function removeEntree() {
+      if (entreeMarker) { map.removeLayer(entreeMarker); entreeMarker = null; }
+      variant.entree = null;
+      updateGebiedVariantById(gebiedId, { entree: null });
+      renderTabs();
+    }
+
+    function toggleEntreeMode() {
+      entreeMode = !entreeMode;
+      if (entreeMode) {
+        stopDrawing();
+        map.getContainer().style.cursor = 'crosshair';
+        const hint = document.getElementById('map-hint');
+        hint.textContent = 'Klik op de kaart om de entree te plaatsen';
+        hint.classList.remove('hidden');
+      } else {
+        map.getContainer().style.cursor = '';
+        document.getElementById('map-hint').classList.add('hidden');
+      }
+      renderTabs();
+    }
 
     function calcAreaM2(latlngs) {
       if (!latlngs || latlngs.length < 3) return 0;
@@ -496,6 +554,7 @@
 
     let clickTimer = null;
     map.on('click', e => {
+      if (entreeMode) { placeEntree(e.latlng); return; }
       if (!drawingMode) return;
       const latlng = e.latlng;
       // Snap-to-close check (≥3 points)
@@ -734,13 +793,16 @@
       if (drawingMode) {
         stopDrawing();
       } else {
+        entreeMode = false;
         activeTab = tab;
         drawingMode = true;
         drawPoints = [];
         currentPoly = null;
         map.getContainer().style.cursor = 'crosshair';
         map.getContainer().classList.add('drawing-crosshair');
-        document.getElementById('map-hint').classList.remove('hidden');
+        const hint = document.getElementById('map-hint');
+        hint.textContent = 'Klik om punten te plaatsen · dubbelklik of druk op Enter om te voltooien';
+        hint.classList.remove('hidden');
       }
       renderTabs();
     }
@@ -754,58 +816,93 @@
       container.innerHTML = '';
 
       TABS.forEach((tab, idx) => {
-        const zones = tabZones[tab.key];
-        const isDone = zones.length > 0;
+        const isPoint  = tab.kind === 'point';
+        const zones    = isPoint ? [] : tabZones[tab.key];
+        const isDone   = isPoint
+          ? (variant.entree && variant.entree.lat != null)
+          : zones.length > 0;
         const isActive = activeTab && activeTab.key === tab.key;
 
         if (isActive) {
-          const isDrawing = drawingMode;
-          const totalOpp = zones.reduce((s, z) => s + z.opp, 0);
           const card = document.createElement('div');
           card.className = 'card p-4 flex flex-col gap-3';
           card.style.border = '2px solid #7C3AED';
-          const zonesHtml = zones.map((z, i) => `
-            <div class="flex items-center gap-1 text-xs">
-              <span class="text-gray-600 flex-1">Zone ${i + 1}</span>
-              <span class="text-gray-400 flex-shrink-0">${z.opp.toLocaleString('nl-NL')} m²</span>
-              <button onclick="removeZone('${tab.key}', ${z.id})"
-                class="text-gray-300 hover:text-red-400 transition-colors leading-none flex-shrink-0"
-                title="Verwijderen">×</button>
-            </div>`).join('');
-          card.innerHTML = `
-            <h3 class="font-semibold text-sm text-gray-700">${tab.label}</h3>
-            <button onclick="toggleDrawing(TABS[${idx}])"
-              class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border transition-all ${isDrawing
-                ? 'border-red-300 text-red-500 hover:bg-red-50'
-                : 'border-violet-300 text-violet-600 hover:bg-violet-50'}">
-              ${isDrawing ? '✕ Stoppen met tekenen' : '✏ Teken zone'}
-            </button>
-            ${isDrawing ? `
-            <div class="flex items-center justify-between text-xs text-gray-400">
-              <span>Huidig vlak</span>
-              <span id="live-draw-opp">— m²</span>
-            </div>
-            <button id="btn-voltooien" onclick="finishDrawing()" disabled
-              class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border border-emerald-300 text-emerald-600 hover:bg-emerald-50 transition-all disabled:opacity-40 disabled:cursor-default">
-              ✓ Voltooien
-            </button>` : ''}
-            ${zonesHtml
-              ? `<div class="flex flex-col gap-1">${zonesHtml}</div>`
-              : '<p class="text-xs text-gray-300">Nog geen zones getekend</p>'}
-            <div class="flex items-center justify-between text-xs text-gray-500 pt-1 border-t border-gray-100">
-              <span>Totaal</span>
-              <span class="font-semibold text-violet-700">${totalOpp ? totalOpp.toLocaleString('nl-NL') + ' m²' : '— m²'}</span>
-            </div>
-            ${renderPveZoneList(tab.key, totalOpp)}
-            <button onclick="volgendeTab(${idx})" class="btn-secondary w-full text-sm py-2">overslaan</button>
-            <button onclick="volgendeTab(${idx})" class="btn-primary w-full text-sm py-2">volgende</button>`;
+
+          if (isPoint) {
+            // ── Entree (point placement) card ──────────────────────────────
+            const hasEntree = variant.entree && variant.entree.lat != null;
+            card.innerHTML = `
+              <h3 class="font-semibold text-sm text-gray-700">${tab.label}</h3>
+              <button onclick="toggleEntreeMode()"
+                class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border transition-all ${entreeMode
+                  ? 'border-red-300 text-red-500 hover:bg-red-50'
+                  : 'border-violet-300 text-violet-600 hover:bg-violet-50'}">
+                ${entreeMode ? '✕ Annuleren' : '🚪 Klik op kaart om te plaatsen'}
+              </button>
+              ${hasEntree
+                ? `<div class="flex items-center gap-1 text-xs">
+                    <span class="text-gray-600 flex-1">🚪 Entree geplaatst</span>
+                    <button onclick="removeEntree()"
+                      class="text-gray-300 hover:text-red-400 transition-colors leading-none"
+                      title="Verwijderen">×</button>
+                  </div>`
+                : '<p class="text-xs text-gray-300">Nog geen entree geplaatst</p>'}
+              <button onclick="volgendeTab(${idx})" class="btn-secondary w-full text-sm py-2">overslaan</button>
+              <button onclick="volgendeTab(${idx})" class="btn-primary w-full text-sm py-2">volgende</button>`;
+          } else {
+            // ── Polygon drawing card ────────────────────────────────────────
+            const isDrawing = drawingMode;
+            const totalOpp  = zones.reduce((s, z) => s + z.opp, 0);
+            const zonesHtml = zones.map((z, i) => `
+              <div class="flex items-center gap-1 text-xs">
+                <span class="text-gray-600 flex-1">Zone ${i + 1}</span>
+                <span class="text-gray-400 flex-shrink-0">${z.opp.toLocaleString('nl-NL')} m²</span>
+                <button onclick="removeZone('${tab.key}', ${z.id})"
+                  class="text-gray-300 hover:text-red-400 transition-colors leading-none flex-shrink-0"
+                  title="Verwijderen">×</button>
+              </div>`).join('');
+            card.innerHTML = `
+              <h3 class="font-semibold text-sm text-gray-700">${tab.label}</h3>
+              <button onclick="toggleDrawing(TABS[${idx}])"
+                class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border transition-all ${isDrawing
+                  ? 'border-red-300 text-red-500 hover:bg-red-50'
+                  : 'border-violet-300 text-violet-600 hover:bg-violet-50'}">
+                ${isDrawing ? '✕ Stoppen met tekenen' : '✏ Teken zone'}
+              </button>
+              ${isDrawing ? `
+              <div class="flex items-center justify-between text-xs text-gray-400">
+                <span>Huidig vlak</span>
+                <span id="live-draw-opp">— m²</span>
+              </div>
+              <button id="btn-voltooien" onclick="finishDrawing()" disabled
+                class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border border-emerald-300 text-emerald-600 hover:bg-emerald-50 transition-all disabled:opacity-40 disabled:cursor-default">
+                ✓ Voltooien
+              </button>` : ''}
+              ${zonesHtml
+                ? `<div class="flex flex-col gap-1">${zonesHtml}</div>`
+                : '<p class="text-xs text-gray-300">Nog geen zones getekend</p>'}
+              <div class="flex items-center justify-between text-xs text-gray-500 pt-1 border-t border-gray-100">
+                <span>Totaal</span>
+                <span class="font-semibold text-violet-700">${totalOpp ? totalOpp.toLocaleString('nl-NL') + ' m²' : '— m²'}</span>
+              </div>
+              ${renderPveZoneList(tab.key, totalOpp)}
+              <button onclick="volgendeTab(${idx})" class="btn-secondary w-full text-sm py-2">overslaan</button>
+              <button onclick="volgendeTab(${idx})" class="btn-primary w-full text-sm py-2">volgende</button>`;
+          }
           container.appendChild(card);
         } else {
           const pill = document.createElement('button');
           const activeIdx = TABS.findIndex(t => activeTab && t.key === activeTab.key);
           pill.className = 'tab-pill ' + (isDone ? 'done' : (idx > activeIdx ? 'pending' : ''));
           pill.textContent = (isDone ? '✓ ' : '') + tab.label;
-          pill.onclick = () => { stopDrawing(); activeTab = tab; renderTabs(); };
+          pill.onclick = () => {
+            stopDrawing();
+            entreeMode = false;
+            map.getContainer().style.cursor = '';
+            document.getElementById('map-hint').classList.add('hidden');
+            activeTab = tab;
+            renderTabs();
+          };
           container.appendChild(pill);
         }
       });
@@ -817,6 +914,9 @@
       } else {
         stopDrawing();
       }
+      entreeMode = false;
+      map.getContainer().style.cursor = '';
+      document.getElementById('map-hint').classList.add('hidden');
       if (currentIdx + 1 < TABS.length) {
         activeTab = TABS[currentIdx + 1];
         renderTabs();
