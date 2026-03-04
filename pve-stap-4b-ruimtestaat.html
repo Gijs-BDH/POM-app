@@ -871,7 +871,12 @@
         function closeRsPopup() { document.getElementById('rs-overlay').classList.remove('open'); }
 
         // ── Boot ──────────────────────────────────────────────────────────────────
+        STEPS.forEach(s => {
+            applyDefaultsForStep(s.n);
+        });
+
         restoreState();
+
         goToStep(1);
     </script>
     <script src="js/dashboard-detail.js"></script>
