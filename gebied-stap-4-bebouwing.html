@@ -33,1242 +33,1246 @@
     }
   </style>
 </head>
-<body class="min-h-screen bg-gray-50 p-8 gebied">
+<body class="min-h-screen bg-gray-50 p-8 gebied flex">
+    <div id="pom-page-content">
+        <div class="mx-auto">
+            <a href="project-overzicht.html" class="breadcrumb">← Project overzicht</a>
+            <h1 id="project-titel" class="page-title"></h1>
+            <div id="step-indicator" class="mb-6"></div>
 
-  <div class="mx-auto">
-    <a href="project-overzicht.html" class="breadcrumb">← Project overzicht</a>
-    <h1 id="project-titel" class="page-title"></h1>
-    <div id="step-indicator" class="mb-6"></div>
+            <div class="flex gap-5">
+                <div id="nav-panel" class="nav-panel"></div>
 
-    <div class="flex gap-5">
-      <div id="nav-panel" class="nav-panel"></div>
+                <!-- PDF viewer + Map -->
+                <div class="relative flex-1 flex gap-5">
 
-      <!-- PDF viewer + Map -->
-      <div class="relative flex-1 flex gap-5">
+                    <!-- Kavelpaspoort PDF Viewer -->
+                    <div id="kavelpaspoort-panel" class="card p-4 flex flex-col gap-3" style="position:absolute;left:0;top:0;height:100%;z-index:1000;width:14rem;transition:width 0.2s;display:none;">
+                        <div class="flex items-center justify-between gap-2">
+                            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest flex-1">Kavelpaspoort</h3>
+                            <div class="flex items-center gap-1">
+                                <button onclick="pdfZoom(-1)" class="text-gray-400 hover:text-violet-600 text-xs px-1.5 py-0.5 rounded border border-gray-200 hover:border-violet-300 transition-colors">−</button>
+                                <button onclick="pdfZoom(1)" class="text-gray-400 hover:text-violet-600 text-xs px-1.5 py-0.5 rounded border border-gray-200 hover:border-violet-300 transition-colors">+</button>
+                                <button id="pdf-expand-btn" onclick="togglePdfExpand()" title="Vergroten/verkleinen"
+                                        class="text-gray-400 hover:text-violet-600 text-xs px-1.5 py-0.5 rounded border border-gray-200 hover:border-violet-300 transition-colors">
+                                    ⇔
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex-1 rounded-lg overflow-hidden bg-gray-200" style="min-height:380px;">
+                            <iframe id="pdf-frame" src="" style="display:none;width:100%;height:100%;border:none;border-radius:8px;"></iframe>
+                        </div>
+                    </div>
 
-      <!-- Kavelpaspoort PDF Viewer -->
-      <div id="kavelpaspoort-panel" class="card p-4 flex flex-col gap-3" style="position:absolute;left:0;top:0;height:100%;z-index:1000;width:14rem;transition:width 0.2s;display:none;">
-        <div class="flex items-center justify-between gap-2">
-          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest flex-1">Kavelpaspoort</h3>
-          <div class="flex items-center gap-1">
-            <button onclick="pdfZoom(-1)" class="text-gray-400 hover:text-violet-600 text-xs px-1.5 py-0.5 rounded border border-gray-200 hover:border-violet-300 transition-colors">−</button>
-            <button onclick="pdfZoom(1)"  class="text-gray-400 hover:text-violet-600 text-xs px-1.5 py-0.5 rounded border border-gray-200 hover:border-violet-300 transition-colors">+</button>
-            <button id="pdf-expand-btn" onclick="togglePdfExpand()" title="Vergroten/verkleinen"
-              class="text-gray-400 hover:text-violet-600 text-xs px-1.5 py-0.5 rounded border border-gray-200 hover:border-violet-300 transition-colors">⇔</button>
-          </div>
+                    <!-- Map -->
+                    <div class="flex-1">
+                        <div class="flex justify-end mb-2">
+                            <div class="inline-flex rounded-lg border border-gray-200 bg-white p-0.5">
+                                <button id="btn-2d" onclick="setMapMode('2d')" class="px-3 py-1 text-xs rounded-md bg-violet-600 text-white">2D</button>
+                                <button id="btn-3d" onclick="setMapMode('3d')" class="px-3 py-1 text-xs rounded-md text-gray-500">3D</button>
+                            </div>
+                        </div>
+                        <div id="map"></div>
+                        <div id="map3d" class="hidden"></div>
+                        <p id="map-hint" class="text-xs text-gray-400 mt-2 text-center hidden">
+                            Klik om punten te plaatsen &nbsp;·&nbsp; dubbelklik of druk op Enter om te voltooien
+                        </p>
+                    </div>
+
+                </div><!-- end pdf+map wrapper -->
+                <!-- Right: tab list + summary -->
+                <div class="w-52 flex-shrink-0 flex flex-col gap-3">
+                    <div id="tabs-container" class="flex flex-col gap-2"></div>
+                    <div class="card p-4 flex flex-col gap-2" style="display:none">
+                        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Oppervlak</h3>
+                        <div class="flex justify-between text-xs text-gray-500">
+                            <span>Bouwvlak</span>
+                            <span id="opp-summary-bouwvlak">— m²</span>
+                        </div>
+                        <div class="flex justify-between text-xs" style="color:#F97316"><span>· Onbebouwd</span><span id="opp-summary-onbebouwdGebied">— m²</span></div>
+                        <div class="flex justify-between text-xs" style="color:#EF4444"><span>· Uitsluiting</span><span id="opp-summary-uitsluiting">— m²</span></div>
+                        <div class="flex justify-between text-xs" style="color:#3B82F6"><span>· Parkeren</span><span id="opp-summary-parkeren">— m²</span></div>
+                        <div class="flex justify-between text-xs" style="color:#22C55E"><span>· Onderbouwplein</span><span id="opp-summary-onderbouwplein">— m²</span></div>
+                        <div class="flex justify-between text-xs" style="color:#0EA5E9"><span>· Bovenbouwplein</span><span id="opp-summary-bovenbouwPlein">— m²</span></div>
+                        <div class="flex justify-between text-xs" style="color:#A855F7"><span>· Fietsenstalling</span><span id="opp-summary-fietsenstalling">— m²</span></div>
+                        <div class="border-t border-gray-100 pt-1 mt-1 flex justify-between text-xs" style="color:#F59E0B"><span>· Obstakels</span><span id="opp-summary-obstakels">— m²</span></div>
+                        <div class="border-t border-gray-100 pt-2 flex justify-between text-xs font-semibold">
+                            <span class="text-gray-700">Bebouwbaar</span>
+                            <span id="bebouwbaar-opp-display" class="text-emerald-600">— m²</span>
+                        </div>
+                        <div id="pve-compat-container" class="hidden flex flex-col gap-1 pt-2 border-t border-gray-100">
+                            <div class="text-xs font-semibold text-gray-400 uppercase tracking-widest" style="letter-spacing:0.05em">PVE grondvlak</div>
+                            <div id="pve-compat-list" class="flex flex-col gap-1"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="flex-1 rounded-lg overflow-hidden bg-gray-200" style="min-height:380px;">
-          <iframe id="pdf-frame" src="" style="display:none;width:100%;height:100%;border:none;border-radius:8px;"></iframe>
-        </div>
-      </div>
-
-      <!-- Map -->
-      <div class="flex-1">
-        <div class="flex justify-end mb-2">
-          <div class="inline-flex rounded-lg border border-gray-200 bg-white p-0.5">
-            <button id="btn-2d" onclick="setMapMode('2d')" class="px-3 py-1 text-xs rounded-md bg-violet-600 text-white">2D</button>
-            <button id="btn-3d" onclick="setMapMode('3d')" class="px-3 py-1 text-xs rounded-md text-gray-500">3D</button>
-          </div>
-        </div>
-        <div id="map"></div>
-        <div id="map3d" class="hidden"></div>
-        <p id="map-hint" class="text-xs text-gray-400 mt-2 text-center hidden">
-          Klik om punten te plaatsen &nbsp;·&nbsp; dubbelklik of druk op Enter om te voltooien
-        </p>
-      </div>
-
-      </div><!-- end pdf+map wrapper -->
-
-      <!-- Right: tab list + summary -->
-      <div class="w-52 flex-shrink-0 flex flex-col gap-3">
-        <div id="tabs-container" class="flex flex-col gap-2"></div>
-        <div class="card p-4 flex flex-col gap-2" style="display:none">
-          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Oppervlak</h3>
-          <div class="flex justify-between text-xs text-gray-500">
-            <span>Bouwvlak</span>
-            <span id="opp-summary-bouwvlak">— m²</span>
-          </div>
-          <div class="flex justify-between text-xs" style="color:#F97316"><span>· Onbebouwd</span><span id="opp-summary-onbebouwdGebied">— m²</span></div>
-          <div class="flex justify-between text-xs" style="color:#EF4444"><span>· Uitsluiting</span><span id="opp-summary-uitsluiting">— m²</span></div>
-          <div class="flex justify-between text-xs" style="color:#3B82F6"><span>· Parkeren</span><span id="opp-summary-parkeren">— m²</span></div>
-          <div class="flex justify-between text-xs" style="color:#22C55E"><span>· Onderbouwplein</span><span id="opp-summary-onderbouwplein">— m²</span></div>
-          <div class="flex justify-between text-xs" style="color:#0EA5E9"><span>· Bovenbouwplein</span><span id="opp-summary-bovenbouwPlein">— m²</span></div>
-          <div class="flex justify-between text-xs" style="color:#A855F7"><span>· Fietsenstalling</span><span id="opp-summary-fietsenstalling">— m²</span></div>
-          <div class="border-t border-gray-100 pt-1 mt-1 flex justify-between text-xs" style="color:#F59E0B"><span>· Obstakels</span><span id="opp-summary-obstakels">— m²</span></div>
-          <div class="border-t border-gray-100 pt-2 flex justify-between text-xs font-semibold">
-            <span class="text-gray-700">Bebouwbaar</span>
-            <span id="bebouwbaar-opp-display" class="text-emerald-600">— m²</span>
-          </div>
-          <div id="pve-compat-container" class="hidden flex flex-col gap-1 pt-2 border-t border-gray-100">
-            <div class="text-xs font-semibold text-gray-400 uppercase tracking-widest" style="letter-spacing:0.05em">PVE grondvlak</div>
-            <div id="pve-compat-list" class="flex flex-col gap-1"></div>
-          </div>
-        </div>
-      </div>
     </div>
-  </div>
+    <div class="ml-6" data-role="bot"></div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>window.CESIUM_BASE_URL = 'https://cdn.jsdelivr.net/npm/cesium@1.107/Build/Cesium/';</script>
+    <script src="https://cdn.jsdelivr.net/npm/cesium@1.107/Build/Cesium/Cesium.js"></script>
+    <script src="js/cesium-maplibre-shim.js?v=20261031"></script>
+    <script src="js/state.js"></script>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const gebiedId = params.get('id');
+        const project = getCurrentProject();
+        if (!project) { window.location.href = 'index.html'; }
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script>window.CESIUM_BASE_URL = 'https://cdn.jsdelivr.net/npm/cesium@1.107/Build/Cesium/';</script>
-  <script src="https://cdn.jsdelivr.net/npm/cesium@1.107/Build/Cesium/Cesium.js"></script>
-  <script src="js/cesium-maplibre-shim.js?v=20261031"></script>
-  <script src="js/state.js"></script>
-  <script>
-    const params   = new URLSearchParams(window.location.search);
-    const gebiedId = params.get('id');
-    const project  = getCurrentProject();
-    if (!project) { window.location.href = 'index.html'; }
+        let variant = (project.gebiedVarianten || []).find(g => g.id === gebiedId);
+        if (!variant) { window.location.href = 'project-overzicht.html'; }
 
-    let variant = (project.gebiedVarianten || []).find(g => g.id === gebiedId);
-    if (!variant) { window.location.href = 'project-overzicht.html'; }
+        // ── Kavelpaspoort PDF Viewer ──────────────────────────────────────────────
+        let pdfExpanded = false;
+        const PDF_ZOOMS = [50, 75, 100, 125, 150, 175, 200];
+        let pdfZoomIdx = 0;
 
-    // ── Kavelpaspoort PDF Viewer ──────────────────────────────────────────────
-    let pdfExpanded = false;
-    const PDF_ZOOMS = [50, 75, 100, 125, 150, 175, 200];
-    let pdfZoomIdx = 0;
-
-    function togglePdfExpand() {
-      pdfExpanded = !pdfExpanded;
-      const panel = document.getElementById('kavelpaspoort-panel');
-      const btn   = document.getElementById('pdf-expand-btn');
-      panel.style.width = pdfExpanded ? '48%' : '14rem';
-      btn.textContent   = pdfExpanded ? '⇤' : '⇔';
-      setTimeout(() => {
-        const frame = document.getElementById('pdf-frame');
-        if (frame.style.display !== 'none') {
-          frame.src = `public/kavelpaspoort.pdf?z=${PDF_ZOOMS[pdfZoomIdx]}#toolbar=0&navpanes=0&zoom=${PDF_ZOOMS[pdfZoomIdx]}`;
+        function togglePdfExpand() {
+            pdfExpanded = !pdfExpanded;
+            const panel = document.getElementById('kavelpaspoort-panel');
+            const btn = document.getElementById('pdf-expand-btn');
+            panel.style.width = pdfExpanded ? '48%' : '14rem';
+            btn.textContent = pdfExpanded ? '⇤' : '⇔';
+            setTimeout(() => {
+                const frame = document.getElementById('pdf-frame');
+                if (frame.style.display !== 'none') {
+                    frame.src = `public/kavelpaspoort.pdf?z=${PDF_ZOOMS[pdfZoomIdx]}#toolbar=0&navpanes=0&zoom=${PDF_ZOOMS[pdfZoomIdx]}`;
+                }
+            }, 220);
         }
-      }, 220);
-    }
 
-    function pdfZoom(dir) {
-      pdfZoomIdx = Math.max(0, Math.min(PDF_ZOOMS.length - 1, pdfZoomIdx + dir));
-      const frame = document.getElementById('pdf-frame');
-      if (frame.style.display !== 'none') {
-        frame.src = `public/kavelpaspoort.pdf?z=${PDF_ZOOMS[pdfZoomIdx]}#toolbar=0&navpanes=0&zoom=${PDF_ZOOMS[pdfZoomIdx]}`;
-      }
-    }
-
-    function loadKavelpaspoortPdf() {
-      const panel = document.getElementById('kavelpaspoort-panel');
-      const frame = document.getElementById('pdf-frame');
-      if (variant.kavelpaspoort) {
-        panel.style.display = '';
-        frame.src = `public/kavelpaspoort.pdf?z=${PDF_ZOOMS[pdfZoomIdx]}#toolbar=0&navpanes=0&zoom=${PDF_ZOOMS[pdfZoomIdx]}`;
-        frame.style.display = 'block';
-      } else {
-        panel.style.display = 'none';
-        frame.src = '';
-        frame.style.display = 'none';
-      }
-    }
-
-    loadKavelpaspoortPdf();
-
-    document.getElementById('project-titel').textContent = project.naam;
-    document.getElementById('step-indicator').innerHTML  = renderStepIndicator(5, 6, ['gebied-stap-1-locatie.html', 'gebied-stap-2-stedenbouw.html?id=' + gebiedId, 'gebied-stap-3-programma.html?id=' + gebiedId]);
-    document.getElementById('nav-panel').innerHTML       = renderNavPanel('gebied', project);
-
-    // ── Map ───────────────────────────────────────────────────────────────────
-    const MAP_VIEW_KEY = 'pom_map_view_gebied_' + project.id;
-    const savedView = JSON.parse(localStorage.getItem(MAP_VIEW_KEY) || 'null');
-    const map = L.map('map').setView(
-      savedView ? [savedView.lat, savedView.lng] : [52.2, 5.3],
-      savedView ? savedView.zoom : 8
-    );
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 19
-    }).addTo(map);
-    map.on('moveend', () => {
-      const c = map.getCenter();
-      localStorage.setItem(MAP_VIEW_KEY, JSON.stringify({ lat: c.lat, lng: c.lng, zoom: map.getZoom() }));
-    });
-
-    const map3d = new maplibregl.Map({
-      container: 'map3d',
-      style: {
-        version: 8,
-        sources: { osm: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256 } },
-        layers: [{ id: 'osm', type: 'raster', source: 'osm' }]
-      },
-      center: [map.getCenter().lng, map.getCenter().lat],
-      zoom: map.getZoom(),
-      pitch: 55,
-      bearing: -15
-    });
-
-    function setMapMode(mode) {
-      const map2dEl = document.getElementById('map');
-      const map3dEl = document.getElementById('map3d');
-      const btn2d = document.getElementById('btn-2d');
-      const btn3d = document.getElementById('btn-3d');
-      if (mode === '3d') {
-        const c = map.getCenter();
-        map3d.setCenter([c.lng, c.lat]);
-        map3d.setZoom(map.getZoom());
-        map3dEl.style.width = map2dEl.offsetWidth + 'px';
-        map2dEl.classList.add('hidden');
-        map3dEl.classList.remove('hidden');
-        btn2d.className = 'px-3 py-1 text-xs rounded-md text-gray-500';
-        btn3d.className = 'px-3 py-1 text-xs rounded-md bg-violet-600 text-white';
-        map3d.resize();
-        syncLeafletTo3D();
-      } else {
-        const c = map3d.getCenter();
-        map.setView([c.lat, c.lng], map3d.getZoom());
-        map3dEl.classList.add('hidden');
-        map2dEl.classList.remove('hidden');
-        btn2d.className = 'px-3 py-1 text-xs rounded-md bg-violet-600 text-white';
-        btn3d.className = 'px-3 py-1 text-xs rounded-md text-gray-500';
-        map.invalidateSize();
-      }
-    }
-    window.setMapMode = setMapMode;
-
-    let map3dReady = false;
-    const sync3dSourceId = 'leaflet-polygons-src';
-    const obstacle3dPointSourceId = 'obstacles-points-src';
-    const obstacle3dVolumeSourceId = 'obstacles-volume-src';
-    function syncLeafletTo3D() {
-      if (!map3dReady) return;
-      const features = [];
-      map.eachLayer(layer => {
-        if (layer instanceof L.Polygon) {
-          const gj = layer.toGeoJSON();
-          if (gj && gj.geometry) {
-            gj.properties = {
-              fillColor: layer.options?.fillColor || layer.options?.color || '#7C3AED',
-              lineColor: layer.options?.color || '#4C1D95',
-              fillOpacity: layer.options?.fillOpacity ?? 0.22,
-              lineWidth: layer.options?.weight ?? 1.5,
-            };
-            features.push(gj);
-          }
+        function pdfZoom(dir) {
+            pdfZoomIdx = Math.max(0, Math.min(PDF_ZOOMS.length - 1, pdfZoomIdx + dir));
+            const frame = document.getElementById('pdf-frame');
+            if (frame.style.display !== 'none') {
+                frame.src = `public/kavelpaspoort.pdf?z=${PDF_ZOOMS[pdfZoomIdx]}#toolbar=0&navpanes=0&zoom=${PDF_ZOOMS[pdfZoomIdx]}`;
+            }
         }
-      });
-      const fc = { type: 'FeatureCollection', features };
-      const src = map3d.getSource(sync3dSourceId);
-      if (src) {
-        src.setData(fc);
-      } else {
-        map3d.addSource(sync3dSourceId, { type: 'geojson', data: fc });
-        map3d.addLayer({
-          id: 'leaflet-polygons-fill',
-          type: 'fill',
-          source: sync3dSourceId,
-          paint: {
-            'fill-color': ['coalesce', ['get', 'fillColor'], '#7C3AED'],
-            'fill-opacity': ['coalesce', ['get', 'fillOpacity'], 0.22]
-          }
-        });
-        map3d.addLayer({
-          id: 'leaflet-polygons-line',
-          type: 'line',
-          source: sync3dSourceId,
-          paint: {
-            'line-color': ['coalesce', ['get', 'lineColor'], '#4C1D95'],
-            'line-width': ['coalesce', ['get', 'lineWidth'], 1.5]
-          }
-        });
-      }
-    }
-    function circleFootprint(lng, lat, radiusM, steps = 16) {
-      const mToLng = 1 / (111320 * Math.cos(lat * Math.PI / 180));
-      const mToLat = 1 / 111320;
-      const ring = [];
-      for (let i = 0; i <= steps; i++) {
-        const a = (i / steps) * Math.PI * 2;
-        ring.push([lng + Math.cos(a) * radiusM * mToLng, lat + Math.sin(a) * radiusM * mToLat]);
-      }
-      return ring;
-    }
 
-    function rectFootprint(lng, lat, widthM, lengthM) {
-      const hw = widthM / 2;
-      const hl = lengthM / 2;
-      const mToLng = 1 / (111320 * Math.cos(lat * Math.PI / 180));
-      const mToLat = 1 / 111320;
-      const pts = [
-        [lng - hl * mToLng, lat - hw * mToLat],
-        [lng + hl * mToLng, lat - hw * mToLat],
-        [lng + hl * mToLng, lat + hw * mToLat],
-        [lng - hl * mToLng, lat + hw * mToLat],
-      ];
-      pts.push(pts[0]);
-      return pts;
-    }
-
-    function obstacleVolumeFeatures(o) {
-      const mToLng = 1 / (111320 * Math.cos(o.lat * Math.PI / 180));
-      const mToLat = 1 / 111320;
-      if (o.type === 'boom') {
-        return [
-          {
-            type: 'Feature',
-            geometry: { type: 'Polygon', coordinates: [circleFootprint(o.lng, o.lat, 0.16)] },
-            properties: { color: '#6B3F1F', h: 3.2, b: 0, op: 0.98 }
-          },
-          {
-            type: 'Feature',
-            geometry: { type: 'Polygon', coordinates: [circleFootprint(o.lng, o.lat, 1.45)] },
-            properties: { color: '#2F7D32', h: 5.4, b: 2.4, op: 0.94 }
-          },
-          {
-            type: 'Feature',
-            geometry: { type: 'Polygon', coordinates: [circleFootprint(o.lng - 0.95 * mToLng, o.lat + 0.2 * mToLat, 1.05)] },
-            properties: { color: '#2E7D32', h: 5.8, b: 3.0, op: 0.92 }
-          },
-          {
-            type: 'Feature',
-            geometry: { type: 'Polygon', coordinates: [circleFootprint(o.lng + 0.95 * mToLng, o.lat + 0.18 * mToLat, 1.0)] },
-            properties: { color: '#357A38', h: 5.8, b: 3.0, op: 0.92 }
-          },
-          {
-            type: 'Feature',
-            geometry: { type: 'Polygon', coordinates: [circleFootprint(o.lng - 0.35 * mToLng, o.lat - 0.95 * mToLat, 0.9)] },
-            properties: { color: '#3E8C41', h: 5.6, b: 2.9, op: 0.9 }
-          },
-          {
-            type: 'Feature',
-            geometry: { type: 'Polygon', coordinates: [circleFootprint(o.lng + 0.3 * mToLng, o.lat + 0.9 * mToLat, 0.85)] },
-            properties: { color: '#4C9A4A', h: 6.1, b: 3.4, op: 0.9 }
-          },
-          {
-            type: 'Feature',
-            geometry: { type: 'Polygon', coordinates: [circleFootprint(o.lng, o.lat + 0.15 * mToLat, 0.75)] },
-            properties: { color: '#66B56A', h: 7.0, b: 4.9, op: 0.88 }
-          }
-        ];
-      }
-      if (o.type === 'lamp') {
-        return [
-          {
-            type: 'Feature',
-            geometry: { type: 'Polygon', coordinates: [circleFootprint(o.lng, o.lat, 0.07)] },
-            properties: { color: '#9CA3AF', h: 4.8, b: 0, op: 0.98 }
-          },
-          {
-            type: 'Feature',
-            geometry: { type: 'Polygon', coordinates: [rectFootprint(o.lng + 0.32 * mToLng, o.lat, 0.07, 0.65)] },
-            properties: { color: '#D1D5DB', h: 4.95, b: 4.75, op: 0.98 }
-          },
-          {
-            type: 'Feature',
-            geometry: { type: 'Polygon', coordinates: [circleFootprint(o.lng + 0.62 * mToLng, o.lat, 0.18)] },
-            properties: { color: '#FEF3C7', h: 5.15, b: 4.8, op: 0.78 }
-          }
-        ];
-      }
-      return [
-        {
-          type: 'Feature',
-          geometry: { type: 'Polygon', coordinates: [rectFootprint(o.lng, o.lat, 0.55, 1.8)] },
-          properties: { color: '#A16207', h: 0.5, b: 0.45, op: 0.98 }
-        },
-        {
-          type: 'Feature',
-          geometry: { type: 'Polygon', coordinates: [rectFootprint(o.lng - 0.62 * mToLng, o.lat - 0.18 * mToLat, 0.1, 0.12)] },
-          properties: { color: '#6B4F3A', h: 0.45, b: 0, op: 0.98 }
-        },
-        {
-          type: 'Feature',
-          geometry: { type: 'Polygon', coordinates: [rectFootprint(o.lng + 0.62 * mToLng, o.lat - 0.18 * mToLat, 0.1, 0.12)] },
-          properties: { color: '#6B4F3A', h: 0.45, b: 0, op: 0.98 }
-        },
-        {
-          type: 'Feature',
-          geometry: { type: 'Polygon', coordinates: [rectFootprint(o.lng, o.lat + (0.3 * mToLat), 0.1, 1.8)] },
-          properties: { color: '#92400E', h: 1.1, b: 0.45, op: 0.98 }
+        function loadKavelpaspoortPdf() {
+            const panel = document.getElementById('kavelpaspoort-panel');
+            const frame = document.getElementById('pdf-frame');
+            if (variant.kavelpaspoort) {
+                panel.style.display = '';
+                frame.src = `public/kavelpaspoort.pdf?z=${PDF_ZOOMS[pdfZoomIdx]}#toolbar=0&navpanes=0&zoom=${PDF_ZOOMS[pdfZoomIdx]}`;
+                frame.style.display = 'block';
+            } else {
+                panel.style.display = 'none';
+                frame.src = '';
+                frame.style.display = 'none';
+            }
         }
-      ];
-    }
 
-    function syncObstaclesTo3D() {
-      if (!map3dReady) return;
-      const pointFc = {
-        type: 'FeatureCollection',
-        features: obstacleItems.map(o => {
-          const t = getObstacleType(o.type);
-          return {
-            type: 'Feature',
-            geometry: { type: 'Point', coordinates: [o.lng, o.lat] },
-            properties: { label: t.label, icon: t.icon }
-          };
-        })
-      };
-      const zoneFeatures = tabZones[OBSTAKEL_KEY]
-        .filter(z => z.geo && z.geo.length >= 3 && z.verdiepingen > 0)
-        .map(z => ({
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [[ ...z.geo.map(c => [c[1], c[0]]), [z.geo[0][1], z.geo[0][0]] ]]
-          },
-          properties: { color: '#F59E0B', h: z.verdiepingen * 3.5, b: 0, op: 0.7 }
-        }));
-      const volumeFc = {
-        type: 'FeatureCollection',
-        features: [...obstacleItems.flatMap(obstacleVolumeFeatures), ...zoneFeatures]
-      };
+        loadKavelpaspoortPdf();
 
-      if (!map3d.getSource(obstacle3dPointSourceId)) {
-        map3d.addSource(obstacle3dPointSourceId, { type: 'geojson', data: pointFc });
-      }
-      if (!map3d.getSource(obstacle3dVolumeSourceId)) {
-        map3d.addSource(obstacle3dVolumeSourceId, { type: 'geojson', data: volumeFc });
-      }
+        document.getElementById('project-titel').textContent = project.naam;
+        document.getElementById('step-indicator').innerHTML = renderStepIndicator(5, 6, ['gebied-stap-1-locatie.html', 'gebied-stap-2-stedenbouw.html?id=' + gebiedId, 'gebied-stap-3-programma.html?id=' + gebiedId]);
+        document.getElementById('nav-panel').innerHTML = renderNavPanel('gebied', project);
 
-      if (!map3d.getLayer('obstacles-objects-3d')) {
-        map3d.addLayer({
-          id: 'obstacles-objects-3d',
-          type: 'fill-extrusion',
-          source: obstacle3dVolumeSourceId,
-          paint: {
-            'fill-extrusion-color': ['coalesce', ['get', 'color'], '#9CA3AF'],
-            'fill-extrusion-height': ['coalesce', ['get', 'h'], 1],
-            'fill-extrusion-base': ['coalesce', ['get', 'b'], 0],
-            'fill-extrusion-opacity': ['coalesce', ['get', 'op'], 0.95]
-          }
-        });
-      }
-      if (!map3d.getLayer('obstacles-objects-3d-outline')) {
-        map3d.addLayer({
-          id: 'obstacles-objects-3d-outline',
-          type: 'line',
-          source: obstacle3dVolumeSourceId,
-          paint: {
-            'line-color': '#5B4636',
-            'line-width': 1
-          }
-        });
-      }
-      if (!map3d.getLayer('obstacles-points-label')) {
-        map3d.addLayer({
-          id: 'obstacles-points-label',
-          type: 'symbol',
-          source: obstacle3dPointSourceId,
-          layout: {
-            'text-field': ['concat', ['get', 'icon'], ' ', ['get', 'label']],
-            'text-size': 12,
-            'text-offset': [0, 1.2],
-            'text-anchor': 'top'
-          },
-          paint: { 'text-color': '#7C2D12' }
-        });
-      }
-
-      map3d.getSource(obstacle3dPointSourceId).setData(pointFc);
-      map3d.getSource(obstacle3dVolumeSourceId).setData(volumeFc);
-    }
-    map3d.on('load', () => { map3dReady = true; syncLeafletTo3D(); syncObstaclesTo3D(); });
-    map.on('layeradd', syncLeafletTo3D);
-    map.on('layerremove', syncLeafletTo3D);
-
-    // Stap-1 reference kavel (read-only dashed boundary)
-    if (variant.geo && variant.geo.length >= 3) {
-      L.polygon(variant.geo, { color: '#7C3AED', fillColor: '#7C3AED',
-        fillOpacity: 0.06, weight: 2, dashArray: '6 4' }).addTo(map);
-    }
-
-    // Context layers from previous steps (read-only)
-    const CTX = [
-      { key: 'onbebouwdGebied', color: '#F97316' },
-      { key: 'uitsluiting',    color: '#EF4444' },
-      { key: 'parkeren',       color: '#3B82F6' },
-      { key: 'onderbouwplein', color: '#22C55E' },
-      { key: 'bovenbouwPlein', color: '#0EA5E9' },
-      { key: 'fietsenstalling',color: '#A855F7' },
-    ];
-    let hasBounds = false;
-    CTX.forEach(c => {
-      const data = variant[c.key];
-      if (!data) return;
-      const toRender = (data.zones && data.zones.length > 0)
-        ? data.zones.filter(z => z.geo && z.geo.length >= 3)
-        : (data.geo && data.geo.length >= 3 ? [{ geo: data.geo }] : []);
-      toRender.forEach(z => {
-        const poly = L.polygon(z.geo, { color: c.color, fillColor: c.color, fillOpacity: 0.2, weight: 1.5, dashArray: '4 4' }).addTo(map);
-        if (!hasBounds && !savedView) { map.fitBounds(poly.getBounds(), { padding: [40, 40] }); hasBounds = true; }
-      });
-    });
-    if (!hasBounds && !savedView && variant.geo && variant.geo.length >= 3) {
-      map.fitBounds(L.polygon(variant.geo).getBounds(), { padding: [40, 40] });
-      hasBounds = true;
-    }
-
-    const TABS = [
-      { key: 'obstakels', label: 'Obstakels', color: '#F59E0B' },
-    ];
-    const OBSTAKEL_KEY = 'obstakels';
-    const OBSTAKEL_TYPES = [
-      { key: 'boom', label: 'Boom', icon: '🌳', opp: 4 },
-      { key: 'lamp', label: 'Lichtmast', icon: '💡', opp: 1 },
-      { key: 'bank', label: 'Bankje', icon: '🪑', opp: 2 },
-    ];
-    TABS.forEach(t => { if (!variant[t.key]) variant[t.key] = { geo: [], opp: 0 }; });
-
-    const layers = {};
-    TABS.forEach(t => { layers[t.key] = L.layerGroup().addTo(map); });
-
-    // ── Multi-zone state per tab ──────────────────────────────────────────────
-    const tabZones = {};
-    let nextZoneId = 1;
-    TABS.forEach(t => {
-      tabZones[t.key] = [];
-      const data = variant[t.key];
-      if (!data) return;
-      const zonesData = (data.zones && data.zones.length > 0)
-        ? data.zones
-        : (data.geo && data.geo.length >= 3 ? [{ geo: data.geo, opp: data.opp || 0 }] : []);
-      zonesData.forEach(z => {
-        if (z.geo && z.geo.length >= 3) {
-          const poly = L.polygon(z.geo, { color: t.color, fillColor: t.color, fillOpacity: 0.3, weight: 2 }).addTo(layers[t.key]);
-          tabZones[t.key].push({ id: nextZoneId++, geo: z.geo, opp: z.opp || 0, verdiepingen: Math.round(z.verdiepingen || 0), poly });
-        }
-      });
-    });
-
-    // ── Obstakels als sleepbare objecten ─────────────────────────────────────
-    const obstacleItems = [];
-    let nextObstacleId = 1;
-    let selectedObstacleId = null;
-
-    function getObstacleType(typeKey) {
-      return OBSTAKEL_TYPES.find(t => t.key === typeKey) || OBSTAKEL_TYPES[0];
-    }
-
-    function getObstacleMarkerIcon(type, isSelected) {
-      return L.divIcon({
-        className: '',
-        html: `<div style="font-size:1.25rem;line-height:1;display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:999px;${isSelected ? 'border:2px solid #7C3AED;background:rgba(124,58,237,0.12);' : ''}">${type.icon}</div>`,
-        iconSize: [28, 28],
-        iconAnchor: [14, 14]
-      });
-    }
-
-    function refreshObstacleMarkerSelection() {
-      obstacleItems.forEach(o => {
-        const type = getObstacleType(o.type);
-        o.marker.setIcon(getObstacleMarkerIcon(type, o.id === selectedObstacleId));
-      });
-    }
-
-    function createObstacleMarker(item) {
-      const type = getObstacleType(item.type);
-      const icon = getObstacleMarkerIcon(type, item.id === selectedObstacleId);
-      const marker = L.marker([item.lat, item.lng], { icon, draggable: true }).addTo(layers[OBSTAKEL_KEY]);
-      marker.on('dragend', e => {
-        const p = e.target.getLatLng();
-        item.lat = p.lat;
-        item.lng = p.lng;
-        saveObstacleItems();
-      });
-      marker.on('click', () => {
-        selectedObstacleId = item.id;
-        refreshObstacleMarkerSelection();
-        renderTabs();
-      });
-      marker.bindTooltip(type.label, { direction: 'top', offset: [0, -8] });
-      marker.on('contextmenu', e => {
-        L.DomEvent.stopPropagation(e);
-        removeObstacle(item.id);
-      });
-      marker.bindTooltip(`${type.label} (${type.opp} m²) · rechtermuisknop om te verwijderen`, { direction: 'top', offset: [0, -8] });
-      return marker;
-    }
-
-    function saveObstacleItems() {
-      const objects = obstacleItems.map(o => ({ id: o.id, type: o.type, lat: o.lat, lng: o.lng }));
-      const markersOpp = obstacleItems.reduce((sum, o) => {
-        const t = getObstacleType(o.type);
-        return sum + (t.opp || 0);
-      }, 0);
-      const zones = tabZones[OBSTAKEL_KEY].map(z => ({ geo: z.geo, opp: z.opp, verdiepingen: Math.round(z.verdiepingen || 0) }));
-      const zonesOpp = tabZones[OBSTAKEL_KEY].reduce((s, z) => s + z.opp, 0);
-      const totalOpp = markersOpp + zonesOpp;
-      if (!variant[OBSTAKEL_KEY]) variant[OBSTAKEL_KEY] = {};
-      variant[OBSTAKEL_KEY].objects = objects;
-      variant[OBSTAKEL_KEY].zones = zones;
-      variant[OBSTAKEL_KEY].geo = zones.length > 0 ? zones[0].geo : [];
-      variant[OBSTAKEL_KEY].opp = totalOpp;
-      updateGebiedVariantById(gebiedId, {
-        [OBSTAKEL_KEY]: { objects, zones, geo: variant[OBSTAKEL_KEY].geo, opp: totalOpp }
-      });
-      updateSummary();
-      syncObstaclesTo3D();
-    }
-
-    function addObstacle(typeKey) {
-      const center = map.getCenter();
-      const item = {
-        id: nextObstacleId++,
-        type: typeKey,
-        lat: center.lat,
-        lng: center.lng,
-        marker: null
-      };
-      item.marker = createObstacleMarker(item);
-      obstacleItems.push(item);
-      selectedObstacleId = item.id;
-      refreshObstacleMarkerSelection();
-      saveObstacleItems();
-      renderTabs();
-    }
-    function toggleStamping(typeKey) {
-      if (drawingMode) stopDrawing();
-      stampingObstacleType = stampingObstacleType === typeKey ? null : typeKey;
-      const hint = document.getElementById('map-hint');
-      if (stampingObstacleType) {
-        const type = getObstacleType(stampingObstacleType);
-        map.getContainer().style.cursor = 'copy';
-        hint.textContent = `Klik op de kaart om ${type.icon} ${type.label.toLowerCase()} te plaatsen`;
-        hint.classList.remove('hidden');
-      } else {
-        map.getContainer().style.cursor = '';
-        hint.classList.add('hidden');
-      }
-      renderTabs();
-    }
-
-    function removeObstacle(id) {
-      const idx = obstacleItems.findIndex(o => o.id === id);
-      if (idx === -1) return;
-      map.removeLayer(obstacleItems[idx].marker);
-      obstacleItems.splice(idx, 1);
-      if (selectedObstacleId === id) selectedObstacleId = null;
-      refreshObstacleMarkerSelection();
-      saveObstacleItems();
-      renderTabs();
-    }
-
-    function removeSelectedObstacle() {
-      if (!selectedObstacleId) return;
-      removeObstacle(selectedObstacleId);
-    }
-
-    document.addEventListener('keydown', (e) => {
-      const target = e.target;
-      const tag = (target && target.tagName) ? target.tagName.toUpperCase() : '';
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return;
-      if (e.key !== 'Delete') return;
-      if (!selectedObstacleId) return;
-      e.preventDefault();
-      removeSelectedObstacle();
-    });
-
-    const storedObstacles = (variant[OBSTAKEL_KEY] && variant[OBSTAKEL_KEY].objects) || [];
-    storedObstacles.forEach(o => {
-      if (typeof o.lat !== 'number' || typeof o.lng !== 'number') return;
-      const item = {
-        id: o.id || nextObstacleId++,
-        type: o.type || OBSTAKEL_TYPES[0].key,
-        lat: o.lat,
-        lng: o.lng,
-        marker: null
-      };
-      nextObstacleId = Math.max(nextObstacleId, item.id + 1);
-      item.marker = createObstacleMarker(item);
-      obstacleItems.push(item);
-    });
-
-    // ── Drawing state ─────────────────────────────────────────────────────────
-    let activeTab             = null;
-    let drawingMode           = false;
-    let drawPoints            = [];
-    let currentPoly           = null;
-    let rubberbandLine        = null;
-    let rubberbandLabel  = null;
-    let areaLabel        = null;
-    let firstPointCircle      = null;
-    let stampingObstacleType  = null; // typeKey being stamped, or null
-
-    function calcAreaM2(latlngs) {
-      if (!latlngs || latlngs.length < 3) return 0;
-      let area = 0;
-      const n = latlngs.length;
-      for (let i = 0; i < n; i++) {
-        const j = (i + 1) % n;
-        area += latlngs[i].lat * latlngs[j].lng;
-        area -= latlngs[j].lat * latlngs[i].lng;
-      }
-      const DEG_TO_M = 111320;
-      return Math.round(Math.abs(area / 2) * DEG_TO_M * DEG_TO_M * Math.cos(52 * Math.PI / 180));
-    }
-
-    function layerOpp(key) {
-      const data = variant[key];
-      if (!data) return 0;
-      if (data.zones && data.zones.length) return data.zones.reduce((sum, z) => sum + (z.opp || 0), 0);
-      return data.opp || 0;
-    }
-
-    // ── PVE ground-floor compatibility ───────────────────────────────────────
-    function calcMinGrondvlak(pveVariant) {
-      const rs = pveVariant && pveVariant.ruimtestaat;
-      if (!rs) return null;
-      const clusters = rs.clusters || [];
-      if (!clusters.length) return null;
-      return Math.round(clusters
-        .filter(c => c.verdiepingrestrictie)
-        .reduce((sum, c) => sum + c.rooms.reduce(
-          (s, r) => s + parseFloat(r.aantal) * parseFloat(r.oppervlakte), 0), 0));
-    }
-
-
-    // ── PVE breakdown tooltip helper ──────────────────────────────────────────
-    function pveBreakdownTooltip(totalOpp) {
-      const school = totalOpp * 0.77;
-      const gym = totalOpp * 0.15;
-      const voorschools = totalOpp * 0.1;
-      return `
-        <div class="absolute z-50 hidden group-hover:block bottom-full left-0 mb-1 bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
-          <div>School: ${school.toLocaleString('nl-NL', {maximumFractionDigits: 0})} m²</div>
-          <div>Gym: ${gym.toLocaleString('nl-NL', {maximumFractionDigits: 0})} m²</div>
-          <div>Voorschools: ${voorschools.toLocaleString('nl-NL', {maximumFractionDigits: 0})} m²</div>
-        </div>
-      `;
-    }
-
-    function updatePveCompatList(bebouwbaarOpp) {
-      const pveVarianten = project.pveVarianten || [];
-      const container = document.getElementById('pve-compat-container');
-      const listEl    = document.getElementById('pve-compat-list');
-      if (!container || !listEl) return;
-      if (pveVarianten.length === 0) { container.classList.add('hidden'); return; }
-      container.classList.remove('hidden');
-      listEl.innerHTML = pveVarianten.map(pv => {
-        const minOpp = calcMinGrondvlak(pv);
-        if (minOpp === null || minOpp === 0) {
-          return `<div class="flex items-center justify-between gap-1 text-xs">
-            <span class="truncate flex-1" style="color:#F97316" title="${pv.naam}">${pv.naam}</span>
-            <span class="flex-shrink-0" style="color:#D1D5DB">geen ruimtestaat</span>
-          </div>`;
-        }
-        const ok = bebouwbaarOpp > 0 && bebouwbaarOpp >= minOpp;
-        return `<div class="flex items-center justify-between gap-1 text-xs">
-          <span class="truncate flex-1" style="${ok ? 'color:#059669' : 'color:#F97316'}" title="${pv.naam}">${pv.naam}</span>
-          <span class="flex-shrink-0" style="${ok ? 'color:#059669' : 'color:#F97316'}">${minOpp.toLocaleString('nl-NL')} m²</span>
-          <span class="flex-shrink-0 font-semibold" style="${ok ? 'color:#059669' : 'color:#F97316'}">${ok ? '✓' : '✗'}</span>
-        </div>`;
-      }).join('');
-    }
-
-    function calcBebouwbaarOpp() {
-      const bouwvlakOpp = (variant.bouwbaarGebied && variant.bouwbaarGebied.opp) || variant.opp || 0;
-      let nietBebouwbaarOpp = 0;
-      ['onbebouwdGebied', 'uitsluiting', 'parkeren', 'onderbouwplein', 'bovenbouwPlein', 'fietsenstalling'].forEach(key => {
-        nietBebouwbaarOpp += layerOpp(key);
-      });
-      TABS.forEach(t => {
-        let opp = tabZones[t.key].reduce((s, z) => s + z.opp, 0);
-        if (t.key === OBSTAKEL_KEY) {
-          opp += obstacleItems.reduce((sum, o) => { const type = getObstacleType(o.type); return sum + (type.opp || 0); }, 0);
-        }
-        nietBebouwbaarOpp += opp;
-      });
-      return Math.max(0, bouwvlakOpp - nietBebouwbaarOpp);
-    }
-
-    function renderPveGrondvlakList(bebouwbaarOpp) {
-      const pveVarianten = project.pveVarianten || [];
-      if (pveVarianten.length === 0) return '';
-      const rows = pveVarianten.map(pv => {
-        const minOpp = calcMinGrondvlak(pv);
-        if (minOpp === null || minOpp === 0) {
-          return `<div class="flex items-center justify-between gap-1 text-xs">
-            <span class="truncate flex-1" style="color:#F97316" title="${pv.naam}">${pv.naam}</span>
-            <span class="flex-shrink-0" style="color:#D1D5DB">geen ruimtestaat</span>
-          </div>`;
-        }
-        const ok = bebouwbaarOpp > 0 && bebouwbaarOpp >= minOpp;
-        return `<div class="flex items-center justify-between gap-1 text-xs">
-          <span class="truncate flex-1" style="${ok ? 'color:#059669' : 'color:#F97316'}" title="${pv.naam}">${pv.naam}</span>
-          <span class="flex-shrink-0" style="${ok ? 'color:#059669' : 'color:#F97316'}">${minOpp.toLocaleString('nl-NL')} m²</span>
-          <span class="flex-shrink-0 font-semibold" style="${ok ? 'color:#059669' : 'color:#F97316'}">${ok ? '✓' : '✗'}</span>
-        </div>`;
-      }).join('');
-      return `<div class="flex flex-col gap-1 pt-2 border-t border-gray-100">
-        <div class="text-xs font-semibold text-gray-400 uppercase tracking-widest" style="letter-spacing:0.05em">PVE grondvlak</div>
-        ${rows}
-      </div>`;
-    }
-
-    function updateSummary() {
-      const bouwvlakOpp = (variant.bouwbaarGebied && variant.bouwbaarGebied.opp) || variant.opp || 0;
-      document.getElementById('opp-summary-bouwvlak').textContent = bouwvlakOpp ? bouwvlakOpp.toLocaleString('nl-NL') + ' m²' : '— m²';
-      let nietBebouwbaarOpp = 0;
-      ['onbebouwdGebied', 'uitsluiting', 'parkeren', 'onderbouwplein', 'bovenbouwPlein', 'fietsenstalling'].forEach(key => {
-        const el = document.getElementById('opp-summary-' + key);
-        if (!el) return;
-        const opp = layerOpp(key);
-        el.textContent = opp ? opp.toLocaleString('nl-NL') + ' m²' : '— m²';
-        nietBebouwbaarOpp += opp;
-      });
-      TABS.forEach(t => {
-        const el = document.getElementById('opp-summary-' + t.key);
-        if (!el) return;
-        let opp = tabZones[t.key].reduce((s, z) => s + z.opp, 0);
-        if (t.key === OBSTAKEL_KEY) {
-          opp += obstacleItems.reduce((sum, o) => {
-            const type = getObstacleType(o.type);
-            return sum + (type.opp || 0);
-          }, 0);
-        }
-        el.textContent = opp ? opp.toLocaleString('nl-NL') + ' m²' : '— m²';
-        nietBebouwbaarOpp += opp;
-      });
-      const bebouwbaarOpp = Math.max(0, bouwvlakOpp - nietBebouwbaarOpp);
-      document.getElementById('bebouwbaar-opp-display').textContent = bebouwbaarOpp.toLocaleString('nl-NL') + ' m²';
-      updatePveCompatList(bebouwbaarOpp);
-    }
-
-    let clickTimer = null;
-    map.on('click', e => {
-      if (stampingObstacleType && activeTab && activeTab.key === OBSTAKEL_KEY) {
-        const item = {
-          id: nextObstacleId++,
-          type: stampingObstacleType,
-          lat: e.latlng.lat,
-          lng: e.latlng.lng,
-          marker: null
-        };
-        item.marker = createObstacleMarker(item);
-        obstacleItems.push(item);
-        saveObstacleItems();
-        renderTabs();
-        return;
-      }
-      if (!drawingMode) return;
-      const latlng = e.latlng;
-      // Snap-to-close check (≥3 points)
-      if (drawPoints.length >= 3) {
-        const firstPx = map.latLngToContainerPoint([drawPoints[0][0], drawPoints[0][1]]);
-        const curPx   = map.latLngToContainerPoint(latlng);
-        if (Math.hypot(firstPx.x - curPx.x, firstPx.y - curPx.y) < 15) {
-          clearTimeout(clickTimer);
-          finishDrawing();
-          return;
-        }
-      }
-      clearTimeout(clickTimer);
-      clickTimer = setTimeout(() => {
-        // Snap placement to 0.5 m steps along direction from last point
-        let placedLatlng = latlng;
-        if (drawPoints.length > 0) {
-          const from2     = [drawPoints[drawPoints.length - 1][0], drawPoints[drawPoints.length - 1][1]];
-          const DEG_TO_M2 = 111320;
-          const cosLat2   = Math.cos(from2[0] * Math.PI / 180);
-          const dLatM2    = (latlng.lat - from2[0]) * DEG_TO_M2;
-          const dLngM2    = (latlng.lng - from2[1]) * DEG_TO_M2 * cosLat2;
-          const rawDist2  = Math.hypot(dLatM2, dLngM2);
-          const snapDist2 = Math.round(rawDist2 / 0.5) * 0.5;
-          if (rawDist2 > 0.001 && snapDist2 > 0) {
-            const r = snapDist2 / rawDist2;
-            placedLatlng = L.latLng(from2[0] + (latlng.lat - from2[0]) * r,
-                                    from2[1] + (latlng.lng - from2[1]) * r);
-          }
-        }
-        drawPoints.push([placedLatlng.lat, placedLatlng.lng]);
-        // Re-anchor rubber-band from new last point to current cursor immediately
-        if (rubberbandLine) {
-          rubberbandLine.setLatLngs([[placedLatlng.lat, placedLatlng.lng], [latlng.lat, latlng.lng]]);
-        }
-        if (rubberbandLabel) { map.removeLayer(rubberbandLabel); rubberbandLabel = null; }
-        if (drawPoints.length === 1) {
-          firstPointCircle = L.circleMarker([placedLatlng.lat, placedLatlng.lng], {
-            radius: 5, color: activeTab.color, fillColor: activeTab.color,
-            fillOpacity: 1, weight: 2, interactive: false
-          }).addTo(map);
-        } else if (drawPoints.length === 2) {
-          if (currentPoly) map.removeLayer(currentPoly);
-          currentPoly = L.polyline(drawPoints, {
-            color: activeTab.color, weight: 2, dashArray: '5 4'
-          }).addTo(map);
-        } else {
-          if (currentPoly) map.removeLayer(currentPoly);
-          currentPoly = L.polygon(drawPoints, {
-            color: activeTab.color, fillColor: activeTab.color,
-            fillOpacity: 0.2, weight: 2, dashArray: '5 4'
-          }).addTo(map);
-          const liveOpp = calcAreaM2(drawPoints.map(p => L.latLng(p[0], p[1])));
-          const liveEl = document.getElementById('live-draw-opp');
-          if (liveEl) liveEl.textContent = liveOpp.toLocaleString('nl-NL') + ' m²';
-          const voltooienBtn = document.getElementById('btn-voltooien');
-          if (voltooienBtn) voltooienBtn.disabled = false;
-        }
-      }, 250);
-    });
-
-    document.addEventListener('mousemove', e => {
-      if (!drawingMode || drawPoints.length === 0) return;
-      const mapEl = document.getElementById('map');
-      if (!mapEl || mapEl.classList.contains('hidden')) return;
-      const rect = mapEl.getBoundingClientRect();
-      if (e.clientX < rect.left || e.clientX > rect.right ||
-          e.clientY < rect.top  || e.clientY > rect.bottom) return;
-      let target = map.containerPointToLatLng(
-        L.point(e.clientX - rect.left, e.clientY - rect.top)
-      );
-      let snapping = false;
-      if (drawPoints.length >= 3) {
-        const firstPx = map.latLngToContainerPoint([drawPoints[0][0], drawPoints[0][1]]);
-        const curPx   = map.latLngToContainerPoint(target);
-        if (Math.hypot(firstPx.x - curPx.x, firstPx.y - curPx.y) < 15) {
-          target = L.latLng(drawPoints[0][0], drawPoints[0][1]);
-          snapping = true;
-        }
-      }
-      const from = [drawPoints[drawPoints.length - 1][0], drawPoints[drawPoints.length - 1][1]];
-      let snappedDistM = 0;
-      if (!snapping) {
-        const DEG_TO_M = 111320;
-        const cosLat   = Math.cos(from[0] * Math.PI / 180);
-        const dLatM    = (target.lat - from[0]) * DEG_TO_M;
-        const dLngM    = (target.lng - from[1]) * DEG_TO_M * cosLat;
-        const rawDistM = Math.hypot(dLatM, dLngM);
-        snappedDistM   = Math.round(rawDistM / 0.5) * 0.5;
-        if (rawDistM > 0.001 && snappedDistM > 0) {
-          const ratio = snappedDistM / rawDistM;
-          target = L.latLng(from[0] + (target.lat - from[0]) * ratio,
-                            from[1] + (target.lng - from[1]) * ratio);
-        }
-      }
-      if (!rubberbandLine) {
-        rubberbandLine = L.polyline([from, [target.lat, target.lng]], {
-          color: activeTab ? activeTab.color : '#7C3AED',
-          weight: 1.5, dashArray: '6 4', opacity: 0.7, interactive: false
+        // ── Map ───────────────────────────────────────────────────────────────────
+        const MAP_VIEW_KEY = 'pom_map_view_gebied_' + project.id;
+        const savedView = JSON.parse(localStorage.getItem(MAP_VIEW_KEY) || 'null');
+        const map = L.map('map').setView(
+            savedView ? [savedView.lat, savedView.lng] : [52.2, 5.3],
+            savedView ? savedView.zoom : 8
+        );
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+            maxZoom: 19
         }).addTo(map);
-      } else {
-        rubberbandLine.setLatLngs([from, [target.lat, target.lng]]);
-      }
-      const midLat   = (from[0] + target.lat) / 2;
-      const midLng   = (from[1] + target.lng) / 2;
-      const labelTxt = snapping ? 'sluiten' : (snappedDistM >= 0.5 ? snappedDistM.toFixed(1) + ' m' : '');
-      if (labelTxt) {
-        const icon = L.divIcon({
-          html: `<div class="rubberband-label">${labelTxt}</div>`,
-          className: '', iconSize: [0, 0], iconAnchor: [0, 0]
+        map.on('moveend', () => {
+            const c = map.getCenter();
+            localStorage.setItem(MAP_VIEW_KEY, JSON.stringify({ lat: c.lat, lng: c.lng, zoom: map.getZoom() }));
         });
-        if (!rubberbandLabel) {
-          rubberbandLabel = L.marker([midLat, midLng], { icon, interactive: false, zIndexOffset: 1000 }).addTo(map);
-        } else {
-          rubberbandLabel.setLatLng([midLat, midLng]);
-          rubberbandLabel.setIcon(icon);
+
+        const map3d = new maplibregl.Map({
+            container: 'map3d',
+            style: {
+                version: 8,
+                sources: { osm: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256 } },
+                layers: [{ id: 'osm', type: 'raster', source: 'osm' }]
+            },
+            center: [map.getCenter().lng, map.getCenter().lat],
+            zoom: map.getZoom(),
+            pitch: 55,
+            bearing: -15
+        });
+
+        function setMapMode(mode) {
+            const map2dEl = document.getElementById('map');
+            const map3dEl = document.getElementById('map3d');
+            const btn2d = document.getElementById('btn-2d');
+            const btn3d = document.getElementById('btn-3d');
+            if (mode === '3d') {
+                const c = map.getCenter();
+                map3d.setCenter([c.lng, c.lat]);
+                map3d.setZoom(map.getZoom());
+                map3dEl.style.width = map2dEl.offsetWidth + 'px';
+                map2dEl.classList.add('hidden');
+                map3dEl.classList.remove('hidden');
+                btn2d.className = 'px-3 py-1 text-xs rounded-md text-gray-500';
+                btn3d.className = 'px-3 py-1 text-xs rounded-md bg-violet-600 text-white';
+                map3d.resize();
+                syncLeafletTo3D();
+            } else {
+                const c = map3d.getCenter();
+                map.setView([c.lat, c.lng], map3d.getZoom());
+                map3dEl.classList.add('hidden');
+                map2dEl.classList.remove('hidden');
+                btn2d.className = 'px-3 py-1 text-xs rounded-md bg-violet-600 text-white';
+                btn3d.className = 'px-3 py-1 text-xs rounded-md text-gray-500';
+                map.invalidateSize();
+            }
         }
-      } else if (rubberbandLabel) {
-        map.removeLayer(rubberbandLabel); rubberbandLabel = null;
-      }
-      if (drawPoints.length >= 2) {
-        const allPts   = [...drawPoints, [target.lat, target.lng]];
-        const liveArea = calcAreaM2(allPts.map(p => L.latLng(p[0], p[1])));
-        const cLat = allPts.reduce((s, p) => s + p[0], 0) / allPts.length;
-        const cLng = allPts.reduce((s, p) => s + p[1], 0) / allPts.length;
-        if (liveArea > 0) {
-          const areaIcon = L.divIcon({
-            html: `<div class="area-label">${liveArea.toLocaleString('nl-NL')} m²</div>`,
-            className: '', iconSize: [0, 0], iconAnchor: [0, 0]
-          });
-          if (!areaLabel) {
-            areaLabel = L.marker([cLat, cLng], { icon: areaIcon, interactive: false, zIndexOffset: 999 }).addTo(map);
-          } else {
-            areaLabel.setLatLng([cLat, cLng]);
-            areaLabel.setIcon(areaIcon);
-          }
-        } else if (areaLabel) {
-          map.removeLayer(areaLabel); areaLabel = null;
+        window.setMapMode = setMapMode;
+
+        let map3dReady = false;
+        const sync3dSourceId = 'leaflet-polygons-src';
+        const obstacle3dPointSourceId = 'obstacles-points-src';
+        const obstacle3dVolumeSourceId = 'obstacles-volume-src';
+        function syncLeafletTo3D() {
+            if (!map3dReady) return;
+            const features = [];
+            map.eachLayer(layer => {
+                if (layer instanceof L.Polygon) {
+                    const gj = layer.toGeoJSON();
+                    if (gj && gj.geometry) {
+                        gj.properties = {
+                            fillColor: layer.options?.fillColor || layer.options?.color || '#7C3AED',
+                            lineColor: layer.options?.color || '#4C1D95',
+                            fillOpacity: layer.options?.fillOpacity ?? 0.22,
+                            lineWidth: layer.options?.weight ?? 1.5,
+                        };
+                        features.push(gj);
+                    }
+                }
+            });
+            const fc = { type: 'FeatureCollection', features };
+            const src = map3d.getSource(sync3dSourceId);
+            if (src) {
+                src.setData(fc);
+            } else {
+                map3d.addSource(sync3dSourceId, { type: 'geojson', data: fc });
+                map3d.addLayer({
+                    id: 'leaflet-polygons-fill',
+                    type: 'fill',
+                    source: sync3dSourceId,
+                    paint: {
+                        'fill-color': ['coalesce', ['get', 'fillColor'], '#7C3AED'],
+                        'fill-opacity': ['coalesce', ['get', 'fillOpacity'], 0.22]
+                    }
+                });
+                map3d.addLayer({
+                    id: 'leaflet-polygons-line',
+                    type: 'line',
+                    source: sync3dSourceId,
+                    paint: {
+                        'line-color': ['coalesce', ['get', 'lineColor'], '#4C1D95'],
+                        'line-width': ['coalesce', ['get', 'lineWidth'], 1.5]
+                    }
+                });
+            }
         }
-      } else if (areaLabel) {
-        map.removeLayer(areaLabel); areaLabel = null;
-      }
-      if (firstPointCircle) {
-        const col = snapping ? '#10B981' : (activeTab ? activeTab.color : '#7C3AED');
-        firstPointCircle.setStyle({ color: col, fillColor: col });
-      }
-    });
+        function circleFootprint(lng, lat, radiusM, steps = 16) {
+            const mToLng = 1 / (111320 * Math.cos(lat * Math.PI / 180));
+            const mToLat = 1 / 111320;
+            const ring = [];
+            for (let i = 0; i <= steps; i++) {
+                const a = (i / steps) * Math.PI * 2;
+                ring.push([lng + Math.cos(a) * radiusM * mToLng, lat + Math.sin(a) * radiusM * mToLat]);
+            }
+            return ring;
+        }
 
-    function finishDrawing() {
-      if (!drawingMode || drawPoints.length < 3) return;
-      clearTimeout(clickTimer);
-      if (rubberbandLine)   { map.removeLayer(rubberbandLine);   rubberbandLine   = null; }
-      if (rubberbandLabel)  { map.removeLayer(rubberbandLabel);  rubberbandLabel  = null; }
-      if (areaLabel)        { map.removeLayer(areaLabel);        areaLabel        = null; }
-      if (firstPointCircle) { map.removeLayer(firstPointCircle); firstPointCircle = null; }
-      const tab = activeTab;
-      const geo = drawPoints.slice();
-      const opp = calcAreaM2(drawPoints.map(p => L.latLng(p[0], p[1])));
-      if (currentPoly) map.removeLayer(currentPoly);
-      const finalPoly = L.polygon(geo, {
-        color: tab.color, fillColor: tab.color, fillOpacity: 0.3, weight: 2
-      }).addTo(layers[tab.key]);
-      tabZones[tab.key].push({ id: nextZoneId++, geo, opp, verdiepingen: 0, poly: finalPoly });
-      drawingMode = false;
-      currentPoly = null;
-      drawPoints = [];
-      map.getContainer().style.cursor = '';
-      map.getContainer().classList.remove('drawing-crosshair');
-      document.getElementById('map-hint').classList.add('hidden');
-      saveTabZones(tab.key);
-      renderTabs();
-    }
+        function rectFootprint(lng, lat, widthM, lengthM) {
+            const hw = widthM / 2;
+            const hl = lengthM / 2;
+            const mToLng = 1 / (111320 * Math.cos(lat * Math.PI / 180));
+            const mToLat = 1 / 111320;
+            const pts = [
+                [lng - hl * mToLng, lat - hw * mToLat],
+                [lng + hl * mToLng, lat - hw * mToLat],
+                [lng + hl * mToLng, lat + hw * mToLat],
+                [lng - hl * mToLng, lat + hw * mToLat],
+            ];
+            pts.push(pts[0]);
+            return pts;
+        }
 
-    map.on('dblclick', e => {
-      if (!drawingMode || !currentPoly || drawPoints.length < 3) return;
-      clearTimeout(clickTimer);
-      finishDrawing();
-    });
+        function obstacleVolumeFeatures(o) {
+            const mToLng = 1 / (111320 * Math.cos(o.lat * Math.PI / 180));
+            const mToLat = 1 / 111320;
+            if (o.type === 'boom') {
+                return [
+                    {
+                        type: 'Feature',
+                        geometry: { type: 'Polygon', coordinates: [circleFootprint(o.lng, o.lat, 0.16)] },
+                        properties: { color: '#6B3F1F', h: 3.2, b: 0, op: 0.98 }
+                    },
+                    {
+                        type: 'Feature',
+                        geometry: { type: 'Polygon', coordinates: [circleFootprint(o.lng, o.lat, 1.45)] },
+                        properties: { color: '#2F7D32', h: 5.4, b: 2.4, op: 0.94 }
+                    },
+                    {
+                        type: 'Feature',
+                        geometry: { type: 'Polygon', coordinates: [circleFootprint(o.lng - 0.95 * mToLng, o.lat + 0.2 * mToLat, 1.05)] },
+                        properties: { color: '#2E7D32', h: 5.8, b: 3.0, op: 0.92 }
+                    },
+                    {
+                        type: 'Feature',
+                        geometry: { type: 'Polygon', coordinates: [circleFootprint(o.lng + 0.95 * mToLng, o.lat + 0.18 * mToLat, 1.0)] },
+                        properties: { color: '#357A38', h: 5.8, b: 3.0, op: 0.92 }
+                    },
+                    {
+                        type: 'Feature',
+                        geometry: { type: 'Polygon', coordinates: [circleFootprint(o.lng - 0.35 * mToLng, o.lat - 0.95 * mToLat, 0.9)] },
+                        properties: { color: '#3E8C41', h: 5.6, b: 2.9, op: 0.9 }
+                    },
+                    {
+                        type: 'Feature',
+                        geometry: { type: 'Polygon', coordinates: [circleFootprint(o.lng + 0.3 * mToLng, o.lat + 0.9 * mToLat, 0.85)] },
+                        properties: { color: '#4C9A4A', h: 6.1, b: 3.4, op: 0.9 }
+                    },
+                    {
+                        type: 'Feature',
+                        geometry: { type: 'Polygon', coordinates: [circleFootprint(o.lng, o.lat + 0.15 * mToLat, 0.75)] },
+                        properties: { color: '#66B56A', h: 7.0, b: 4.9, op: 0.88 }
+                    }
+                ];
+            }
+            if (o.type === 'lamp') {
+                return [
+                    {
+                        type: 'Feature',
+                        geometry: { type: 'Polygon', coordinates: [circleFootprint(o.lng, o.lat, 0.07)] },
+                        properties: { color: '#9CA3AF', h: 4.8, b: 0, op: 0.98 }
+                    },
+                    {
+                        type: 'Feature',
+                        geometry: { type: 'Polygon', coordinates: [rectFootprint(o.lng + 0.32 * mToLng, o.lat, 0.07, 0.65)] },
+                        properties: { color: '#D1D5DB', h: 4.95, b: 4.75, op: 0.98 }
+                    },
+                    {
+                        type: 'Feature',
+                        geometry: { type: 'Polygon', coordinates: [circleFootprint(o.lng + 0.62 * mToLng, o.lat, 0.18)] },
+                        properties: { color: '#FEF3C7', h: 5.15, b: 4.8, op: 0.78 }
+                    }
+                ];
+            }
+            return [
+                {
+                    type: 'Feature',
+                    geometry: { type: 'Polygon', coordinates: [rectFootprint(o.lng, o.lat, 0.55, 1.8)] },
+                    properties: { color: '#A16207', h: 0.5, b: 0.45, op: 0.98 }
+                },
+                {
+                    type: 'Feature',
+                    geometry: { type: 'Polygon', coordinates: [rectFootprint(o.lng - 0.62 * mToLng, o.lat - 0.18 * mToLat, 0.1, 0.12)] },
+                    properties: { color: '#6B4F3A', h: 0.45, b: 0, op: 0.98 }
+                },
+                {
+                    type: 'Feature',
+                    geometry: { type: 'Polygon', coordinates: [rectFootprint(o.lng + 0.62 * mToLng, o.lat - 0.18 * mToLat, 0.1, 0.12)] },
+                    properties: { color: '#6B4F3A', h: 0.45, b: 0, op: 0.98 }
+                },
+                {
+                    type: 'Feature',
+                    geometry: { type: 'Polygon', coordinates: [rectFootprint(o.lng, o.lat + (0.3 * mToLat), 0.1, 1.8)] },
+                    properties: { color: '#92400E', h: 1.1, b: 0.45, op: 0.98 }
+                }
+            ];
+        }
 
-    map.on('contextmenu', e => {
-      if (!drawingMode || !currentPoly || drawPoints.length < 3) return;
-      L.DomEvent.preventDefault(e);
-      clearTimeout(clickTimer);
-      finishDrawing();
-    });
+        function syncObstaclesTo3D() {
+            if (!map3dReady) return;
+            const pointFc = {
+                type: 'FeatureCollection',
+                features: obstacleItems.map(o => {
+                    const t = getObstacleType(o.type);
+                    return {
+                        type: 'Feature',
+                        geometry: { type: 'Point', coordinates: [o.lng, o.lat] },
+                        properties: { label: t.label, icon: t.icon }
+                    };
+                })
+            };
+            const zoneFeatures = tabZones[OBSTAKEL_KEY]
+                .filter(z => z.geo && z.geo.length >= 3 && z.verdiepingen > 0)
+                .map(z => ({
+                    type: 'Feature',
+                    geometry: {
+                        type: 'Polygon',
+                        coordinates: [[...z.geo.map(c => [c[1], c[0]]), [z.geo[0][1], z.geo[0][0]]]]
+                    },
+                    properties: { color: '#F59E0B', h: z.verdiepingen * 3.5, b: 0, op: 0.7 }
+                }));
+            const volumeFc = {
+                type: 'FeatureCollection',
+                features: [...obstacleItems.flatMap(obstacleVolumeFeatures), ...zoneFeatures]
+            };
 
-    function saveTabZones(key) {
-      const zones = tabZones[key].map(z => ({ geo: z.geo, opp: z.opp, verdiepingen: Math.round(z.verdiepingen || 0) }));
-      let totalOpp = tabZones[key].reduce((s, z) => s + z.opp, 0);
-      const updates = {};
-      if (key === OBSTAKEL_KEY) {
-        const markersOpp = obstacleItems.reduce((sum, o) => {
-          const t = getObstacleType(o.type);
-          return sum + (t.opp || 0);
-        }, 0);
-        totalOpp += markersOpp;
-        updates[key] = { objects: variant[OBSTAKEL_KEY].objects || [], zones, opp: totalOpp, geo: zones.length > 0 ? zones[0].geo : [] };
-      } else {
-        updates[key] = { zones, opp: totalOpp, geo: zones.length > 0 ? zones[0].geo : [] };
-      }
-      if (!variant[key]) variant[key] = {};
-      variant[key].zones = zones;
-      variant[key].opp = totalOpp;
-      variant[key].geo = updates[key].geo;
-      updateGebiedVariantById(gebiedId, updates);
-      updateSummary();
-      if (key === OBSTAKEL_KEY) syncObstaclesTo3D();
-    }
+            if (!map3d.getSource(obstacle3dPointSourceId)) {
+                map3d.addSource(obstacle3dPointSourceId, { type: 'geojson', data: pointFc });
+            }
+            if (!map3d.getSource(obstacle3dVolumeSourceId)) {
+                map3d.addSource(obstacle3dVolumeSourceId, { type: 'geojson', data: volumeFc });
+            }
 
-    function setZoneVerdiepingen(key, id, val) {
-      const z = tabZones[key].find(z => z.id === id);
-      if (!z) return;
-      z.verdiepingen = Math.max(0, Math.round(parseFloat(val) || 0));
-      if (key === OBSTAKEL_KEY) saveObstacleItems();
-      else saveTabZones(key);
-    }
+            if (!map3d.getLayer('obstacles-objects-3d')) {
+                map3d.addLayer({
+                    id: 'obstacles-objects-3d',
+                    type: 'fill-extrusion',
+                    source: obstacle3dVolumeSourceId,
+                    paint: {
+                        'fill-extrusion-color': ['coalesce', ['get', 'color'], '#9CA3AF'],
+                        'fill-extrusion-height': ['coalesce', ['get', 'h'], 1],
+                        'fill-extrusion-base': ['coalesce', ['get', 'b'], 0],
+                        'fill-extrusion-opacity': ['coalesce', ['get', 'op'], 0.95]
+                    }
+                });
+            }
+            if (!map3d.getLayer('obstacles-objects-3d-outline')) {
+                map3d.addLayer({
+                    id: 'obstacles-objects-3d-outline',
+                    type: 'line',
+                    source: obstacle3dVolumeSourceId,
+                    paint: {
+                        'line-color': '#5B4636',
+                        'line-width': 1
+                    }
+                });
+            }
+            if (!map3d.getLayer('obstacles-points-label')) {
+                map3d.addLayer({
+                    id: 'obstacles-points-label',
+                    type: 'symbol',
+                    source: obstacle3dPointSourceId,
+                    layout: {
+                        'text-field': ['concat', ['get', 'icon'], ' ', ['get', 'label']],
+                        'text-size': 12,
+                        'text-offset': [0, 1.2],
+                        'text-anchor': 'top'
+                    },
+                    paint: { 'text-color': '#7C2D12' }
+                });
+            }
 
-    function removeZone(key, id) {
-      const idx = tabZones[key].findIndex(z => z.id === id);
-      if (idx === -1) return;
-      map.removeLayer(tabZones[key][idx].poly);
-      tabZones[key].splice(idx, 1);
-      saveTabZones(key);
-      renderTabs();
-    }
+            map3d.getSource(obstacle3dPointSourceId).setData(pointFc);
+            map3d.getSource(obstacle3dVolumeSourceId).setData(volumeFc);
+        }
+        map3d.on('load', () => { map3dReady = true; syncLeafletTo3D(); syncObstaclesTo3D(); });
+        map.on('layeradd', syncLeafletTo3D);
+        map.on('layerremove', syncLeafletTo3D);
 
-    function stopDrawing() {
-      clearTimeout(clickTimer);
-      if (rubberbandLine)   { map.removeLayer(rubberbandLine);   rubberbandLine   = null; }
-      if (rubberbandLabel)  { map.removeLayer(rubberbandLabel);  rubberbandLabel  = null; }
-      if (areaLabel)        { map.removeLayer(areaLabel);        areaLabel        = null; }
-      if (firstPointCircle) { map.removeLayer(firstPointCircle); firstPointCircle = null; }
-      if (currentPoly) { map.removeLayer(currentPoly); currentPoly = null; }
-      drawingMode = false;
-      drawPoints = [];
-      stampingObstacleType = null;
-      map.getContainer().style.cursor = '';
-      map.getContainer().classList.remove('drawing-crosshair');
-      document.getElementById('map-hint').classList.add('hidden');
-    }
+        // Stap-1 reference kavel (read-only dashed boundary)
+        if (variant.geo && variant.geo.length >= 3) {
+            L.polygon(variant.geo, {
+                color: '#7C3AED', fillColor: '#7C3AED',
+                fillOpacity: 0.06, weight: 2, dashArray: '6 4'
+            }).addTo(map);
+        }
 
-    function toggleDrawing(tab) {
-      stampingObstacleType = null;
-      if (drawingMode) {
-        stopDrawing();
-      } else {
-        activeTab = tab;
-        drawingMode = true;
-        drawPoints = [];
-        currentPoly = null;
-        map.getContainer().style.cursor = 'crosshair';
-        map.getContainer().classList.add('drawing-crosshair');
-        document.getElementById('map-hint').classList.remove('hidden');
-      }
-      renderTabs();
-    }
+        // Context layers from previous steps (read-only)
+        const CTX = [
+            { key: 'onbebouwdGebied', color: '#F97316' },
+            { key: 'uitsluiting', color: '#EF4444' },
+            { key: 'parkeren', color: '#3B82F6' },
+            { key: 'onderbouwplein', color: '#22C55E' },
+            { key: 'bovenbouwPlein', color: '#0EA5E9' },
+            { key: 'fietsenstalling', color: '#A855F7' },
+        ];
+        let hasBounds = false;
+        CTX.forEach(c => {
+            const data = variant[c.key];
+            if (!data) return;
+            const toRender = (data.zones && data.zones.length > 0)
+                ? data.zones.filter(z => z.geo && z.geo.length >= 3)
+                : (data.geo && data.geo.length >= 3 ? [{ geo: data.geo }] : []);
+            toRender.forEach(z => {
+                const poly = L.polygon(z.geo, { color: c.color, fillColor: c.color, fillOpacity: 0.2, weight: 1.5, dashArray: '4 4' }).addTo(map);
+                if (!hasBounds && !savedView) { map.fitBounds(poly.getBounds(), { padding: [40, 40] }); hasBounds = true; }
+            });
+        });
+        if (!hasBounds && !savedView && variant.geo && variant.geo.length >= 3) {
+            map.fitBounds(L.polygon(variant.geo).getBounds(), { padding: [40, 40] });
+            hasBounds = true;
+        }
 
-    function startDrawing(tab) {
-      toggleDrawing(tab);
-    }
+        const TABS = [
+            { key: 'obstakels', label: 'Obstakels', color: '#F59E0B' },
+        ];
+        const OBSTAKEL_KEY = 'obstakels';
+        const OBSTAKEL_TYPES = [
+            { key: 'boom', label: 'Boom', icon: '🌳', opp: 4 },
+            { key: 'lamp', label: 'Lichtmast', icon: '💡', opp: 1 },
+            { key: 'bank', label: 'Bankje', icon: '🪑', opp: 2 },
+        ];
+        TABS.forEach(t => { if (!variant[t.key]) variant[t.key] = { geo: [], opp: 0 }; });
 
-    function renderTabs() {
-      const container = document.getElementById('tabs-container');
-      container.innerHTML = '';
+        const layers = {};
+        TABS.forEach(t => { layers[t.key] = L.layerGroup().addTo(map); });
 
-      TABS.forEach((tab, idx) => {
-        const zones = tabZones[tab.key];
-        const isDone = tab.key === OBSTAKEL_KEY ? (obstacleItems.length > 0 || zones.length > 0) : zones.length > 0;
-        const isActive = activeTab && activeTab.key === tab.key;
+        // ── Multi-zone state per tab ──────────────────────────────────────────────
+        const tabZones = {};
+        let nextZoneId = 1;
+        TABS.forEach(t => {
+            tabZones[t.key] = [];
+            const data = variant[t.key];
+            if (!data) return;
+            const zonesData = (data.zones && data.zones.length > 0)
+                ? data.zones
+                : (data.geo && data.geo.length >= 3 ? [{ geo: data.geo, opp: data.opp || 0 }] : []);
+            zonesData.forEach(z => {
+                if (z.geo && z.geo.length >= 3) {
+                    const poly = L.polygon(z.geo, { color: t.color, fillColor: t.color, fillOpacity: 0.3, weight: 2 }).addTo(layers[t.key]);
+                    tabZones[t.key].push({ id: nextZoneId++, geo: z.geo, opp: z.opp || 0, verdiepingen: Math.round(z.verdiepingen || 0), poly });
+                }
+            });
+        });
 
-        if (isActive) {
-          if (tab.key === OBSTAKEL_KEY) {
-            const isDrawing = drawingMode;
-            const markersOpp = obstacleItems.reduce((sum, o) => { const t = getObstacleType(o.type); return sum + (t.opp || 0); }, 0);
-            const zonesOpp = zones.reduce((s, z) => s + z.opp, 0);
+        // ── Obstakels als sleepbare objecten ─────────────────────────────────────
+        const obstacleItems = [];
+        let nextObstacleId = 1;
+        let selectedObstacleId = null;
+
+        function getObstacleType(typeKey) {
+            return OBSTAKEL_TYPES.find(t => t.key === typeKey) || OBSTAKEL_TYPES[0];
+        }
+
+        function getObstacleMarkerIcon(type, isSelected) {
+            return L.divIcon({
+                className: '',
+                html: `<div style="font-size:1.25rem;line-height:1;display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:999px;${isSelected ? 'border:2px solid #7C3AED;background:rgba(124,58,237,0.12);' : ''}">${type.icon}</div>`,
+                iconSize: [28, 28],
+                iconAnchor: [14, 14]
+            });
+        }
+
+        function refreshObstacleMarkerSelection() {
+            obstacleItems.forEach(o => {
+                const type = getObstacleType(o.type);
+                o.marker.setIcon(getObstacleMarkerIcon(type, o.id === selectedObstacleId));
+            });
+        }
+
+        function createObstacleMarker(item) {
+            const type = getObstacleType(item.type);
+            const icon = getObstacleMarkerIcon(type, item.id === selectedObstacleId);
+            const marker = L.marker([item.lat, item.lng], { icon, draggable: true }).addTo(layers[OBSTAKEL_KEY]);
+            marker.on('dragend', e => {
+                const p = e.target.getLatLng();
+                item.lat = p.lat;
+                item.lng = p.lng;
+                saveObstacleItems();
+            });
+            marker.on('click', () => {
+                selectedObstacleId = item.id;
+                refreshObstacleMarkerSelection();
+                renderTabs();
+            });
+            marker.bindTooltip(type.label, { direction: 'top', offset: [0, -8] });
+            marker.on('contextmenu', e => {
+                L.DomEvent.stopPropagation(e);
+                removeObstacle(item.id);
+            });
+            marker.bindTooltip(`${type.label} (${type.opp} m²) · rechtermuisknop om te verwijderen`, { direction: 'top', offset: [0, -8] });
+            return marker;
+        }
+
+        function saveObstacleItems() {
+            const objects = obstacleItems.map(o => ({ id: o.id, type: o.type, lat: o.lat, lng: o.lng }));
+            const markersOpp = obstacleItems.reduce((sum, o) => {
+                const t = getObstacleType(o.type);
+                return sum + (t.opp || 0);
+            }, 0);
+            const zones = tabZones[OBSTAKEL_KEY].map(z => ({ geo: z.geo, opp: z.opp, verdiepingen: Math.round(z.verdiepingen || 0) }));
+            const zonesOpp = tabZones[OBSTAKEL_KEY].reduce((s, z) => s + z.opp, 0);
             const totalOpp = markersOpp + zonesOpp;
-            const bebouwbaarOpp = calcBebouwbaarOpp();
-            const card = document.createElement('div');
-            card.className = 'card p-4 flex flex-col gap-3';
-            card.style.border = '2px solid #7C3AED';
-            const typeButtons = OBSTAKEL_TYPES.map(t => {
-              const isStamping = stampingObstacleType === t.key;
-              return `<button onclick="toggleStamping('${t.key}')"
-                class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border transition-all ${isStamping
-                  ? 'border-red-300 text-red-500 bg-red-50'
-                  : 'border-violet-300 text-violet-600 hover:bg-violet-50'}">
-                ${isStamping ? `✕ Stop ${t.label.toLowerCase()} plaatsen` : `${t.icon} ${t.label}`}
-              </button>`;
-            }).join('');
-            const zonesHtml = zones.map((z, i) => `
-              <div class="flex flex-col gap-1 text-xs">
-                <div class="flex items-center gap-1">
-                  <span class="text-gray-600 flex-1">Vlak ${i + 1} &nbsp;·&nbsp; ${z.opp.toLocaleString('nl-NL')} m²</span>
-                  <button onclick="removeZone('${tab.key}', ${z.id})"
-                    class="text-gray-300 hover:text-red-400 transition-colors leading-none flex-shrink-0"
-                    title="Verwijderen">×</button>
-                </div>
-                <div class="flex items-center gap-1 pl-0.5">
-                  <span class="text-gray-400 flex-shrink-0">Verdiepingen</span>
-                  <input type="number" min="0" step="1" value="${z.verdiepingen || 0}"
-                    onchange="setZoneVerdiepingen('${tab.key}', ${z.id}, this.value)"
-                    class="w-12 text-xs border border-gray-200 rounded px-1 py-0.5 text-right focus:outline-none focus:border-violet-400">
-                </div>
-              </div>`).join('');
-            const listHtml = obstacleItems.map((o, i) => {
-              const t = getObstacleType(o.type);
-              const isSelected = o.id === selectedObstacleId;
-              return `<div class="flex items-center gap-1 text-xs">
-                <span class="${isSelected ? 'text-violet-700 font-semibold' : 'text-gray-600'} flex-1">${isSelected ? '● ' : ''}${t.icon} ${t.label} ${i + 1}</span>
-                <span class="text-gray-400 flex-shrink-0">${t.opp} m²</span>
-                <button onclick="removeObstacle(${o.id})"
-                  class="text-gray-300 hover:text-red-400 transition-colors leading-none flex-shrink-0"
-                  title="Verwijderen">×</button>
-              </div>`;
-            }).join('');
-            card.innerHTML = `
-              <h3 class="font-semibold text-sm text-gray-700">${tab.label}</h3>
-              <p class="text-xs text-gray-400">Selecteer een type en klik op de kaart om te plaatsen. Sleep om te verplaatsen, rechtermuisknop om te verwijderen.</p>
-              <div class="flex flex-col gap-1">${typeButtons}</div>
-              <p class="text-[11px] text-gray-400">Klik op een object en druk op Delete om te verwijderen.</p>
-              <button onclick="toggleDrawing(TABS[${idx}])"
-                class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border transition-all ${isDrawing
-                  ? 'border-red-300 text-red-500 hover:bg-red-50'
-                  : 'border-violet-300 text-violet-600 hover:bg-violet-50'}">
-                ${isDrawing ? '✕ Stoppen met vlak tekenen' : '✏ Teken obstakelvlak'}
-              </button>
-              ${isDrawing ? `
-              <div class="flex items-center justify-between text-xs text-gray-400">
-                <span>Huidig vlak</span>
-                <span id="live-draw-opp">— m²</span>
-              </div>
-              <button id="btn-voltooien" onclick="finishDrawing()" disabled
-                class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border border-emerald-300 text-emerald-600 hover:bg-emerald-50 transition-all disabled:opacity-40 disabled:cursor-default">
-                ✓ Voltooien
-              </button>` : ''}
-              ${listHtml
-                ? `<div class="flex flex-col gap-1 pt-1 border-t border-gray-100">${listHtml}</div>`
-                : '<p class="text-xs text-gray-300">Nog geen objecten geplaatst</p>'}
-              ${zonesHtml
-                ? `<div class="flex flex-col gap-1 pt-1 border-t border-gray-100">${zonesHtml}</div>`
-                : '<p class="text-xs text-gray-300">Nog geen obstakelvlakken getekend</p>'}
-              <div class="flex items-center justify-between text-xs text-gray-500 pt-1 border-t border-gray-100">
-                <span>Obstakels totaal</span>
-                <span class="font-semibold text-violet-700">${totalOpp ? totalOpp.toLocaleString('nl-NL') + ' m²' : '— m²'}</span>
-              </div>
-              <div class="flex items-center justify-between text-xs pt-1">
-                <span class="text-gray-500">Bebouwbaar</span>
-                <span class="font-semibold text-emerald-600">${bebouwbaarOpp ? bebouwbaarOpp.toLocaleString('nl-NL') + ' m²' : '— m²'}</span>
-              </div>
-              ${renderPveGrondvlakList(bebouwbaarOpp)}
-            <button onclick="volgendeTab(${idx})" class="btn-secondary w-full text-sm py-2">overslaan</button>
-            <button onclick="volgendeTab(${idx})" class="btn-primary w-full text-sm py-2">volgende</button>`;
-            container.appendChild(card);
-            return;
-          }
-
-          const isDrawing = drawingMode;
-          const totalOpp = zones.reduce((s, z) => s + z.opp, 0);
-          const card = document.createElement('div');
-          card.className = 'card p-4 flex flex-col gap-3';
-          card.style.border = '2px solid #7C3AED';
-          const zonesHtml = zones.map((z, i) => `
-            <div class="flex items-center gap-1 text-xs">
-              <span class="text-gray-600 flex-1">Zone ${i + 1}</span>
-              <span class="text-gray-400 flex-shrink-0">${z.opp.toLocaleString('nl-NL')} m²</span>
-              <button onclick="removeZone('${tab.key}', ${z.id})"
-                class="text-gray-300 hover:text-red-400 transition-colors leading-none flex-shrink-0"
-                title="Verwijderen">×</button>
-            </div>`).join('');
-          card.innerHTML = `
-            <h3 class="font-semibold text-sm text-gray-700">${tab.label}</h3>
-            <button onclick="toggleDrawing(TABS[${idx}])"
-              class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border transition-all ${isDrawing
-                ? 'border-red-300 text-red-500 hover:bg-red-50'
-                : 'border-violet-300 text-violet-600 hover:bg-violet-50'}">
-              ${isDrawing ? '✕ Stoppen met tekenen' : '✏ Teken zone'}
-            </button>
-            ${isDrawing ? `
-            <div class="flex items-center justify-between text-xs text-gray-400">
-              <span>Huidig vlak</span>
-              <span id="live-draw-opp">— m²</span>
-            </div>
-            <button id="btn-voltooien" onclick="finishDrawing()" disabled
-              class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border border-emerald-300 text-emerald-600 hover:bg-emerald-50 transition-all disabled:opacity-40 disabled:cursor-default">
-              ✓ Voltooien
-            </button>` : ''}
-            ${zonesHtml
-              ? `<div class="flex flex-col gap-1">${zonesHtml}</div>`
-              : '<p class="text-xs text-gray-300">Nog geen zones getekend</p>'}
-            <div class="flex items-center justify-between text-xs text-gray-500 pt-1 border-t border-gray-100">
-              <span>Totaal</span>
-              <span class="font-semibold text-violet-700">${totalOpp ? totalOpp.toLocaleString('nl-NL') + ' m²' : '— m²'}</span>
-            </div>
-            <button onclick="volgendeTab(${idx})" class="btn-primary w-full text-sm py-2">volgende</button>`;
-          container.appendChild(card);
-        } else {
-          const pill = document.createElement('button');
-          const activeIdx = TABS.findIndex(t => activeTab && t.key === activeTab.key);
-          pill.className = 'tab-pill ' + (isDone ? 'done' : (idx > activeIdx ? 'pending' : ''));
-          pill.textContent = (isDone ? '✓ ' : '') + tab.label;
-          pill.onclick = () => { stopDrawing(); activeTab = tab; renderTabs(); };
-          container.appendChild(pill);
+            if (!variant[OBSTAKEL_KEY]) variant[OBSTAKEL_KEY] = {};
+            variant[OBSTAKEL_KEY].objects = objects;
+            variant[OBSTAKEL_KEY].zones = zones;
+            variant[OBSTAKEL_KEY].geo = zones.length > 0 ? zones[0].geo : [];
+            variant[OBSTAKEL_KEY].opp = totalOpp;
+            updateGebiedVariantById(gebiedId, {
+                [OBSTAKEL_KEY]: { objects, zones, geo: variant[OBSTAKEL_KEY].geo, opp: totalOpp }
+            });
+            updateSummary();
+            syncObstaclesTo3D();
         }
-      });
-    }
 
-    function volgendeTab(currentIdx) {
-      if (drawingMode && currentPoly && drawPoints.length >= 3) {
-        finishDrawing();
-      } else {
-        stopDrawing();
-      }
-      if (currentIdx + 1 < TABS.length) {
-        activeTab = TABS[currentIdx + 1];
+        function addObstacle(typeKey) {
+            const center = map.getCenter();
+            const item = {
+                id: nextObstacleId++,
+                type: typeKey,
+                lat: center.lat,
+                lng: center.lng,
+                marker: null
+            };
+            item.marker = createObstacleMarker(item);
+            obstacleItems.push(item);
+            selectedObstacleId = item.id;
+            refreshObstacleMarkerSelection();
+            saveObstacleItems();
+            renderTabs();
+        }
+        function toggleStamping(typeKey) {
+            if (drawingMode) stopDrawing();
+            stampingObstacleType = stampingObstacleType === typeKey ? null : typeKey;
+            const hint = document.getElementById('map-hint');
+            if (stampingObstacleType) {
+                const type = getObstacleType(stampingObstacleType);
+                map.getContainer().style.cursor = 'copy';
+                hint.textContent = `Klik op de kaart om ${type.icon} ${type.label.toLowerCase()} te plaatsen`;
+                hint.classList.remove('hidden');
+            } else {
+                map.getContainer().style.cursor = '';
+                hint.classList.add('hidden');
+            }
+            renderTabs();
+        }
+
+        function removeObstacle(id) {
+            const idx = obstacleItems.findIndex(o => o.id === id);
+            if (idx === -1) return;
+            map.removeLayer(obstacleItems[idx].marker);
+            obstacleItems.splice(idx, 1);
+            if (selectedObstacleId === id) selectedObstacleId = null;
+            refreshObstacleMarkerSelection();
+            saveObstacleItems();
+            renderTabs();
+        }
+
+        function removeSelectedObstacle() {
+            if (!selectedObstacleId) return;
+            removeObstacle(selectedObstacleId);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            const target = e.target;
+            const tag = (target && target.tagName) ? target.tagName.toUpperCase() : '';
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return;
+            if (e.key !== 'Delete') return;
+            if (!selectedObstacleId) return;
+            e.preventDefault();
+            removeSelectedObstacle();
+        });
+
+        const storedObstacles = (variant[OBSTAKEL_KEY] && variant[OBSTAKEL_KEY].objects) || [];
+        storedObstacles.forEach(o => {
+            if (typeof o.lat !== 'number' || typeof o.lng !== 'number') return;
+            const item = {
+                id: o.id || nextObstacleId++,
+                type: o.type || OBSTAKEL_TYPES[0].key,
+                lat: o.lat,
+                lng: o.lng,
+                marker: null
+            };
+            nextObstacleId = Math.max(nextObstacleId, item.id + 1);
+            item.marker = createObstacleMarker(item);
+            obstacleItems.push(item);
+        });
+
+        // ── Drawing state ─────────────────────────────────────────────────────────
+        let activeTab = null;
+        let drawingMode = false;
+        let drawPoints = [];
+        let currentPoly = null;
+        let rubberbandLine = null;
+        let rubberbandLabel = null;
+        let areaLabel = null;
+        let firstPointCircle = null;
+        let stampingObstacleType = null; // typeKey being stamped, or null
+
+        function calcAreaM2(latlngs) {
+            if (!latlngs || latlngs.length < 3) return 0;
+            let area = 0;
+            const n = latlngs.length;
+            for (let i = 0; i < n; i++) {
+                const j = (i + 1) % n;
+                area += latlngs[i].lat * latlngs[j].lng;
+                area -= latlngs[j].lat * latlngs[i].lng;
+            }
+            const DEG_TO_M = 111320;
+            return Math.round(Math.abs(area / 2) * DEG_TO_M * DEG_TO_M * Math.cos(52 * Math.PI / 180));
+        }
+
+        function layerOpp(key) {
+            const data = variant[key];
+            if (!data) return 0;
+            if (data.zones && data.zones.length) return data.zones.reduce((sum, z) => sum + (z.opp || 0), 0);
+            return data.opp || 0;
+        }
+
+        // ── PVE ground-floor compatibility ───────────────────────────────────────
+        function calcMinGrondvlak(pveVariant) {
+            const rs = pveVariant && pveVariant.ruimtestaat;
+            if (!rs) return null;
+            const clusters = rs.clusters || [];
+            if (!clusters.length) return null;
+            return Math.round(clusters
+                .filter(c => c.verdiepingrestrictie)
+                .reduce((sum, c) => sum + c.rooms.reduce(
+                    (s, r) => s + parseFloat(r.aantal) * parseFloat(r.oppervlakte), 0), 0));
+        }
+
+
+        // ── PVE breakdown tooltip helper ──────────────────────────────────────────
+        function pveBreakdownTooltip(totalOpp) {
+            const school = totalOpp * 0.77;
+            const gym = totalOpp * 0.15;
+            const voorschools = totalOpp * 0.1;
+            return `
+                    <div class="absolute z-50 hidden group-hover:block bottom-full left-0 mb-1 bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+                      <div>School: ${school.toLocaleString('nl-NL', { maximumFractionDigits: 0 })} m²</div>
+                      <div>Gym: ${gym.toLocaleString('nl-NL', { maximumFractionDigits: 0 })} m²</div>
+                      <div>Voorschools: ${voorschools.toLocaleString('nl-NL', { maximumFractionDigits: 0 })} m²</div>
+                    </div>
+                  `;
+        }
+
+        function updatePveCompatList(bebouwbaarOpp) {
+            const pveVarianten = project.pveVarianten || [];
+            const container = document.getElementById('pve-compat-container');
+            const listEl = document.getElementById('pve-compat-list');
+            if (!container || !listEl) return;
+            if (pveVarianten.length === 0) { container.classList.add('hidden'); return; }
+            container.classList.remove('hidden');
+            listEl.innerHTML = pveVarianten.map(pv => {
+                const minOpp = calcMinGrondvlak(pv);
+                if (minOpp === null || minOpp === 0) {
+                    return `<div class="flex items-center justify-between gap-1 text-xs">
+                        <span class="truncate flex-1" style="color:#F97316" title="${pv.naam}">${pv.naam}</span>
+                        <span class="flex-shrink-0" style="color:#D1D5DB">geen ruimtestaat</span>
+                      </div>`;
+                }
+                const ok = bebouwbaarOpp > 0 && bebouwbaarOpp >= minOpp;
+                return `<div class="flex items-center justify-between gap-1 text-xs">
+                      <span class="truncate flex-1" style="${ok ? 'color:#059669' : 'color:#F97316'}" title="${pv.naam}">${pv.naam}</span>
+                      <span class="flex-shrink-0" style="${ok ? 'color:#059669' : 'color:#F97316'}">${minOpp.toLocaleString('nl-NL')} m²</span>
+                      <span class="flex-shrink-0 font-semibold" style="${ok ? 'color:#059669' : 'color:#F97316'}">${ok ? '✓' : '✗'}</span>
+                    </div>`;
+            }).join('');
+        }
+
+        function calcBebouwbaarOpp() {
+            const bouwvlakOpp = (variant.bouwbaarGebied && variant.bouwbaarGebied.opp) || variant.opp || 0;
+            let nietBebouwbaarOpp = 0;
+            ['onbebouwdGebied', 'uitsluiting', 'parkeren', 'onderbouwplein', 'bovenbouwPlein', 'fietsenstalling'].forEach(key => {
+                nietBebouwbaarOpp += layerOpp(key);
+            });
+            TABS.forEach(t => {
+                let opp = tabZones[t.key].reduce((s, z) => s + z.opp, 0);
+                if (t.key === OBSTAKEL_KEY) {
+                    opp += obstacleItems.reduce((sum, o) => { const type = getObstacleType(o.type); return sum + (type.opp || 0); }, 0);
+                }
+                nietBebouwbaarOpp += opp;
+            });
+            return Math.max(0, bouwvlakOpp - nietBebouwbaarOpp);
+        }
+
+        function renderPveGrondvlakList(bebouwbaarOpp) {
+            const pveVarianten = project.pveVarianten || [];
+            if (pveVarianten.length === 0) return '';
+            const rows = pveVarianten.map(pv => {
+                const minOpp = calcMinGrondvlak(pv);
+                if (minOpp === null || minOpp === 0) {
+                    return `<div class="flex items-center justify-between gap-1 text-xs">
+                        <span class="truncate flex-1" style="color:#F97316" title="${pv.naam}">${pv.naam}</span>
+                        <span class="flex-shrink-0" style="color:#D1D5DB">geen ruimtestaat</span>
+                      </div>`;
+                }
+                const ok = bebouwbaarOpp > 0 && bebouwbaarOpp >= minOpp;
+                return `<div class="flex items-center justify-between gap-1 text-xs">
+                      <span class="truncate flex-1" style="${ok ? 'color:#059669' : 'color:#F97316'}" title="${pv.naam}">${pv.naam}</span>
+                      <span class="flex-shrink-0" style="${ok ? 'color:#059669' : 'color:#F97316'}">${minOpp.toLocaleString('nl-NL')} m²</span>
+                      <span class="flex-shrink-0 font-semibold" style="${ok ? 'color:#059669' : 'color:#F97316'}">${ok ? '✓' : '✗'}</span>
+                    </div>`;
+            }).join('');
+            return `<div class="flex flex-col gap-1 pt-2 border-t border-gray-100">
+                    <div class="text-xs font-semibold text-gray-400 uppercase tracking-widest" style="letter-spacing:0.05em">PVE grondvlak</div>
+                    ${rows}
+                  </div>`;
+        }
+
+        function updateSummary() {
+            const bouwvlakOpp = (variant.bouwbaarGebied && variant.bouwbaarGebied.opp) || variant.opp || 0;
+            document.getElementById('opp-summary-bouwvlak').textContent = bouwvlakOpp ? bouwvlakOpp.toLocaleString('nl-NL') + ' m²' : '— m²';
+            let nietBebouwbaarOpp = 0;
+            ['onbebouwdGebied', 'uitsluiting', 'parkeren', 'onderbouwplein', 'bovenbouwPlein', 'fietsenstalling'].forEach(key => {
+                const el = document.getElementById('opp-summary-' + key);
+                if (!el) return;
+                const opp = layerOpp(key);
+                el.textContent = opp ? opp.toLocaleString('nl-NL') + ' m²' : '— m²';
+                nietBebouwbaarOpp += opp;
+            });
+            TABS.forEach(t => {
+                const el = document.getElementById('opp-summary-' + t.key);
+                if (!el) return;
+                let opp = tabZones[t.key].reduce((s, z) => s + z.opp, 0);
+                if (t.key === OBSTAKEL_KEY) {
+                    opp += obstacleItems.reduce((sum, o) => {
+                        const type = getObstacleType(o.type);
+                        return sum + (type.opp || 0);
+                    }, 0);
+                }
+                el.textContent = opp ? opp.toLocaleString('nl-NL') + ' m²' : '— m²';
+                nietBebouwbaarOpp += opp;
+            });
+            const bebouwbaarOpp = Math.max(0, bouwvlakOpp - nietBebouwbaarOpp);
+            document.getElementById('bebouwbaar-opp-display').textContent = bebouwbaarOpp.toLocaleString('nl-NL') + ' m²';
+            updatePveCompatList(bebouwbaarOpp);
+        }
+
+        let clickTimer = null;
+        map.on('click', e => {
+            if (stampingObstacleType && activeTab && activeTab.key === OBSTAKEL_KEY) {
+                const item = {
+                    id: nextObstacleId++,
+                    type: stampingObstacleType,
+                    lat: e.latlng.lat,
+                    lng: e.latlng.lng,
+                    marker: null
+                };
+                item.marker = createObstacleMarker(item);
+                obstacleItems.push(item);
+                saveObstacleItems();
+                renderTabs();
+                return;
+            }
+            if (!drawingMode) return;
+            const latlng = e.latlng;
+            // Snap-to-close check (≥3 points)
+            if (drawPoints.length >= 3) {
+                const firstPx = map.latLngToContainerPoint([drawPoints[0][0], drawPoints[0][1]]);
+                const curPx = map.latLngToContainerPoint(latlng);
+                if (Math.hypot(firstPx.x - curPx.x, firstPx.y - curPx.y) < 15) {
+                    clearTimeout(clickTimer);
+                    finishDrawing();
+                    return;
+                }
+            }
+            clearTimeout(clickTimer);
+            clickTimer = setTimeout(() => {
+                // Snap placement to 0.5 m steps along direction from last point
+                let placedLatlng = latlng;
+                if (drawPoints.length > 0) {
+                    const from2 = [drawPoints[drawPoints.length - 1][0], drawPoints[drawPoints.length - 1][1]];
+                    const DEG_TO_M2 = 111320;
+                    const cosLat2 = Math.cos(from2[0] * Math.PI / 180);
+                    const dLatM2 = (latlng.lat - from2[0]) * DEG_TO_M2;
+                    const dLngM2 = (latlng.lng - from2[1]) * DEG_TO_M2 * cosLat2;
+                    const rawDist2 = Math.hypot(dLatM2, dLngM2);
+                    const snapDist2 = Math.round(rawDist2 / 0.5) * 0.5;
+                    if (rawDist2 > 0.001 && snapDist2 > 0) {
+                        const r = snapDist2 / rawDist2;
+                        placedLatlng = L.latLng(from2[0] + (latlng.lat - from2[0]) * r,
+                            from2[1] + (latlng.lng - from2[1]) * r);
+                    }
+                }
+                drawPoints.push([placedLatlng.lat, placedLatlng.lng]);
+                // Re-anchor rubber-band from new last point to current cursor immediately
+                if (rubberbandLine) {
+                    rubberbandLine.setLatLngs([[placedLatlng.lat, placedLatlng.lng], [latlng.lat, latlng.lng]]);
+                }
+                if (rubberbandLabel) { map.removeLayer(rubberbandLabel); rubberbandLabel = null; }
+                if (drawPoints.length === 1) {
+                    firstPointCircle = L.circleMarker([placedLatlng.lat, placedLatlng.lng], {
+                        radius: 5, color: activeTab.color, fillColor: activeTab.color,
+                        fillOpacity: 1, weight: 2, interactive: false
+                    }).addTo(map);
+                } else if (drawPoints.length === 2) {
+                    if (currentPoly) map.removeLayer(currentPoly);
+                    currentPoly = L.polyline(drawPoints, {
+                        color: activeTab.color, weight: 2, dashArray: '5 4'
+                    }).addTo(map);
+                } else {
+                    if (currentPoly) map.removeLayer(currentPoly);
+                    currentPoly = L.polygon(drawPoints, {
+                        color: activeTab.color, fillColor: activeTab.color,
+                        fillOpacity: 0.2, weight: 2, dashArray: '5 4'
+                    }).addTo(map);
+                    const liveOpp = calcAreaM2(drawPoints.map(p => L.latLng(p[0], p[1])));
+                    const liveEl = document.getElementById('live-draw-opp');
+                    if (liveEl) liveEl.textContent = liveOpp.toLocaleString('nl-NL') + ' m²';
+                    const voltooienBtn = document.getElementById('btn-voltooien');
+                    if (voltooienBtn) voltooienBtn.disabled = false;
+                }
+            }, 250);
+        });
+
+        document.addEventListener('mousemove', e => {
+            if (!drawingMode || drawPoints.length === 0) return;
+            const mapEl = document.getElementById('map');
+            if (!mapEl || mapEl.classList.contains('hidden')) return;
+            const rect = mapEl.getBoundingClientRect();
+            if (e.clientX < rect.left || e.clientX > rect.right ||
+                e.clientY < rect.top || e.clientY > rect.bottom) return;
+            let target = map.containerPointToLatLng(
+                L.point(e.clientX - rect.left, e.clientY - rect.top)
+            );
+            let snapping = false;
+            if (drawPoints.length >= 3) {
+                const firstPx = map.latLngToContainerPoint([drawPoints[0][0], drawPoints[0][1]]);
+                const curPx = map.latLngToContainerPoint(target);
+                if (Math.hypot(firstPx.x - curPx.x, firstPx.y - curPx.y) < 15) {
+                    target = L.latLng(drawPoints[0][0], drawPoints[0][1]);
+                    snapping = true;
+                }
+            }
+            const from = [drawPoints[drawPoints.length - 1][0], drawPoints[drawPoints.length - 1][1]];
+            let snappedDistM = 0;
+            if (!snapping) {
+                const DEG_TO_M = 111320;
+                const cosLat = Math.cos(from[0] * Math.PI / 180);
+                const dLatM = (target.lat - from[0]) * DEG_TO_M;
+                const dLngM = (target.lng - from[1]) * DEG_TO_M * cosLat;
+                const rawDistM = Math.hypot(dLatM, dLngM);
+                snappedDistM = Math.round(rawDistM / 0.5) * 0.5;
+                if (rawDistM > 0.001 && snappedDistM > 0) {
+                    const ratio = snappedDistM / rawDistM;
+                    target = L.latLng(from[0] + (target.lat - from[0]) * ratio,
+                        from[1] + (target.lng - from[1]) * ratio);
+                }
+            }
+            if (!rubberbandLine) {
+                rubberbandLine = L.polyline([from, [target.lat, target.lng]], {
+                    color: activeTab ? activeTab.color : '#7C3AED',
+                    weight: 1.5, dashArray: '6 4', opacity: 0.7, interactive: false
+                }).addTo(map);
+            } else {
+                rubberbandLine.setLatLngs([from, [target.lat, target.lng]]);
+            }
+            const midLat = (from[0] + target.lat) / 2;
+            const midLng = (from[1] + target.lng) / 2;
+            const labelTxt = snapping ? 'sluiten' : (snappedDistM >= 0.5 ? snappedDistM.toFixed(1) + ' m' : '');
+            if (labelTxt) {
+                const icon = L.divIcon({
+                    html: `<div class="rubberband-label">${labelTxt}</div>`,
+                    className: '', iconSize: [0, 0], iconAnchor: [0, 0]
+                });
+                if (!rubberbandLabel) {
+                    rubberbandLabel = L.marker([midLat, midLng], { icon, interactive: false, zIndexOffset: 1000 }).addTo(map);
+                } else {
+                    rubberbandLabel.setLatLng([midLat, midLng]);
+                    rubberbandLabel.setIcon(icon);
+                }
+            } else if (rubberbandLabel) {
+                map.removeLayer(rubberbandLabel); rubberbandLabel = null;
+            }
+            if (drawPoints.length >= 2) {
+                const allPts = [...drawPoints, [target.lat, target.lng]];
+                const liveArea = calcAreaM2(allPts.map(p => L.latLng(p[0], p[1])));
+                const cLat = allPts.reduce((s, p) => s + p[0], 0) / allPts.length;
+                const cLng = allPts.reduce((s, p) => s + p[1], 0) / allPts.length;
+                if (liveArea > 0) {
+                    const areaIcon = L.divIcon({
+                        html: `<div class="area-label">${liveArea.toLocaleString('nl-NL')} m²</div>`,
+                        className: '', iconSize: [0, 0], iconAnchor: [0, 0]
+                    });
+                    if (!areaLabel) {
+                        areaLabel = L.marker([cLat, cLng], { icon: areaIcon, interactive: false, zIndexOffset: 999 }).addTo(map);
+                    } else {
+                        areaLabel.setLatLng([cLat, cLng]);
+                        areaLabel.setIcon(areaIcon);
+                    }
+                } else if (areaLabel) {
+                    map.removeLayer(areaLabel); areaLabel = null;
+                }
+            } else if (areaLabel) {
+                map.removeLayer(areaLabel); areaLabel = null;
+            }
+            if (firstPointCircle) {
+                const col = snapping ? '#10B981' : (activeTab ? activeTab.color : '#7C3AED');
+                firstPointCircle.setStyle({ color: col, fillColor: col });
+            }
+        });
+
+        function finishDrawing() {
+            if (!drawingMode || drawPoints.length < 3) return;
+            clearTimeout(clickTimer);
+            if (rubberbandLine) { map.removeLayer(rubberbandLine); rubberbandLine = null; }
+            if (rubberbandLabel) { map.removeLayer(rubberbandLabel); rubberbandLabel = null; }
+            if (areaLabel) { map.removeLayer(areaLabel); areaLabel = null; }
+            if (firstPointCircle) { map.removeLayer(firstPointCircle); firstPointCircle = null; }
+            const tab = activeTab;
+            const geo = drawPoints.slice();
+            const opp = calcAreaM2(drawPoints.map(p => L.latLng(p[0], p[1])));
+            if (currentPoly) map.removeLayer(currentPoly);
+            const finalPoly = L.polygon(geo, {
+                color: tab.color, fillColor: tab.color, fillOpacity: 0.3, weight: 2
+            }).addTo(layers[tab.key]);
+            tabZones[tab.key].push({ id: nextZoneId++, geo, opp, verdiepingen: 0, poly: finalPoly });
+            drawingMode = false;
+            currentPoly = null;
+            drawPoints = [];
+            map.getContainer().style.cursor = '';
+            map.getContainer().classList.remove('drawing-crosshair');
+            document.getElementById('map-hint').classList.add('hidden');
+            saveTabZones(tab.key);
+            renderTabs();
+        }
+
+        map.on('dblclick', e => {
+            if (!drawingMode || !currentPoly || drawPoints.length < 3) return;
+            clearTimeout(clickTimer);
+            finishDrawing();
+        });
+
+        map.on('contextmenu', e => {
+            if (!drawingMode || !currentPoly || drawPoints.length < 3) return;
+            L.DomEvent.preventDefault(e);
+            clearTimeout(clickTimer);
+            finishDrawing();
+        });
+
+        function saveTabZones(key) {
+            const zones = tabZones[key].map(z => ({ geo: z.geo, opp: z.opp, verdiepingen: Math.round(z.verdiepingen || 0) }));
+            let totalOpp = tabZones[key].reduce((s, z) => s + z.opp, 0);
+            const updates = {};
+            if (key === OBSTAKEL_KEY) {
+                const markersOpp = obstacleItems.reduce((sum, o) => {
+                    const t = getObstacleType(o.type);
+                    return sum + (t.opp || 0);
+                }, 0);
+                totalOpp += markersOpp;
+                updates[key] = { objects: variant[OBSTAKEL_KEY].objects || [], zones, opp: totalOpp, geo: zones.length > 0 ? zones[0].geo : [] };
+            } else {
+                updates[key] = { zones, opp: totalOpp, geo: zones.length > 0 ? zones[0].geo : [] };
+            }
+            if (!variant[key]) variant[key] = {};
+            variant[key].zones = zones;
+            variant[key].opp = totalOpp;
+            variant[key].geo = updates[key].geo;
+            updateGebiedVariantById(gebiedId, updates);
+            updateSummary();
+            if (key === OBSTAKEL_KEY) syncObstaclesTo3D();
+        }
+
+        function setZoneVerdiepingen(key, id, val) {
+            const z = tabZones[key].find(z => z.id === id);
+            if (!z) return;
+            z.verdiepingen = Math.max(0, Math.round(parseFloat(val) || 0));
+            if (key === OBSTAKEL_KEY) saveObstacleItems();
+            else saveTabZones(key);
+        }
+
+        function removeZone(key, id) {
+            const idx = tabZones[key].findIndex(z => z.id === id);
+            if (idx === -1) return;
+            map.removeLayer(tabZones[key][idx].poly);
+            tabZones[key].splice(idx, 1);
+            saveTabZones(key);
+            renderTabs();
+        }
+
+        function stopDrawing() {
+            clearTimeout(clickTimer);
+            if (rubberbandLine) { map.removeLayer(rubberbandLine); rubberbandLine = null; }
+            if (rubberbandLabel) { map.removeLayer(rubberbandLabel); rubberbandLabel = null; }
+            if (areaLabel) { map.removeLayer(areaLabel); areaLabel = null; }
+            if (firstPointCircle) { map.removeLayer(firstPointCircle); firstPointCircle = null; }
+            if (currentPoly) { map.removeLayer(currentPoly); currentPoly = null; }
+            drawingMode = false;
+            drawPoints = [];
+            stampingObstacleType = null;
+            map.getContainer().style.cursor = '';
+            map.getContainer().classList.remove('drawing-crosshair');
+            document.getElementById('map-hint').classList.add('hidden');
+        }
+
+        function toggleDrawing(tab) {
+            stampingObstacleType = null;
+            if (drawingMode) {
+                stopDrawing();
+            } else {
+                activeTab = tab;
+                drawingMode = true;
+                drawPoints = [];
+                currentPoly = null;
+                map.getContainer().style.cursor = 'crosshair';
+                map.getContainer().classList.add('drawing-crosshair');
+                document.getElementById('map-hint').classList.remove('hidden');
+            }
+            renderTabs();
+        }
+
+        function startDrawing(tab) {
+            toggleDrawing(tab);
+        }
+
+        function renderTabs() {
+            const container = document.getElementById('tabs-container');
+            container.innerHTML = '';
+
+            TABS.forEach((tab, idx) => {
+                const zones = tabZones[tab.key];
+                const isDone = tab.key === OBSTAKEL_KEY ? (obstacleItems.length > 0 || zones.length > 0) : zones.length > 0;
+                const isActive = activeTab && activeTab.key === tab.key;
+
+                if (isActive) {
+                    if (tab.key === OBSTAKEL_KEY) {
+                        const isDrawing = drawingMode;
+                        const markersOpp = obstacleItems.reduce((sum, o) => { const t = getObstacleType(o.type); return sum + (t.opp || 0); }, 0);
+                        const zonesOpp = zones.reduce((s, z) => s + z.opp, 0);
+                        const totalOpp = markersOpp + zonesOpp;
+                        const bebouwbaarOpp = calcBebouwbaarOpp();
+                        const card = document.createElement('div');
+                        card.className = 'card p-4 flex flex-col gap-3';
+                        card.style.border = '2px solid #7C3AED';
+                        const typeButtons = OBSTAKEL_TYPES.map(t => {
+                            const isStamping = stampingObstacleType === t.key;
+                            return `<button onclick="toggleStamping('${t.key}')"
+                            class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border transition-all ${isStamping
+                                    ? 'border-red-300 text-red-500 bg-red-50'
+                                    : 'border-violet-300 text-violet-600 hover:bg-violet-50'}">
+                            ${isStamping ? `✕ Stop ${t.label.toLowerCase()} plaatsen` : `${t.icon} ${t.label}`}
+                          </button>`;
+                        }).join('');
+                        const zonesHtml = zones.map((z, i) => `
+                          <div class="flex flex-col gap-1 text-xs">
+                            <div class="flex items-center gap-1">
+                              <span class="text-gray-600 flex-1">Vlak ${i + 1} &nbsp;·&nbsp; ${z.opp.toLocaleString('nl-NL')} m²</span>
+                              <button onclick="removeZone('${tab.key}', ${z.id})"
+                                class="text-gray-300 hover:text-red-400 transition-colors leading-none flex-shrink-0"
+                                title="Verwijderen">×</button>
+                            </div>
+                            <div class="flex items-center gap-1 pl-0.5">
+                              <span class="text-gray-400 flex-shrink-0">Verdiepingen</span>
+                              <input type="number" min="0" step="1" value="${z.verdiepingen || 0}"
+                                onchange="setZoneVerdiepingen('${tab.key}', ${z.id}, this.value)"
+                                class="w-12 text-xs border border-gray-200 rounded px-1 py-0.5 text-right focus:outline-none focus:border-violet-400">
+                            </div>
+                          </div>`).join('');
+                        const listHtml = obstacleItems.map((o, i) => {
+                            const t = getObstacleType(o.type);
+                            const isSelected = o.id === selectedObstacleId;
+                            return `<div class="flex items-center gap-1 text-xs">
+                            <span class="${isSelected ? 'text-violet-700 font-semibold' : 'text-gray-600'} flex-1">${isSelected ? '● ' : ''}${t.icon} ${t.label} ${i + 1}</span>
+                            <span class="text-gray-400 flex-shrink-0">${t.opp} m²</span>
+                            <button onclick="removeObstacle(${o.id})"
+                              class="text-gray-300 hover:text-red-400 transition-colors leading-none flex-shrink-0"
+                              title="Verwijderen">×</button>
+                          </div>`;
+                        }).join('');
+                        card.innerHTML = `
+                          <h3 class="font-semibold text-sm text-gray-700">${tab.label}</h3>
+                          <p class="text-xs text-gray-400">Selecteer een type en klik op de kaart om te plaatsen. Sleep om te verplaatsen, rechtermuisknop om te verwijderen.</p>
+                          <div class="flex flex-col gap-1">${typeButtons}</div>
+                          <p class="text-[11px] text-gray-400">Klik op een object en druk op Delete om te verwijderen.</p>
+                          <button onclick="toggleDrawing(TABS[${idx}])"
+                            class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border transition-all ${isDrawing
+                                ? 'border-red-300 text-red-500 hover:bg-red-50'
+                                : 'border-violet-300 text-violet-600 hover:bg-violet-50'}">
+                            ${isDrawing ? '✕ Stoppen met vlak tekenen' : '✏ Teken obstakelvlak'}
+                          </button>
+                          ${isDrawing ? `
+                          <div class="flex items-center justify-between text-xs text-gray-400">
+                            <span>Huidig vlak</span>
+                            <span id="live-draw-opp">— m²</span>
+                          </div>
+                          <button id="btn-voltooien" onclick="finishDrawing()" disabled
+                            class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border border-emerald-300 text-emerald-600 hover:bg-emerald-50 transition-all disabled:opacity-40 disabled:cursor-default">
+                            ✓ Voltooien
+                          </button>` : ''}
+                          ${listHtml
+                                ? `<div class="flex flex-col gap-1 pt-1 border-t border-gray-100">${listHtml}</div>`
+                                : '<p class="text-xs text-gray-300">Nog geen objecten geplaatst</p>'}
+                          ${zonesHtml
+                                ? `<div class="flex flex-col gap-1 pt-1 border-t border-gray-100">${zonesHtml}</div>`
+                                : '<p class="text-xs text-gray-300">Nog geen obstakelvlakken getekend</p>'}
+                          <div class="flex items-center justify-between text-xs text-gray-500 pt-1 border-t border-gray-100">
+                            <span>Obstakels totaal</span>
+                            <span class="font-semibold text-violet-700">${totalOpp ? totalOpp.toLocaleString('nl-NL') + ' m²' : '— m²'}</span>
+                          </div>
+                          <div class="flex items-center justify-between text-xs pt-1">
+                            <span class="text-gray-500">Bebouwbaar</span>
+                            <span class="font-semibold text-emerald-600">${bebouwbaarOpp ? bebouwbaarOpp.toLocaleString('nl-NL') + ' m²' : '— m²'}</span>
+                          </div>
+                          ${renderPveGrondvlakList(bebouwbaarOpp)}
+                        <button onclick="volgendeTab(${idx})" class="btn-secondary w-full text-sm py-2">overslaan</button>
+                        <button onclick="volgendeTab(${idx})" class="btn-primary w-full text-sm py-2">volgende</button>`;
+                        container.appendChild(card);
+                        return;
+                    }
+
+                    const isDrawing = drawingMode;
+                    const totalOpp = zones.reduce((s, z) => s + z.opp, 0);
+                    const card = document.createElement('div');
+                    card.className = 'card p-4 flex flex-col gap-3';
+                    card.style.border = '2px solid #7C3AED';
+                    const zonesHtml = zones.map((z, i) => `
+                        <div class="flex items-center gap-1 text-xs">
+                          <span class="text-gray-600 flex-1">Zone ${i + 1}</span>
+                          <span class="text-gray-400 flex-shrink-0">${z.opp.toLocaleString('nl-NL')} m²</span>
+                          <button onclick="removeZone('${tab.key}', ${z.id})"
+                            class="text-gray-300 hover:text-red-400 transition-colors leading-none flex-shrink-0"
+                            title="Verwijderen">×</button>
+                        </div>`).join('');
+                    card.innerHTML = `
+                        <h3 class="font-semibold text-sm text-gray-700">${tab.label}</h3>
+                        <button onclick="toggleDrawing(TABS[${idx}])"
+                          class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border transition-all ${isDrawing
+                            ? 'border-red-300 text-red-500 hover:bg-red-50'
+                            : 'border-violet-300 text-violet-600 hover:bg-violet-50'}">
+                          ${isDrawing ? '✕ Stoppen met tekenen' : '✏ Teken zone'}
+                        </button>
+                        ${isDrawing ? `
+                        <div class="flex items-center justify-between text-xs text-gray-400">
+                          <span>Huidig vlak</span>
+                          <span id="live-draw-opp">— m²</span>
+                        </div>
+                        <button id="btn-voltooien" onclick="finishDrawing()" disabled
+                          class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border border-emerald-300 text-emerald-600 hover:bg-emerald-50 transition-all disabled:opacity-40 disabled:cursor-default">
+                          ✓ Voltooien
+                        </button>` : ''}
+                        ${zonesHtml
+                            ? `<div class="flex flex-col gap-1">${zonesHtml}</div>`
+                            : '<p class="text-xs text-gray-300">Nog geen zones getekend</p>'}
+                        <div class="flex items-center justify-between text-xs text-gray-500 pt-1 border-t border-gray-100">
+                          <span>Totaal</span>
+                          <span class="font-semibold text-violet-700">${totalOpp ? totalOpp.toLocaleString('nl-NL') + ' m²' : '— m²'}</span>
+                        </div>
+                        <button onclick="volgendeTab(${idx})" class="btn-primary w-full text-sm py-2">volgende</button>`;
+                    container.appendChild(card);
+                } else {
+                    const pill = document.createElement('button');
+                    const activeIdx = TABS.findIndex(t => activeTab && t.key === activeTab.key);
+                    pill.className = 'tab-pill ' + (isDone ? 'done' : (idx > activeIdx ? 'pending' : ''));
+                    pill.textContent = (isDone ? '✓ ' : '') + tab.label;
+                    pill.onclick = () => { stopDrawing(); activeTab = tab; renderTabs(); };
+                    container.appendChild(pill);
+                }
+            });
+        }
+
+        function volgendeTab(currentIdx) {
+            if (drawingMode && currentPoly && drawPoints.length >= 3) {
+                finishDrawing();
+            } else {
+                stopDrawing();
+            }
+            if (currentIdx + 1 < TABS.length) {
+                activeTab = TABS[currentIdx + 1];
+                renderTabs();
+            } else {
+                window.location.href = 'gebied-stap-5-bouwvlak.html?id=' + gebiedId;
+            }
+        }
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && drawingMode && drawPoints.length >= 3) {
+                finishDrawing();
+            }
+        });
+
+        activeTab = TABS[0];
         renderTabs();
-      } else {
-        window.location.href = 'gebied-stap-5-bouwvlak.html?id=' + gebiedId;
-      }
-    }
-
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && drawingMode && drawPoints.length >= 3) {
-        finishDrawing();
-      }
-    });
-
-    activeTab = TABS[0];
-    renderTabs();
-    updateSummary();
-  </script>
-  <script src="js/bot.js"></script>
+        updateSummary();
+    </script>
+    <script src="js/bot.js"></script>
 </body>
 </html>
