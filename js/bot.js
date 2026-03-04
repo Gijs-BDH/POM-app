@@ -124,7 +124,7 @@ const BOT_IDLE =
       <div id="pom-bot-panel" role="complementary">
 
         <div id="pom-bot-header">
-          <div id="pom-bot-avatar">P</div>
+          <div id="pom-bot-avatar"><img src="public/pommie.png" alt="POM" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/></div>
           <span id="pom-bot-title">POM Assistent</span>
         </div>
 

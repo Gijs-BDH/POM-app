@@ -775,22 +775,20 @@ body > #pom-bot-wrap {
   border-radius: 1.25rem;
   box-shadow: 0 8px 40px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08);
   overflow: hidden;
-  border: 1.5px solid #EDE9FE;
+  border: 1.5px solid #B2DCD9;
 }
 #pom-bot-header {
   display: flex;
   align-items: center;
   gap: 0.6rem;
   padding: 0.75rem 1rem;
-  background: var(--primary);
+  background: #5BADA6;
 }
 #pom-bot-avatar {
   width: 1.75rem; height: 1.75rem;
   border-radius: 50%;
-  background: rgba(255,255,255,0.25);
-  color: white; font-size: 0.7rem; font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; letter-spacing: 0.03em;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 #pom-bot-title { flex: 1; font-size: 0.85rem; font-weight: 600; color: white; }
 
@@ -803,24 +801,24 @@ body > #pom-bot-wrap {
 .pom-bot-msg-bot {
   align-self: flex-start; max-width: 92%;
   font-size: 0.8rem; color: #374151; line-height: 1.55;
-  background: #F5F3FF; border-radius: 0.75rem 0.75rem 0.75rem 0.2rem;
-  padding: 0.6rem 0.875rem; border-left: 3px solid var(--primary);
+  background: #EEF8F7; border-radius: 0.75rem 0.75rem 0.75rem 0.2rem;
+  padding: 0.6rem 0.875rem; border-left: 3px solid #5BADA6;
 }
 .pom-bot-msg-user {
   align-self: flex-end; max-width: 85%;
   font-size: 0.8rem; color: white; line-height: 1.55;
-  background: var(--primary); border-radius: 0.75rem 0.75rem 0.2rem 0.75rem;
+  background: #5BADA6; border-radius: 0.75rem 0.75rem 0.2rem 0.75rem;
   padding: 0.6rem 0.875rem;
 }
 .pom-bot-actions-row { display: flex; flex-direction: column; gap: 0.35rem; width: 100%; }
 .pom-bot-action-btn {
   width: 100%; text-align: left;
   padding: 0.45rem 0.875rem; border-radius: 0.625rem;
-  border: 1.5px solid #DDD6FE; background: white;
-  color: var(--primary); font-size: 0.78rem; font-weight: 500;
+  border: 1.5px solid #B2DCD9; background: white;
+  color: #5BADA6; font-size: 0.78rem; font-weight: 500;
   cursor: pointer; transition: background 0.15s, border-color 0.15s;
 }
-.pom-bot-action-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+.pom-bot-action-btn:hover { background: #5BADA6; color: white; border-color: #5BADA6; }
 
 /* Input row */
 #pom-bot-input-row {
@@ -833,11 +831,11 @@ body > #pom-bot-wrap {
   padding: 0.4rem 0.7rem; font-size: 0.8rem; color: #374151;
   outline: none; background: white; transition: border-color 0.15s;
 }
-#pom-bot-input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(124,58,237,0.1); }
+#pom-bot-input:focus { border-color: #5BADA6; box-shadow: 0 0 0 2px rgba(91,173,166,0.15); }
 #pom-bot-send {
-  background: var(--primary); color: white; border: none;
+  background: #5BADA6; color: white; border: none;
   border-radius: 0.5rem; padding: 0.4rem 0.7rem;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
   transition: background 0.15s; flex-shrink: 0;
 }
-#pom-bot-send:hover { background: var(--primary-hover); }
+#pom-bot-send:hover { background: #4A9E97; }
