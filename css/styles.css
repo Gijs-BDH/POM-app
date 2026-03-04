@@ -620,7 +620,7 @@ input[type="range"]::-moz-range-thumb {
 .planning-pill.active { background: var(--primary); color: white; }
 
 /* ── Leaflet override ──────────────────────────────────────────────────────── */
-.leaflet-container { border-radius: 0.75rem; width: 55vw; }
+.leaflet-container { border-radius: 0.75rem; /*width: 55vw;*/ }
 /* Force crosshair over all children (incl. interactive shapes) during draw mode */
 .leaflet-container.drawing-crosshair,
 .leaflet-container.drawing-crosshair * { cursor: crosshair !important; }

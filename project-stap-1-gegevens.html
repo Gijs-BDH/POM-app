@@ -8,25 +8,25 @@
     <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body class="newproject flex items-center justify-center min-h-screen bg-gray-50">
+    <div class="flex">
+        <div class="card w-full max-w-md">
+            <h2 class="text-xl font-semibold text-gray-800 mb-6 text-center">Nieuw Project</h2>
 
-    <div class="card w-full max-w-md">
-        <h2 class="text-xl font-semibold text-gray-800 mb-6 text-center">Nieuw Project</h2>
+            <div class="flex flex-col gap-4">
+                <!-- Projectnaam -->
+                <div class="flex items-center gap-4">
+                    <label class="text-sm text-gray-500 w-32 text-right flex-shrink-0">Projectnaam</label>
+                    <input id="naam" type="text" class="input-field" placeholder="Naam van het project" />
+                </div>
 
-        <div class="flex flex-col gap-4">
-            <!-- Projectnaam -->
-            <div class="flex items-center gap-4">
-                <label class="text-sm text-gray-500 w-32 text-right flex-shrink-0">Projectnaam</label>
-                <input id="naam" type="text" class="input-field" placeholder="Naam van het project" />
-            </div>
+                <!-- Huidige stap -->
+                <div class="flex items-center gap-4">
+                    <label class="text-sm text-gray-500 w-32 text-right flex-shrink-0">Waar sta je momenteel</label>
+                    <textarea id="naam" type="text" class="input-field" placeholder="Waarvoor wil je POM gaan gebruiken"></textarea>
+                </div>
 
-            <!-- Huidige stap -->
-            <div class="flex items-center gap-4">
-                <label class="text-sm text-gray-500 w-32 text-right flex-shrink-0">Waar sta je momenteel</label>
-                <textarea id="naam" type="text" class="input-field" placeholder="Waarvoor wil je POM gaan gebruiken"></textarea>
-            </div>
-
-            <!-- Rol -->
-            <!-- <div class="flex items-start gap-4">
+                <!-- Rol -->
+                <!-- <div class="flex items-start gap-4">
                 <label class="text-sm text-gray-500 w-32 text-right flex-shrink-0 pt-1">Wat is jouw rol</label>
                 <div id="rol-btns" class="flex flex-wrap gap-2">
                     <button type="button" class="sel-btn" data-rol="Schoolbestuur">Schoolbestuurder</button>
@@ -39,30 +39,28 @@
                     <button type="button" class="sel-btn" data-rol="Sociaal beleid">Anders</button>
                 </div>
             </div> -->
+                <!-- Rol -->
+                <div class="flex items-center gap-4">
+                    <label class="text-sm text-gray-500 w-32 text-right flex-shrink-0 pt-1">
+                        Wat is jouw rol
+                    </label>
 
-            
-            <!-- Rol -->
-            <div class="flex items-center gap-4">
-                <label class="text-sm text-gray-500 w-32 text-right flex-shrink-0 pt-1">
-                    Wat is jouw rol
-                </label>
-
-                <select id="rol" name="rol" class="border rounded px-3 py-2 text-sm input-field">
-                    <option value="">Maak een keuze...</option>
-                    <option value="Schoolbestuur">Schoolbestuurder</option>
-                    <option value="Architect">Architect</option>
-                    <option value="Onderwijshuisvesting">Beleidsadviseur Onderwijshuisvesting</option>
-                    <option value="Stedenbouw beleid">Stedenbouwkundige</option>
-                    <option value="Sport beleid">Beleidsadviseur Sport</option>
-                    <option value="Sport beleid">Beleidsadviseur mobiliteit</option>
-                    <option value="Sociaal beleid">Beleidsadviseur Sociaal domein</option>
-                    <option value="Sociaal beleid">Anders</option>
-                </select>
-            </div>
+                    <select id="rol" name="rol" class="border rounded px-3 py-2 text-sm input-field">
+                        <option value="">Maak een keuze...</option>
+                        <option value="Schoolbestuur">Schoolbestuurder</option>
+                        <option value="Architect">Architect</option>
+                        <option value="Onderwijshuisvesting">Beleidsadviseur Onderwijshuisvesting</option>
+                        <option value="Stedenbouw beleid">Stedenbouwkundige</option>
+                        <option value="Sport beleid">Beleidsadviseur Sport</option>
+                        <option value="Sport beleid">Beleidsadviseur mobiliteit</option>
+                        <option value="Sociaal beleid">Beleidsadviseur Sociaal domein</option>
+                        <option value="Sociaal beleid">Anders</option>
+                    </select>
+                </div>
 
 
-            <!-- Ervaring -->
-            <!-- <div class="flex items-center gap-4">
+                <!-- Ervaring -->
+                <!-- <div class="flex items-center gap-4">
                 <label class="text-sm text-gray-500 w-32 text-right flex-shrink-0">Ervaring</label>
                 <select id="ervaring" class="select-field">
                   <option value="">Selecteer…</option>
@@ -73,10 +71,12 @@
               </div>
             </div> -->
 
-            <div class="flex justify-end mt-8">
-                <button id="next-btn" onclick="volgendeStap()" class="btn-primary px-6 py-2">volgende stap</button>
+                <div class="flex justify-end mt-8">
+                    <button id="next-btn" onclick="volgendeStap()" class="btn-primary px-6 py-2">volgende stap</button>
+                </div>
             </div>
         </div>
+        <div class="ml-6" data-role="bot"></div>
     </div>
 
     <script src="js/state.js"></script>
@@ -101,10 +101,10 @@
 
         function volgendeStap() {
             const naam = document.getElementById('naam').value.trim();
-            const rol  = document.getElementById('rol').value;
+            const rol = document.getElementById('rol').value;
 
             if (!naam) { alert('Vul een projectnaam in.'); return; }
-            if (!rol)  { alert('Selecteer een rol.'); return; }
+            if (!rol) { alert('Selecteer een rol.'); return; }
 
             setDraft({ naam, rol });
             window.location.href = 'project-stap-2-stakeholders.html';
