@@ -144,13 +144,13 @@
         <!-- ── Step list ───────────────────────────────────────────────────── -->
         <div class="flex-1 flex flex-col gap-3 min-w-0" style="overflow-y:auto; max-height:calc(100vh - 200px);">
 
-          <!-- ═══ Step 1: Schoolbouw ══════════════════════════════════════════ -->
+          <!-- ═══ Step 1: clustering ══════════════════════════════════════════ -->
           <button class="step-pill" id="pill-1" onclick="goToStep(1)" style="display:none">
-            <span>Schoolbouw</span>
+            <span>Clustering</span>
             <span id="pill-1-summary" style="font-size:0.75rem; opacity:0.8"></span>
           </button>
           <div class="card step-card" id="card-1" style="padding:1.5rem">
-            <div class="step-card-title">Schoolbouw</div>
+            <div class="step-card-title">Clustering</div>
             <!-- <div class="qrow">
               <label class="qlabel">Aantal leerlingen</label>
               <input type="number" id="q-leerlingen" class="num-field"
@@ -185,17 +185,17 @@
             <div id="row-ob" class="qrow">
               <label class="qlabel">Lokalen onderbouw</label>
               <input type="number" id="q-ob-lokalen" class="num-field"
-                     value="6" min="0" max="30" oninput="recalculate(); updateLokalenInfo()"/>
+                     min="0" max="30" oninput="recalculate(); updateLokalenInfo()"/>
             </div>
             <div id="row-mb" class="qrow" style="display:none">
               <label class="qlabel">Lokalen middenbouw</label>
               <input type="number" id="q-mb-lokalen" class="num-field"
-                     value="6" min="0" max="30" oninput="recalculate(); updateLokalenInfo()"/>
+                     min="0" max="30" oninput="recalculate(); updateLokalenInfo()"/>
             </div>
             <div id="row-bb" class="qrow">
               <label class="qlabel">Lokalen bovenbouw</label>
               <input type="number" id="q-bb-lokalen" class="num-field"
-                     value="6" min="0" max="30" oninput="recalculate(); updateLokalenInfo()"/>
+                     min="0" max="30" oninput="recalculate(); updateLokalenInfo()"/>
             </div>
             <div class="flex justify-between mt-2">
               <button class="btn-ghost px-4 py-2 text-sm" onclick="goToStep(1)">← Vorige</button>
@@ -211,7 +211,7 @@
           <div class="card step-card" id="card-3" style="padding:1.5rem; display:none">
             <div class="step-card-title">Hoofdruimtes</div>
             <div class="qrow">
-              <label class="qlabel">Centrale ontmoetingsruimte</label>
+              <label class="qlabel">Capiciteit centrale ontmoetingsruimte</label>
               <select id="q-cor" class="select-field" style="max-width:230px" onchange="recalculate()">
                 <option selected>Hele klas</option>
                 <option >Hele cluster</option>
@@ -219,7 +219,7 @@
               </select>
             </div>
             <div class="qrow">
-              <label class="qlabel">Leerplein % van cluster</label>
+              <label class="qlabel">Capaciteit leerplein </br> (als % van clustergrootte)</label>
               <select id="q-leerplein" class="select-field" style="max-width:230px" onchange="recalculate()">
                 <!-- filled in JS -->
               </select>
@@ -264,10 +264,15 @@
               </div>
             </div>
             <div class="qrow">
-              <label class="qlabel">Prikkelarme ruimten</label>
+              <label class="qlabel">Aantal prikkelarme ruimten</label>
               <div class="flex gap-2 items-center flex-wrap">
                 <input type="number" id="q-prikkelarm-aantal" class="num-field"
                        value="1" min="0" max="5" oninput="recalculate()"/>
+              </div>
+            </div>
+                        <div class="qrow">
+              <label class="qlabel">Capaciteit prikkelarme ruimten</label>
+              <div class="flex gap-2 items-center flex-wrap">
                 <select id="q-prikkelarm-grootte" class="select-field" style="max-width:185px" onchange="recalculate()">
                   <option selected>8 m² (1-2 kinderen)</option>
                   <option>16 m² (3-4 kinderen)</option>
@@ -290,14 +295,14 @@
               </div>
             </div>
             <div class="qrow">
-              <label class="qlabel">Kantoorruimten</label>
+              <label class="qlabel">Kantoorruimten formaat</label>
               <select id="q-kantoor" class="select-field" style="max-width:230px" onchange="recalculate()">
                 <option selected>Basis (8m²)</option>
                 <option>Groot (16m²)</option>
               </select>
             </div>
             <div class="qrow">
-              <label class="qlabel">Spreekruimten</label>
+              <label class="qlabel">Spreekruimten formaat</label>
               <select id="q-spreekruimte" class="select-field" style="max-width:230px" onchange="recalculate()">
                 <option selected>Basis (12m²)</option>
                 <option>Groot (24m²)</option>
@@ -383,6 +388,7 @@
     document.getElementById('step-indicator').innerHTML  = renderStepIndicator(2, 5, ['pve-stap-2-voorzieningen.html']);
     document.getElementById('nav-panel').innerHTML       = renderNavPanel('pve', project);
 
+
     // ── Leerplein percentage options (5% – 100%) ──────────────────────────────
     (function () {
       const sel = document.getElementById('q-leerplein');
@@ -397,7 +403,7 @@
 
     // ── Step navigation ───────────────────────────────────────────────────────
     const STEPS = [
-      { n: 1, label: 'Schoolbouw' },
+      { n: 1, label: 'Clustering' },
       { n: 2, label: 'Lokalen' },
       { n: 3, label: 'Hoofdruimtes' },
       { n: 4, label: 'Overige ruimtes' },
@@ -412,7 +418,7 @@
       const base       = Math.ceil(leerlingen / 30) || 8;
 
       if (n === 1) {
-        // Schoolbouw defaults
+        // clustering defaults
         if (!document.getElementById('q-fte').value) {
           document.getElementById('q-fte').value = '12';
         }

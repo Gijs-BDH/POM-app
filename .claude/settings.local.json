@@ -3,7 +3,8 @@
     "allow": [
       "Bash(python -c \":*)",
       "Bash(node -e \":*)",
-      "Bash(grep -n \"^<body\\\\|^  <div \" *.html)"
+      "Bash(grep -n \"^<body\\\\|^  <div \" *.html)",
+      "Bash(python3 -c \":*)"
     ]
   }
 }

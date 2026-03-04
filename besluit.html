@@ -201,6 +201,7 @@
           ${optie ? `
           <div class="px-3 pb-2">
             <span class="metric-pill">${POM_CALC.formatM2(optie.bvo)}</span>
+            ${optie.bouwduur ? `<span class="metric-pill">bouwduur: ${optie.bouwduur}</span>` : ''}
             <div class="dashboard-widget mt-1">
               <div class="dashboard-pill" style="cursor:pointer;transition:background 0.15s;"
                    onmouseenter="this.style.background='#F5F3FF'" onmouseleave="this.style.background=''"

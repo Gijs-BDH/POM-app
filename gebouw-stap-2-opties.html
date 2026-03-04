@@ -261,6 +261,7 @@
               ${(opt.eigenschappen || []).map(e => `<span class="eigenschap-tag">${e}</span>`).join('')}
             </div>
             <span class="metric-pill">BVO: ${opt.bvo.toLocaleString('nl-NL')} m²</span>
+            ${opt.bouwduur ? `<span class="metric-pill">bouwduur: ${opt.bouwduur}</span>` : ''}
             <div class="dashboard-widget">
               <div class="dashboard-pill" style="cursor:pointer;transition:background 0.15s;"
                    onmouseenter="this.style.background='#F5F3FF'" onmouseleave="this.style.background=''"
@@ -325,6 +326,7 @@
         metricRow('BVO', detailOptie.bvo.toLocaleString('nl-NL') + ' m²') +
         metricRow('Footprint', detailOptie.footprint ? detailOptie.footprint.toLocaleString('nl-NL') + ' m²' : '—') +
         metricRow('Bouwlagen', (detailOptie.lagen || '—') + (detailOptie.lagen === 1 ? ' laag' : ' lagen')) +
+        metricRow('Bouwduur', detailOptie.bouwduur || '—') +
         metricRow('Bouwkosten', POM_CALC.formatEuro(detailOptie.bouwkosten), '#7C3AED') +
         metricRow('Per m²', POM_CALC.formatEuro(Math.round(detailOptie.bouwkosten / detailOptie.bvo)), '#7C3AED') +
         metricRow('TCO', POM_CALC.formatEuro(detailOptie.tco), '#059669') +

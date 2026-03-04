@@ -69,6 +69,7 @@ window.GEBOUW_OPTIES_GROUPS = [
         beschrijving: 'Compacte schoolvorm met efficiënte ruimtebenutting op twee bouwlagen. Geschikt voor kleinere kavels met beperkt bouwvlak.',
         eigenschappen: ['Kleine footprint', 'Efficiënt', 'Snel te realiseren'],
         ambitieScores: _scores(67, 55, 67, 75, 65),
+        bouwduur: "2.2 jaar",
       },
       {
         id:           'lineair',
@@ -86,6 +87,7 @@ window.GEBOUW_OPTIES_GROUPS = [
         beschrijving: 'Langgerekte plattegrond langs de straatrooilijn. Optimale daglichttoetreding aan beide zijden, heldere circulatie.',
         eigenschappen: ['Optimaal daglicht', 'Duidelijke routing', 'Goed aanpasbaar'],
         ambitieScores: _scores(80, 67, 70, 70, 67),
+        bouwduur: "2.7 jaar",
       },
     ],
   },
@@ -113,6 +115,7 @@ window.GEBOUW_OPTIES_GROUPS = [
         beschrijving: 'Meerdere bouwlagen op een kleine footprint. Ideaal bij sterk beperkt kavelbegrip of midden in stedelijk weefsel.',
         eigenschappen: ['Kleine footprint', 'Stedelijk', 'Intensief ruimtegebruik'],
         ambitieScores: _scores(55, 65, 50, 72, 75),
+        bouwduur: "2 jaar",
       },
       {
         id:           'dubbeldeks',
@@ -130,6 +133,7 @@ window.GEBOUW_OPTIES_GROUPS = [
         beschrijving: 'Driebouwlaags met groot overdekt programma op de begane grond. Combineert intensief grondgebruik met aangename schaalverhouding.',
         eigenschappen: ['3 lagen', 'Overdekte plint', 'Stadsschool'],
         ambitieScores: _scores(62, 68, 58, 75, 72),
+        bouwduur: "1.8 jaar",
       },
       {
         id:           'lprofiel',
@@ -147,6 +151,7 @@ window.GEBOUW_OPTIES_GROUPS = [
         beschrijving: 'L-vormige opzet van drie bouwlagen met een half-open binnentuin. Creëert een gedeeltelijk beschut buiten­klimaat voor de school.',
         eigenschappen: ['L-vorm', 'Half-open hof', 'Gelede gevel'],
         ambitieScores: _scores(68, 63, 62, 78, 68),
+        bouwduur: "2 jaar",
       },
       {
         id:           'lprofiel2',
@@ -164,6 +169,7 @@ window.GEBOUW_OPTIES_GROUPS = [
         beschrijving: 'L-vormige opzet van drie bouwlagen met een half-open binnentuin. Creëert een gedeeltelijk beschut buiten­klimaat voor de school.',
         eigenschappen: ['L-vorm', 'Half-open hof', 'Gelede gevel'],
         ambitieScores: _scores(68, 63, 62, 78, 68),
+        bouwduur: "2.3 jaar",
       },
     ],
   },

@@ -73,12 +73,12 @@ const RUIMTESTAAT_CALC = (function () {
     if (clusterType === '1 cluster') {
       obLokalen = totaalLokalen;
     } else if (clusterType === '2 clusters OB+BB') {
-      obLokalen = parseInt(inp.aantalLokalenOB) || roundUp(totaalLokalen / 2);
-      bbLokalen = parseInt(inp.aantalLokalenBB) || Math.floor(totaalLokalen / 2);
+      obLokalen = parseInt(inp.aantalLokalenOB) || 0;
+      bbLokalen = parseInt(inp.aantalLokalenBB) || 0;
     } else { // 3 clusters OB+MB+BB
-      obLokalen = parseInt(inp.aantalLokalenOB) || roundUp(totaalLokalen / 3);
-      mbLokalen = parseInt(inp.aantalLokalenMB) || round(totaalLokalen / 3);
-      bbLokalen = parseInt(inp.aantalLokalenBB) || Math.floor(totaalLokalen / 3);
+      obLokalen = parseInt(inp.aantalLokalenOB) || 0;
+      mbLokalen = parseInt(inp.aantalLokalenMB) || 0;
+      bbLokalen = parseInt(inp.aantalLokalenBB) || 0;
     }
     const maxCluster = Math.max(obLokalen, mbLokalen, bbLokalen); // C28
 
