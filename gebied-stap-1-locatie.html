@@ -10,6 +10,14 @@
   <link rel="stylesheet" href="css/styles.css"/>
   <style>
     #map, #map3d { height: 800px; border-radius: 0.75rem; }
+    .tab-pill {
+      width: 100%; padding: 0.55rem 1rem; border-radius: 99px;
+      border: 1.5px solid #E5E7EB; background: white;
+      color: #9CA3AF; font-size: 0.8rem; font-weight: 500;
+      text-align: center; cursor: pointer; transition: all 0.15s;
+    }
+    .tab-pill.done    { border-color: #D1FAE5; background: #ECFDF5; color: #059669; }
+    .tab-pill.pending { color: #D1D5DB; border-color: #F3F4F6; cursor: default; }
   </style>
 </head>
 <body class="min-h-screen bg-gray-50 p-8 gebied">
@@ -32,41 +40,14 @@
         </div>
         <div id="map"></div>
         <div id="map3d" class="hidden"></div>
-        <p class="text-xs text-gray-400 mt-2 text-center">
+        <p id="map-hint" class="text-xs text-gray-400 mt-2 text-center">
           Zoek een adres om de kaart te centreren op de gewenste locatie
         </p>
       </div>
 
-      <!-- Right panel -->
+      <!-- Right panel: sequential cards -->
       <div class="w-56 flex-shrink-0 flex flex-col gap-3">
-
-        <!-- Locatie card -->
-        <div class="card p-4 flex flex-col gap-3">
-          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Locatie</h3>
-          <div class="text-sm font-semibold text-gray-700" id="variant-label"></div>
-          <div class="flex flex-col gap-1">
-            <label class="text-xs text-gray-500">Zoek adres</label>
-            <div class="flex gap-1">
-              <input id="zoek-input" type="text" class="input-field"
-                     placeholder="Adres of plaats…"
-                     onkeydown="if(event.key==='Enter') zoekLocatie()"/>
-              <button onclick="zoekLocatie()" class="btn-primary flex-shrink-0"
-                      style="padding:0.5rem 0.75rem;">→</button>
-            </div>
-            <div id="zoek-feedback" class="text-xs text-gray-400 leading-tight min-h-[1rem]"></div>
-          </div>
-          <label class="flex items-center gap-2 cursor-pointer select-none">
-            <input type="checkbox" id="kadaster-toggle" checked
-                   onchange="toggleKadaster(this.checked)"
-                   class="w-3.5 h-3.5 accent-violet-600"/>
-            <span class="text-xs text-gray-500">Kadastraal percelen overlay</span>
-          </label>
-        </div>
-
-        <button onclick="naarMethode()" class="btn-primary w-full">
-          Volgende stap →
-        </button>
-
+        <div id="cards-container" class="flex flex-col gap-2"></div>
       </div>
     </div>
   </div>
@@ -81,59 +62,55 @@
     if (!project) { window.location.href = 'index.html'; }
 
     document.getElementById('project-titel').textContent = project.naam;
-    document.getElementById('step-indicator').innerHTML  = renderStepIndicator(1, 4);
+    document.getElementById('step-indicator').innerHTML  = renderStepIndicator(1, 5);
     document.getElementById('nav-panel').innerHTML       = renderNavPanel('gebied', project);
 
-    const variantNr = (project.gebiedVarianten || []).length + 1;
-    document.getElementById('variant-label').textContent = 'Gebiedsvariant ' + variantNr;
+    const variantNr    = (project.gebiedVarianten || []).length + 1;
+    const variantLabel = 'Gebiedsvariant ' + variantNr;
 
-    // ── Map init ─────────────────────────────────────────────────────────────
-    const INITIAL_CENTER = [52.2, 5.3];
-    const INITIAL_ZOOM = 8;
+    // ── Cards ─────────────────────────────────────────────────────────────────
+    const CARDS = [
+      { key: 'locatie', label: 'Locatie' },
+      { key: 'methode', label: 'Nieuwe gebiedsvariant' },
+    ];
+    let activeCard = 'locatie';
+    const completedCards = new Set();
+
+    // ── Map init ──────────────────────────────────────────────────────────────
     const MAP_VIEW_KEY = 'pom_map_view_gebied_' + project.id;
-    const savedView = JSON.parse(localStorage.getItem(MAP_VIEW_KEY) || 'null');
+    const savedView    = JSON.parse(localStorage.getItem(MAP_VIEW_KEY) || 'null');
+
     const map = L.map('map').setView(
-      savedView ? [savedView.lat, savedView.lng] : INITIAL_CENTER,
-      savedView ? savedView.zoom : INITIAL_ZOOM
+      savedView ? [savedView.lat, savedView.lng] : [52.2, 5.3],
+      savedView ? savedView.zoom : 8
     );
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 19
     }).addTo(map);
-
-      map.on('moveend', () => {
-          const c = map.getCenter();
-          localStorage.setItem(MAP_VIEW_KEY, JSON.stringify({ lat: c.lat, lng: c.lng, zoom: map.getZoom() }));
-      });
+    map.on('moveend', () => {
+      const c = map.getCenter();
+      localStorage.setItem(MAP_VIEW_KEY, JSON.stringify({ lat: c.lat, lng: c.lng, zoom: map.getZoom() }));
+    });
 
     const map3d = new maplibregl.Map({
       container: 'map3d',
       style: {
         version: 8,
-        sources: {
-          osm: {
-            type: 'raster',
-            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-            tileSize: 256,
-            attribution: '© OpenStreetMap contributors'
-          }
-        },
-        layers: [{ id: 'osm', type: 'raster', source: 'osm' }]
+        sources: { osm: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© OpenStreetMap contributors' } },
+        layers:  [{ id: 'osm', type: 'raster', source: 'osm' }]
       },
-      center: [INITIAL_CENTER[1], INITIAL_CENTER[0]],
-      zoom: INITIAL_ZOOM,
-      pitch: 55,
+      center:  savedView ? [savedView.lng, savedView.lat] : [5.3, 52.2],
+      zoom:    savedView ? savedView.zoom : 8,
+      pitch:   55,
       bearing: -15
     });
 
-    let mapMode = '2d';
     function setMapMode(mode) {
-      mapMode = mode;
       const map2dEl = document.getElementById('map');
       const map3dEl = document.getElementById('map3d');
-      const btn2d = document.getElementById('btn-2d');
-      const btn3d = document.getElementById('btn-3d');
-
+      const btn2d   = document.getElementById('btn-2d');
+      const btn3d   = document.getElementById('btn-3d');
       if (mode === '3d') {
         const c = map.getCenter();
         map3d.setCenter([c.lng, c.lat]);
@@ -144,7 +121,6 @@
         btn2d.className = 'px-3 py-1 text-xs rounded-md text-gray-500';
         btn3d.className = 'px-3 py-1 text-xs rounded-md bg-violet-600 text-white';
         map3d.resize();
-        syncLeafletTo3D();
       } else {
         const c = map3d.getCenter();
         map.setView([c.lat, c.lng], map3d.getZoom());
@@ -157,81 +133,23 @@
     }
     window.setMapMode = setMapMode;
 
-    let map3dReady = false;
-    const sync3dSourceId = 'leaflet-polygons-src';
-    function syncLeafletTo3D() {
-      if (!map3dReady) return;
-      const features = [];
-      map.eachLayer(layer => {
-        if (layer instanceof L.Polygon) {
-          const gj = layer.toGeoJSON();
-          if (gj && gj.geometry) {
-            gj.properties = {
-              fillColor: layer.options?.fillColor || layer.options?.color || '#7C3AED',
-              lineColor: layer.options?.color || '#4C1D95',
-              fillOpacity: layer.options?.fillOpacity ?? 0.22,
-              lineWidth: layer.options?.weight ?? 1.5,
-            };
-            features.push(gj);
-          }
-        }
-      });
-      const fc = { type: 'FeatureCollection', features };
-      const src = map3d.getSource(sync3dSourceId);
-      if (src) {
-        src.setData(fc);
-      } else {
-        map3d.addSource(sync3dSourceId, { type: 'geojson', data: fc });
-        map3d.addLayer({
-          id: 'leaflet-polygons-fill',
-          type: 'fill',
-          source: sync3dSourceId,
-          paint: {
-            'fill-color': ['coalesce', ['get', 'fillColor'], '#7C3AED'],
-            'fill-opacity': ['coalesce', ['get', 'fillOpacity'], 0.22]
-          }
-        });
-        map3d.addLayer({
-          id: 'leaflet-polygons-line',
-          type: 'line',
-          source: sync3dSourceId,
-          paint: {
-            'line-color': ['coalesce', ['get', 'lineColor'], '#4C1D95'],
-            'line-width': ['coalesce', ['get', 'lineWidth'], 1.5]
-          }
-        });
-      }
-    }
-    map3d.on('load', () => { map3dReady = true; syncLeafletTo3D(); });
-    map.on('layeradd', syncLeafletTo3D);
-    map.on('layerremove', syncLeafletTo3D);
-
-    // ── Kadaster WMS overlay ─────────────────────────────────────────────────
+    // ── Kadaster WMS overlay ──────────────────────────────────────────────────
     const kadasterLayer = L.tileLayer.wms(
       'https://service.pdok.nl/kadaster/kadastralekaart/wms/v5_0',
-      { layers: 'Perceel', format: 'image/png', transparent: true, opacity: 0.6,
-        attribution: '© Kadaster' }
+      { layers: 'Perceel', format: 'image/png', transparent: true, opacity: 0.6, attribution: '© Kadaster' }
     ).addTo(map);
 
     function toggleKadaster(on) {
       if (on) map.addLayer(kadasterLayer);
       else    map.removeLayer(kadasterLayer);
     }
+    window.toggleKadaster = toggleKadaster;
 
-    // ── Existing variants as context ─────────────────────────────────────────
-    //(project.gebiedVarianten || []).forEach(g => {
-    //  const geo = (g.bouwbaarGebied && g.bouwbaarGebied.geo && g.bouwbaarGebied.geo.length >= 3)
-    //              ? g.bouwbaarGebied.geo
-    //              : (g.geo && g.geo.length >= 3 ? g.geo : null);
-    //  if (geo) {
-    //    L.polygon(geo, { color: '#F97316', fillColor: '#F97316', fillOpacity: 0.2, weight: 1.5 }).addTo(map);
-    //  }
-    //});
-
-    // ── Address search via Nominatim ─────────────────────────────────────────
+    // ── Address search ────────────────────────────────────────────────────────
     async function zoekLocatie() {
-      const q        = document.getElementById('zoek-input').value.trim();
+      const inp      = document.getElementById('zoek-input');
       const feedback = document.getElementById('zoek-feedback');
+      const q = inp.value.trim();
       if (!q) return;
       feedback.textContent = 'Zoeken…';
       try {
@@ -251,11 +169,142 @@
         feedback.textContent = 'Zoeken mislukt, probeer opnieuw.';
       }
     }
+    window.zoekLocatie = zoekLocatie;
 
-    // ── Navigate ─────────────────────────────────────────────────────────────
-    function naarMethode() {
-      window.location.href = 'gebied-nieuw.html';
+    // ── Method actions ────────────────────────────────────────────────────────
+    function kiesLoket() {
+      const p = getCurrentProject();
+      const variant = { id: crypto.randomUUID(), naam: 'Loket aanvraag', opp: 0, geo: [], wachtOpLoket: true, createdAt: Date.now() };
+      updateCurrentProject({ gebiedVarianten: [...(p.gebiedVarianten || []), variant] });
+      window.location.href = 'project-overzicht.html';
     }
+
+    function kiesTeken() {
+      window.location.href = 'gebied-stap-1-kavels.html';
+    }
+    window.kiesLoket = kiesLoket;
+    window.kiesTeken = kiesTeken;
+
+    // ── Card transitions ──────────────────────────────────────────────────────
+    function goToCard(key) {
+      activeCard = key;
+      renderCards();
+    }
+
+    function naarMethode() {
+      completedCards.add('locatie');
+      goToCard('methode');
+    }
+    window.naarMethode = naarMethode;
+
+    // ── Card HTML builders ────────────────────────────────────────────────────
+    function getCardInnerHTML(key) {
+      switch (key) {
+        case 'locatie':
+          return `
+            <div class="text-sm font-semibold text-gray-700">${variantLabel}</div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs text-gray-500">Zoek adres</label>
+              <div class="flex gap-1">
+                <input id="zoek-input" type="text" class="input-field"
+                       placeholder="Adres of plaats…"
+                       onkeydown="if(event.key==='Enter') zoekLocatie()"/>
+                <button onclick="zoekLocatie()" class="btn-primary flex-shrink-0" style="padding:0.5rem 0.75rem;">→</button>
+              </div>
+              <div id="zoek-feedback" class="text-xs text-gray-400 leading-tight min-h-[1rem]"></div>
+            </div>
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" id="kadaster-toggle" checked
+                     onchange="toggleKadaster(this.checked)"
+                     class="w-3.5 h-3.5 accent-violet-600"/>
+              <span class="text-xs text-gray-500">Kadastraal percelen overlay</span>
+            </label>
+            <button onclick="naarMethode()" class="btn-primary w-full mt-1">Volgende →</button>`;
+
+        case 'methode':
+          return `
+            <p class="text-xs text-gray-500 leading-snug">Met welke methode wil je deze gebiedsvariant definiëren?</p>
+            <div class="flex flex-col gap-2">
+
+
+              <div class="relative text-left p-3 rounded-xl border-2 border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed">
+                <img src="src/assets/naMVP v2.png" class="absolute top-2 right-2 h-7 w-auto" alt="na MVP"/>
+                <div class="flex items-start gap-2.5">
+                  <div class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <div class="font-semibold text-gray-400 text-xs leading-snug">Upload stedenbouwkundig plan</div>
+                    <div class="text-xs text-gray-400 mt-0.5 leading-tight">Gegevens worden automatisch ingevuld</div>
+                  </div>
+                </div>
+              </div>
+
+              
+              <button onclick="kiesLoket()" class="text-left p-3 rounded-xl border-2 border-gray-200 hover:border-amber-400 hover:bg-amber-50 transition-all group">
+                <div class="flex items-start gap-2.5">
+                  <div class="w-7 h-7 rounded-full bg-amber-50 group-hover:bg-amber-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <div class="font-semibold text-gray-700 text-xs leading-snug">Stuur een invoer verzoek</div>
+                    <div class="text-xs text-gray-400 mt-0.5 leading-tight">Stedenbouwkundige vult de gegevens in</div>
+                  </div>
+                </div>
+              </button>
+
+              
+              <button onclick="kiesTeken()" class="text-left p-3 rounded-xl border-2 border-gray-200 hover:border-violet-400 hover:bg-violet-50 transition-all group">
+                <div class="flex items-start gap-2.5">
+                  <div class="w-7 h-7 rounded-full bg-violet-50 group-hover:bg-violet-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg class="w-3.5 h-3.5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <div class="font-semibold text-gray-700 text-xs leading-snug">Teken zelf een gebied in</div>
+                    <div class="text-xs text-gray-400 mt-0.5 leading-tight">Teken de locatie op de kaart</div>
+                  </div>
+                </div>
+              </button>
+              
+
+            </div>`;
+      }
+    }
+
+    // ── renderCards ───────────────────────────────────────────────────────────
+    function renderCards() {
+      const container = document.getElementById('cards-container');
+      container.innerHTML = '';
+      CARDS.forEach(card => {
+        const isDone   = completedCards.has(card.key);
+        const isActive = card.key === activeCard;
+        if (isActive) {
+          const div = document.createElement('div');
+          div.className = 'card p-4 flex flex-col gap-3';
+          div.style.border = '1.5px solid #7C3AED';
+          div.innerHTML = `<h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">${card.label}</h3>${getCardInnerHTML(card.key)}`;
+          container.appendChild(div);
+        } else {
+          const pill = document.createElement('button');
+          pill.className   = 'tab-pill ' + (isDone ? 'done' : 'pending');
+          pill.textContent = (isDone ? '✓ ' : '') + card.label;
+          if (isDone) pill.onclick = () => goToCard(card.key);
+          container.appendChild(pill);
+        }
+      });
+    }
+
+    // Initial render
+    renderCards();
   </script>
   <script src="js/bot.js"></script>
 </body>
