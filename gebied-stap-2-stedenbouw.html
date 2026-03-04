@@ -766,6 +766,57 @@
       saveTabZones('bebouwbaarGebied');
     }
 
+    function laadDefaultOmgevingseisen() {
+      if (!variant.geo || variant.geo.length < 3) {
+        alert('Geen kavelgrens beschikbaar. Ga terug naar stap 1 om de kavel te definiëren.');
+        return;
+      }
+      const geo = variant.geo; // [[lat, lng], ...]
+      const P0 = geo[0];
+      const P1 = geo[1];
+      const Pn = geo[geo.length - 1];
+      // Oblique basis: e1 = P1-P0 (along first edge), e2 = Pn-P0 (along last edge)
+      const e1 = [P1[0] - P0[0], P1[1] - P0[1]];
+      const e2 = [Pn[0] - P0[0], Pn[1] - P0[1]];
+      // Forward transform: local oblique (s,t) → world [lat, lng]
+      function toWorld(s, t) {
+        return [P0[0] + s * e1[0] + t * e2[0], P0[1] + s * e1[1] + t * e2[1]];
+      }
+      // Kavel as turf feature for clipping ([lng, lat] order)
+      const kavelRing = geo.map(c => [c[1], c[0]]);
+      kavelRing.push(kavelRing[0]);
+      const kavelFeat = turf.polygon([kavelRing]);
+
+      function addDefaultZone(localPts, hoogte) {
+        const ring = localPts.map(([s, t]) => { const w = toWorld(s, t); return [w[1], w[0]]; });
+        ring.push(ring[0]);
+        console.log('[omgevingseisen] rect ring (lng,lat):', ring);
+        console.log('[omgevingseisen] kavelFeat:', kavelFeat);
+        const rect = turf.polygon([ring]);
+        const clipped = turf.intersect(turf.featureCollection([kavelFeat, rect]));
+        console.log('[omgevingseisen] clipped:', clipped);
+        if (!clipped || clipped.geometry.type !== 'Polygon') return;
+        const leafletGeo = clipped.geometry.coordinates[0].slice(0, -1).map(c => [c[1], c[0]]);
+        if (leafletGeo.length < 3) return;
+        const opp = Math.round(turf.area(clipped));
+        const tab = TABS.find(t => t.key === 'bebouwbaarGebied');
+        const poly = L.polygon(leafletGeo, {
+          color: tab.color, fillColor: tab.color, fillOpacity: 0.3, weight: 2
+        }).addTo(layers['bebouwbaarGebied']);
+        tabZones['bebouwbaarGebied'].push({ id: nextZoneId++, kind: 'polygon', geo: leafletGeo, opp, poly, hoogte });
+      }
+
+      // Clear existing zones first
+      tabZones['bebouwbaarGebied'].forEach(z => map.removeLayer(z.poly));
+      tabZones['bebouwbaarGebied'] = [];
+
+      addDefaultZone([[0.05, 0.05], [0.60, 0.05], [0.60, 0.95], [0.05, 0.95]], 9);
+      addDefaultZone([[-10000, -10000], [-10000, 10000], [10000, 10000],[10000, -10000]], 4.5);
+
+      saveTabZones('bebouwbaarGebied');
+      renderTabs();
+    }
+
     function saveTabZones(key) {
       const zones = tabZones[key].map(z => {
         const base = { geo: z.geo, opp: z.opp, kind: z.kind || 'polygon', hoogte: z.hoogte || 0 };
@@ -1090,6 +1141,11 @@
             <button id="btn-voltooien" onclick="finishDrawing()" disabled
               class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border border-emerald-300 text-emerald-600 hover:bg-emerald-50 transition-all disabled:opacity-40 disabled:cursor-default">
               ✓ Voltooien
+            </button>` : ''}
+            ${tab.key === 'bebouwbaarGebied' ? `
+            <button onclick="laadDefaultOmgevingseisen()"
+              class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border border-emerald-300 text-emerald-700 hover:bg-emerald-50 transition-all">
+              ↓ Omgevingseisen ophalen
             </button>` : ''}
             ${tab.key === 'parkeren' ? `<div class="grid grid-cols-1 gap-1">
               <button onclick="toggleParkingPlacement(1)"
