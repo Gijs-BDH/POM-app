@@ -27,6 +27,62 @@
                 height: 100%;
                 object-fit: contain;
             }
+        .pve-tip-host {
+            position: relative;
+            cursor: help;
+            color: #9CA3AF;
+            font-size: 0.7rem;
+            display: inline-flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .pve-tip-box {
+            position: absolute;
+            right: calc(100% + 8px);
+            top: 50%;
+            transform: translateY(-50%);
+            background: #1F2937;
+            color: #F9FAFB;
+            font-size: 0.7rem;
+            line-height: 1.5;
+            border-radius: 8px;
+            padding: 10px 12px;
+            z-index: 9999;
+            min-width: 180px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+            pointer-events: none;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.15s, visibility 0.15s;
+        }
+        .pve-tip-host:hover .pve-tip-box { opacity: 1; visibility: visible; }
+        .pve-tip-header {
+            font-size: 0.62rem;
+            font-weight: 600;
+            color: #6B7280;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            padding-bottom: 6px;
+            margin-bottom: 6px;
+            border-bottom: 1px solid #374151;
+        }
+        .pve-tip-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            color: #D1D5DB;
+            padding: 1px 0;
+        }
+        .pve-tip-sep { height: 1px; background: #374151; margin: 5px 0; }
+        .pve-tip-total {
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            font-weight: 600;
+            color: #F9FAFB;
+            padding-top: 1px;
+        }
     </style>
 </head>
 <body class="min-h-screen bg-gray-50 p-8 gebied flex">
@@ -481,30 +537,21 @@
         }
 
         // ── PVE ground-floor compatibility ───────────────────────────────────────
-        function calcMinGrondvlak(pveVariant) {
+        function calcMinGrondvlakDetails(pveVariant) {
             const rs = pveVariant && pveVariant.ruimtestaat;
             if (!rs) return null;
-            const clusters = rs.clusters || [];
+            const clusters = (rs.clusters || []).filter(c => c.verdiepingrestrictie);
             if (!clusters.length) return null;
-            return Math.round(clusters
-                .filter(c => c.verdiepingrestrictie)
-                .reduce((sum, c) => sum + c.rooms.reduce(
-                    (s, r) => s + parseFloat(r.aantal) * parseFloat(r.oppervlakte), 0), 0));
+            const rows = clusters.map(c => {
+                const opp = c.rooms.reduce((s, r) => s + parseFloat(r.aantal) * parseFloat(r.oppervlakte), 0);
+                return { naam: c.naam || c.name || c.label || 'Cluster', opp: Math.round(opp) };
+            });
+            const totaal = Math.round(rows.reduce((s, r) => s + r.opp, 0));
+            return { rows, totaal };
         }
 
-
-        // ── PVE breakdown tooltip helper ──────────────────────────────────────────
-        function pveBreakdownTooltip(totalOpp) {
-            const school = totalOpp * 0.77;
-            const gym = totalOpp * 0.15;
-            const voorschools = totalOpp * 0.1;
-            return `
-                        <div class="absolute z-50 hidden group-hover:block bottom-full left-0 mb-1 bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
-                          <div>School: ${school.toLocaleString('nl-NL', { maximumFractionDigits: 0 })} m²</div>
-                          <div>Gym: ${gym.toLocaleString('nl-NL', { maximumFractionDigits: 0 })} m²</div>
-                          <div>Voorschools: ${voorschools.toLocaleString('nl-NL', { maximumFractionDigits: 0 })} m²</div>
-                        </div>
-                      `;
+        function calcMinGrondvlak(pveVariant) {
+            return calcMinGrondvlakDetails(pveVariant)?.totaal ?? null;
         }
 
         function updatePveCompatList(bebouwbaarOpp) {
@@ -523,10 +570,18 @@
                           </div>`;
                 }
                 const ok = bebouwbaarOpp > 0 && bebouwbaarOpp >= minOpp;
+                const details = calcMinGrondvlakDetails(pv);
+                const tipHtml = details ? (() => {
+                    const rowsHtml = details.rows.map(r =>
+                        `<div class="pve-tip-row"><span>${r.naam}</span><span>${r.opp.toLocaleString('nl-NL')} m\u00B2</span></div>`
+                    ).join('');
+                    return `<span class="pve-tip-host">\u24D8<span class="pve-tip-box"><div class="pve-tip-header">Min. grondvlak (begane grond)</div>${rowsHtml}<div class="pve-tip-sep"></div><div class="pve-tip-total"><span>Totaal</span><span>${details.totaal.toLocaleString('nl-NL')} m\u00B2</span></div></span></span>`;
+                })() : '';
                 return `<div class="flex items-center justify-between gap-1 text-xs">
                           <span class="truncate flex-1" style="${ok ? 'color:#059669' : 'color:#F97316'}" title="${pv.naam}">${pv.naam}</span>
                           <span class="flex-shrink-0" style="${ok ? 'color:#059669' : 'color:#F97316'}">${minOpp.toLocaleString('nl-NL')} m²</span>
-                          <span class="flex-shrink-0 font-semibold" style="${ok ? 'color:#059669' : 'color:#F97316'}">${ok ? '✓' : '✗'}</span>
+                          ${tipHtml}
+                          <span class="flex-shrink-0 font-semibold" style="${ok ? 'color:#059669' : 'color:#F97316'}">${ok ? '\u2713' : '\u2717'}</span>
                         </div>`;
             }).join('');
         }

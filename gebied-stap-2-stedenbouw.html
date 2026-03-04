@@ -1,52 +1,93 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>POM – Gebied Stap 2</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link href="https://cdn.jsdelivr.net/npm/cesium@1.107/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
-    <link rel="stylesheet" href="css/styles.css" />
-    <style>
-        #map, #map3d {
-            height: 800px;
-            border-radius: 0.75rem;
-        }
-
-        .tab-pill {
-            width: 100%;
-            padding: 0.55rem 1rem;
-            border-radius: 99px;
-            border: 1.5px solid #E5E7EB;
-            background: white;
-            color: #9CA3AF;
-            font-size: 0.8rem;
-            font-weight: 500;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-
-            .tab-pill.active {
-                border-color: #7C3AED;
-                color: #7C3AED;
-                box-shadow: 0 0 0 3px rgba(124,58,237,0.1);
-            }
-
-            .tab-pill.done {
-                border-color: #D1FAE5;
-                background: #ECFDF5;
-                color: #059669;
-                cursor: default;
-            }
-
-            .tab-pill.pending {
-                color: #D1D5DB;
-                border-color: #F3F4F6;
-                cursor: default;
-            }
-    </style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>POM – Gebied Stap 2</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link href="https://cdn.jsdelivr.net/npm/cesium@1.107/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css"/>
+  <style>
+    #map, #map3d { height: 800px; border-radius: 0.75rem; }
+    .tab-pill {
+      width: 100%; padding: 0.55rem 1rem; border-radius: 99px;
+      border: 1.5px solid #E5E7EB; background: white;
+      color: #9CA3AF; font-size: 0.8rem; font-weight: 500;
+      text-align: center; cursor: pointer; transition: all 0.15s;
+    }
+    .tab-pill.active  { border-color: #7C3AED; color: #7C3AED; box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
+    .tab-pill.done    { border-color: #D1FAE5; background: #ECFDF5; color: #059669; cursor: default; }
+    .tab-pill.pending { color: #D1D5DB; border-color: #F3F4F6; cursor: default; }
+    .rubberband-label {
+      background: rgba(255,255,255,0.93); border: 1px solid #7C3AED;
+      border-radius: 4px; padding: 1px 5px; font-size: 11px; font-weight: 500;
+      color: #7C3AED; white-space: nowrap; pointer-events: none;
+      transform: translate(-50%, -50%);
+    }
+    .area-label {
+      background: rgba(255,255,255,0.85); border: 1px solid #9CA3AF;
+      border-radius: 4px; padding: 2px 7px; font-size: 12px; font-weight: 600;
+      color: #374151; white-space: nowrap; pointer-events: none;
+      transform: translate(-50%, -50%);
+    }
+    .pve-tip-host {
+      position: relative;
+      cursor: help;
+      color: #9CA3AF;
+      font-size: 0.7rem;
+      display: inline-flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .pve-tip-box {
+      position: absolute;
+      right: calc(100% + 8px);
+      top: 50%;
+      transform: translateY(-50%);
+      background: #1F2937;
+      color: #F9FAFB;
+      font-size: 0.7rem;
+      line-height: 1.5;
+      border-radius: 8px;
+      padding: 10px 12px;
+      z-index: 9999;
+      min-width: 180px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      pointer-events: none;
+      white-space: nowrap;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.15s, visibility 0.15s;
+    }
+    .pve-tip-host:hover .pve-tip-box { opacity: 1; visibility: visible; }
+    .pve-tip-header {
+      font-size: 0.62rem;
+      font-weight: 600;
+      color: #6B7280;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      padding-bottom: 6px;
+      margin-bottom: 6px;
+      border-bottom: 1px solid #374151;
+    }
+    .pve-tip-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      color: #D1D5DB;
+      padding: 1px 0;
+    }
+    .pve-tip-sep { height: 1px; background: #374151; margin: 5px 0; }
+    .pve-tip-total {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      font-weight: 600;
+      color: #F9FAFB;
+      padding-top: 1px;
+    }
+  </style>
 </head>
 <body class="min-h-screen bg-gray-50 p-8 flex">
     <div id="pom-page-content">
@@ -117,6 +158,10 @@
                         <div class="flex justify-between text-xs" style="color:#3B82F6">
                             <span>· Parkeren</span>
                             <span id="opp-summary-parkeren">— m²</span>
+                        </div>
+                        <div class="flex justify-between text-xs" style="color:#A855F7">
+                            <span>· Fietsenstalling</span>
+                            <span id="opp-summary-fietsenstalling">— m²</span>
                         </div>
                         <div class="border-t border-gray-100 pt-2 flex justify-between text-xs font-semibold">
                             <span class="text-gray-700">Bebouwbaar</span>
@@ -194,6 +239,7 @@
         const TABS = [
             { key: 'onbebouwdGebied', label: 'Onbebouwd gebied', color: '#F97316' },
             { key: 'parkeren', label: 'Parkeren', color: '#3B82F6' },
+            { key: 'fietsenstalling', label: 'Voorkeurgebied fietsenstalling', color: '#A855F7' },
         ];
         TABS.forEach(t => { if (!variant[t.key]) variant[t.key] = { geo: [], opp: 0 }; });
 
@@ -369,6 +415,10 @@
         let drawPoints = [];
         let currentPoly = null;
         let clickTimer = null;
+        let rubberbandLine = null;
+        let rubberbandLabel = null;
+        let areaLabel = null;
+        let firstPointCircle = null;
         const PARKING_STANDARD = { widthM: 2.5, lengthM: 5 };
         let lastParkingAngle = 0;
 
@@ -528,17 +578,58 @@
             }
 
             if (!drawingMode) return;
+            // Snap-to-close check (≥3 points)
+            if (drawPoints.length >= 3) {
+                const firstPx = map.latLngToContainerPoint([drawPoints[0][0], drawPoints[0][1]]);
+                const curPx = map.latLngToContainerPoint(e.latlng);
+                if (Math.hypot(firstPx.x - curPx.x, firstPx.y - curPx.y) < 15) {
+                    clearTimeout(clickTimer);
+                    finishDrawing();
+                    return;
+                }
+            }
             clearTimeout(clickTimer);
             const latlng = e.latlng;
             clickTimer = setTimeout(() => {
-                drawPoints.push([latlng.lat, latlng.lng]);
-                if (drawPoints.length >= 3) {
+                // Snap placement to 0.5 m steps along direction from last point
+                let placedLatlng = latlng;
+                if (drawPoints.length > 0) {
+                    const from2 = [drawPoints[drawPoints.length - 1][0], drawPoints[drawPoints.length - 1][1]];
+                    const DEG_TO_M2 = 111320;
+                    const cosLat2 = Math.cos(from2[0] * Math.PI / 180);
+                    const dLatM2 = (latlng.lat - from2[0]) * DEG_TO_M2;
+                    const dLngM2 = (latlng.lng - from2[1]) * DEG_TO_M2 * cosLat2;
+                    const rawDist2 = Math.hypot(dLatM2, dLngM2);
+                    const snapDist2 = Math.round(rawDist2 / 0.5) * 0.5;
+                    if (rawDist2 > 0.001 && snapDist2 > 0) {
+                        const r = snapDist2 / rawDist2;
+                        placedLatlng = L.latLng(from2[0] + (latlng.lat - from2[0]) * r,
+                            from2[1] + (latlng.lng - from2[1]) * r);
+                    }
+                }
+                drawPoints.push([placedLatlng.lat, placedLatlng.lng]);
+                // Re-anchor rubber-band from new last point to current cursor immediately
+                if (rubberbandLine) {
+                    rubberbandLine.setLatLngs([[placedLatlng.lat, placedLatlng.lng], [latlng.lat, latlng.lng]]);
+                }
+                if (rubberbandLabel) { map.removeLayer(rubberbandLabel); rubberbandLabel = null; }
+                if (drawPoints.length === 1) {
+                    firstPointCircle = L.circleMarker([placedLatlng.lat, placedLatlng.lng], {
+                        radius: 5, color: activeTab.color, fillColor: activeTab.color,
+                        fillOpacity: 1, weight: 2, interactive: false
+                    }).addTo(map);
+                } else if (drawPoints.length === 2) {
+                    if (currentPoly) map.removeLayer(currentPoly);
+                    currentPoly = L.polyline(drawPoints, {
+                        color: activeTab.color, weight: 2, dashArray: '5 4'
+                    }).addTo(map);
+                } else {
                     if (currentPoly) map.removeLayer(currentPoly);
                     currentPoly = L.polygon(drawPoints, {
                         color: activeTab.color, fillColor: activeTab.color,
                         fillOpacity: 0.2, weight: 2, dashArray: '5 4'
                     }).addTo(map);
-                    const liveOpp = calcAreaM2(currentPoly.getLatLngs()[0]);
+                    const liveOpp = calcAreaM2(drawPoints.map(p => L.latLng(p[0], p[1])));
                     const liveEl = document.getElementById('live-draw-opp');
                     if (liveEl) liveEl.textContent = liveOpp.toLocaleString('nl-NL') + ' m²';
                     const voltooienBtn = document.getElementById('btn-voltooien');
@@ -547,14 +638,104 @@
             }, 250);
         });
 
+        document.addEventListener('mousemove', e => {
+            if (!drawingMode || drawPoints.length === 0) return;
+            const mapEl = document.getElementById('map');
+            if (!mapEl || mapEl.classList.contains('hidden')) return;
+            const rect = mapEl.getBoundingClientRect();
+            if (e.clientX < rect.left || e.clientX > rect.right ||
+                e.clientY < rect.top || e.clientY > rect.bottom) return;
+            let target = map.containerPointToLatLng(
+                L.point(e.clientX - rect.left, e.clientY - rect.top)
+            );
+            let snapping = false;
+            if (drawPoints.length >= 3) {
+                const firstPx = map.latLngToContainerPoint([drawPoints[0][0], drawPoints[0][1]]);
+                const curPx = map.latLngToContainerPoint(target);
+                if (Math.hypot(firstPx.x - curPx.x, firstPx.y - curPx.y) < 15) {
+                    target = L.latLng(drawPoints[0][0], drawPoints[0][1]);
+                    snapping = true;
+                }
+            }
+            const from = [drawPoints[drawPoints.length - 1][0], drawPoints[drawPoints.length - 1][1]];
+            let snappedDistM = 0;
+            if (!snapping) {
+                const DEG_TO_M = 111320;
+                const cosLat = Math.cos(from[0] * Math.PI / 180);
+                const dLatM = (target.lat - from[0]) * DEG_TO_M;
+                const dLngM = (target.lng - from[1]) * DEG_TO_M * cosLat;
+                const rawDistM = Math.hypot(dLatM, dLngM);
+                snappedDistM = Math.round(rawDistM / 0.5) * 0.5;
+                if (rawDistM > 0.001 && snappedDistM > 0) {
+                    const ratio = snappedDistM / rawDistM;
+                    target = L.latLng(from[0] + (target.lat - from[0]) * ratio,
+                        from[1] + (target.lng - from[1]) * ratio);
+                }
+            }
+            if (!rubberbandLine) {
+                rubberbandLine = L.polyline([from, [target.lat, target.lng]], {
+                    color: activeTab ? activeTab.color : '#7C3AED',
+                    weight: 1.5, dashArray: '6 4', opacity: 0.7, interactive: false
+                }).addTo(map);
+            } else {
+                rubberbandLine.setLatLngs([from, [target.lat, target.lng]]);
+            }
+            const midLat = (from[0] + target.lat) / 2;
+            const midLng = (from[1] + target.lng) / 2;
+            const labelTxt = snapping ? 'sluiten' : (snappedDistM >= 0.5 ? snappedDistM.toFixed(1) + ' m' : '');
+            if (labelTxt) {
+                const icon = L.divIcon({
+                    html: `<div class="rubberband-label">${labelTxt}</div>`,
+                    className: '', iconSize: [0, 0], iconAnchor: [0, 0]
+                });
+                if (!rubberbandLabel) {
+                    rubberbandLabel = L.marker([midLat, midLng], { icon, interactive: false, zIndexOffset: 1000 }).addTo(map);
+                } else {
+                    rubberbandLabel.setLatLng([midLat, midLng]);
+                    rubberbandLabel.setIcon(icon);
+                }
+            } else if (rubberbandLabel) {
+                map.removeLayer(rubberbandLabel); rubberbandLabel = null;
+            }
+            if (drawPoints.length >= 2) {
+                const allPts = [...drawPoints, [target.lat, target.lng]];
+                const liveArea = calcAreaM2(allPts.map(p => L.latLng(p[0], p[1])));
+                const cLat = allPts.reduce((s, p) => s + p[0], 0) / allPts.length;
+                const cLng = allPts.reduce((s, p) => s + p[1], 0) / allPts.length;
+                if (liveArea > 0) {
+                    const areaIcon = L.divIcon({
+                        html: `<div class="area-label">${liveArea.toLocaleString('nl-NL')} m²</div>`,
+                        className: '', iconSize: [0, 0], iconAnchor: [0, 0]
+                    });
+                    if (!areaLabel) {
+                        areaLabel = L.marker([cLat, cLng], { icon: areaIcon, interactive: false, zIndexOffset: 999 }).addTo(map);
+                    } else {
+                        areaLabel.setLatLng([cLat, cLng]);
+                        areaLabel.setIcon(areaIcon);
+                    }
+                } else if (areaLabel) {
+                    map.removeLayer(areaLabel); areaLabel = null;
+                }
+            } else if (areaLabel) {
+                map.removeLayer(areaLabel); areaLabel = null;
+            }
+            if (firstPointCircle) {
+                const col = snapping ? '#10B981' : (activeTab ? activeTab.color : '#7C3AED');
+                firstPointCircle.setStyle({ color: col, fillColor: col });
+            }
+        });
+
         function finishDrawing() {
-            if (!drawingMode || !currentPoly || drawPoints.length < 3) return;
+            if (!drawingMode || drawPoints.length < 3) return;
             clearTimeout(clickTimer);
+            if (rubberbandLine) { map.removeLayer(rubberbandLine); rubberbandLine = null; }
+            if (rubberbandLabel) { map.removeLayer(rubberbandLabel); rubberbandLabel = null; }
+            if (areaLabel) { map.removeLayer(areaLabel); areaLabel = null; }
+            if (firstPointCircle) { map.removeLayer(firstPointCircle); firstPointCircle = null; }
             const tab = activeTab;
-            const latlngs = currentPoly.getLatLngs()[0];
-            const geo = latlngs.map(p => [p.lat, p.lng]);
-            const opp = calcAreaM2(latlngs);
-            map.removeLayer(currentPoly);
+            const geo = drawPoints.slice();
+            const opp = calcAreaM2(drawPoints.map(p => L.latLng(p[0], p[1])));
+            if (currentPoly) map.removeLayer(currentPoly);
             const finalPoly = L.polygon(geo, {
                 color: tab.color, fillColor: tab.color, fillOpacity: 0.3, weight: 2
             }).addTo(layers[tab.key]);
@@ -625,6 +806,10 @@
 
         function stopDrawing() {
             clearTimeout(clickTimer);
+            if (rubberbandLine) { map.removeLayer(rubberbandLine); rubberbandLine = null; }
+            if (rubberbandLabel) { map.removeLayer(rubberbandLabel); rubberbandLabel = null; }
+            if (areaLabel) { map.removeLayer(areaLabel); areaLabel = null; }
+            if (firstPointCircle) { map.removeLayer(firstPointCircle); firstPointCircle = null; }
             if (currentPoly) { map.removeLayer(currentPoly); currentPoly = null; }
             drawingMode = false;
             drawPoints = [];
@@ -675,40 +860,23 @@
         }
 
         // ── PVE ground-floor compatibility ───────────────────────────────────────
-        function calcMinGrondvlak(pveVariant) {
+        function calcMinGrondvlakDetails(pveVariant) {
             const rs = pveVariant && pveVariant.ruimtestaat;
             if (!rs) return null;
-            const clusters = rs.clusters || [];
+            const clusters = (rs.clusters || []).filter(c => c.verdiepingrestrictie);
             if (!clusters.length) return null;
-            return Math.round(clusters
-                .filter(c => c.verdiepingrestrictie)
-                .reduce((sum, c) => sum + c.rooms.reduce(
-                    (s, r) => s + parseFloat(r.aantal) * parseFloat(r.oppervlakte), 0), 0));
+            const rows = clusters.map(c => {
+                const opp = c.rooms.reduce((s, r) => s + parseFloat(r.aantal) * parseFloat(r.oppervlakte), 0);
+                return { naam: c.naam || c.name || c.label || 'Cluster', opp: Math.round(opp) };
+            });
+            const totaal = Math.round(rows.reduce((s, r) => s + r.opp, 0));
+            return { rows, totaal };
         }
 
-
-        // ── PVE breakdown tooltip helper ──────────────────────────────────────────
-        function pveBreakdownTooltip(totalOpp) {
-            const school = totalOpp * 0.77;
-            const gym = totalOpp * 0.15;
-            const voorschools = totalOpp * 0.1;
-            return `<div class="pve-tooltip" style="position: absolute; z-index: 50; display: none; bottom: 100%; margin-bottom: 0.5rem; left: 50%; transform: translateX(-50%); background-color: rgb(17, 24, 39); color: white; font-size: 0.75rem; border-radius: 0.25rem; padding: 0.5rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); min-width: 150px;"><div style="font-weight: bold; margin-bottom: 0.25rem;">Grondvlak</div><div>School: ${school.toLocaleString('nl-NL', { maximumFractionDigits: 0 })} m²</div><div>Gym: ${gym.toLocaleString('nl-NL', { maximumFractionDigits: 0 })} m²</div><div>Voorschools: ${voorschools.toLocaleString('nl-NL', { maximumFractionDigits: 0 })} m²</div></div>`;
+        function calcMinGrondvlak(pveVariant) {
+            return calcMinGrondvlakDetails(pveVariant)?.totaal ?? null;
         }
 
-        function attachTooltipListeners(container) {
-            container.addEventListener('mouseenter', (e) => {
-                if (e.target.contains(e.target.querySelector('.pve-tooltip'))) {
-                    const tooltip = e.target.querySelector('.pve-tooltip');
-                    if (tooltip) tooltip.style.display = 'block';
-                }
-            }, true);
-            container.addEventListener('mouseleave', (e) => {
-                if (e.target.contains(e.target.querySelector('.pve-tooltip'))) {
-                    const tooltip = e.target.querySelector('.pve-tooltip');
-                    if (tooltip) tooltip.style.display = 'none';
-                }
-            }, true);
-        }
         function updatePveCompatList(bebouwbaarOpp) {
             const pveVarianten = project.pveVarianten || [];
             const container = document.getElementById('pve-compat-container');
@@ -720,18 +888,25 @@
                 const minOpp = calcMinGrondvlak(pv);
                 if (minOpp === null || minOpp === 0) {
                     return `<div class="flex items-center justify-between gap-1 text-xs">
-                            <span class="truncate flex-1" style="color:#F97316" title="${pv.naam}">${pv.naam}</span>
-                            <span class="flex-shrink-0" style="color:#D1D5DB">geen ruimtestaat</span>
-                          </div>`;
+                        <span class="truncate flex-1" style="color:#F97316" title="${pv.naam}">${pv.naam}</span>
+                        <span class="flex-shrink-0" style="color:#D1D5DB">geen ruimtestaat</span>
+                      </div>`;
                 }
                 const ok = bebouwbaarOpp > 0 && bebouwbaarOpp >= minOpp;
+                const details = calcMinGrondvlakDetails(pv);
+                const tipHtml = details ? (() => {
+                    const rowsHtml = details.rows.map(r =>
+                        `<div class="pve-tip-row"><span>${r.naam}</span><span>${r.opp.toLocaleString('nl-NL')} m\u00B2</span></div>`
+                    ).join('');
+                    return `<span class="pve-tip-host">\u24D8<span class="pve-tip-box"><div class="pve-tip-header">Min. grondvlak (begane grond)</div>${rowsHtml}<div class="pve-tip-sep"></div><div class="pve-tip-total"><span>Totaal</span><span>${details.totaal.toLocaleString('nl-NL')} m\u00B2</span></div></span></span>`;
+                })() : '';
                 return `<div class="flex items-center justify-between gap-1 text-xs">
-                          <span class="truncate flex-1 group relative cursor-help" style="${ok ? 'color:#059669' : 'color:#F97316'}">${pv.naam}${pveBreakdownTooltip(minOpp)}</span>
-                          <span class="flex-shrink-0" style="${ok ? 'color:#059669' : 'color:#F97316'}">${minOpp.toLocaleString('nl-NL')} m²</span>
-                          <span class="flex-shrink-0 font-semibold" style="${ok ? 'color:#059669' : 'color:#F97316'}">${ok ? '✓' : '✗'}</span>
-                        </div>`;
+                      <span class="truncate flex-1" style="${ok ? 'color:#059669' : 'color:#F97316'}" title="${pv.naam}">${pv.naam}</span>
+                      <span class="flex-shrink-0" style="${ok ? 'color:#059669' : 'color:#F97316'}">${minOpp.toLocaleString('nl-NL')} m²</span>
+                      ${tipHtml}
+                      <span class="flex-shrink-0 font-semibold" style="${ok ? 'color:#059669' : 'color:#F97316'}">${ok ? '\u2713' : '\u2717'}</span>
+                    </div>`;
             }).join('');
-            attachTooltipListeners(listEl);
         }
 
         // ── Per-card bebouwbaar helpers ───────────────────────────────────────────
@@ -753,21 +928,29 @@
                 const minOpp = calcMinGrondvlak(pv);
                 if (minOpp === null || minOpp === 0) {
                     return `<div class="flex items-center justify-between gap-1 text-xs">
-                            <span class="truncate flex-1" style="color:#F97316" title="${pv.naam}">${pv.naam}</span>
-                            <span class="flex-shrink-0" style="color:#D1D5DB">geen ruimtestaat</span>
-                          </div>`;
+                        <span class="truncate flex-1" style="color:#F97316" title="${pv.naam}">${pv.naam}</span>
+                        <span class="flex-shrink-0" style="color:#D1D5DB">geen ruimtestaat</span>
+                      </div>`;
                 }
                 const ok = bebouwbaarOpp > 0 && bebouwbaarOpp >= minOpp;
+                const details = calcMinGrondvlakDetails(pv);
+                const tipHtml = details ? (() => {
+                    const rowsHtml = details.rows.map(r =>
+                        `<div class="pve-tip-row"><span>${r.naam}</span><span>${r.opp.toLocaleString('nl-NL')} m\u00B2</span></div>`
+                    ).join('');
+                    return `<span class="pve-tip-host">\u24D8<span class="pve-tip-box"><div class="pve-tip-header">Min. grondvlak (begane grond)</div>${rowsHtml}<div class="pve-tip-sep"></div><div class="pve-tip-total"><span>Totaal</span><span>${details.totaal.toLocaleString('nl-NL')} m\u00B2</span></div></span></span>`;
+                })() : '';
                 return `<div class="flex items-center justify-between gap-1 text-xs">
-                          <span class="truncate flex-1 group relative cursor-help" style="${ok ? 'color:#059669' : 'color:#F97316'}">${pv.naam}${pveBreakdownTooltip(minOpp)}</span>
-                          <span class="flex-shrink-0" style="${ok ? 'color:#059669' : 'color:#F97316'}">${minOpp.toLocaleString('nl-NL')} m²</span>
-                          <span class="flex-shrink-0 font-semibold" style="${ok ? 'color:#059669' : 'color:#F97316'}">${ok ? '✓' : '✗'}</span>
-                        </div>`;
+                      <span class="truncate flex-1" style="${ok ? 'color:#059669' : 'color:#F97316'}" title="${pv.naam}">${pv.naam}</span>
+                      <span class="flex-shrink-0" style="${ok ? 'color:#059669' : 'color:#F97316'}">${minOpp.toLocaleString('nl-NL')} m²</span>
+                      ${tipHtml}
+                      <span class="flex-shrink-0 font-semibold" style="${ok ? 'color:#059669' : 'color:#F97316'}">${ok ? '\u2713' : '\u2717'}</span>
+                    </div>`;
             }).join('');
             return `<div class="flex flex-col gap-1 pt-2 border-t border-gray-100">
-                        <div class="text-xs font-semibold text-gray-400 uppercase tracking-widest" style="letter-spacing:0.05em">PVE grondvlak</div>
-                        ${rows}
-                      </div>`;
+                    <div class="text-xs font-semibold text-gray-400 uppercase tracking-widest" style="letter-spacing:0.05em">PVE grondvlak</div>
+                    ${rows}
+                  </div>`;
         }
 
         // ── Buildable-area overlay + summary ─────────────────────────────────────
@@ -845,85 +1028,85 @@
                         if (z.kind === 'parkingSpot' || z.kind === 'parkingBlock') {
                             const label = z.spots && z.spots > 1 ? `${z.spots} plekken` : `Plek ${i + 1}`;
                             return `
-                              <div class="flex flex-col gap-1 text-xs">
-                                <div class="flex items-center gap-1">
-                                  <span class="text-gray-600 flex-1">${label}</span>
-                                  <span class="text-gray-400 flex-shrink-0">${z.opp.toLocaleString('nl-NL')} m²</span>
-                                  <button onclick="removeZone('${tab.key}', ${z.id})"
-                                    class="text-gray-300 hover:text-red-400 transition-colors leading-none flex-shrink-0"
-                                    title="Verwijderen">×</button>
-                                </div>
-                                <div class="flex gap-1">
-                                  <button onclick="rotateParkingZone(${z.id}, -15)" class="px-1.5 py-0.5 rounded border border-gray-200 text-gray-500 hover:text-violet-700">↺</button>
-                                  <button onclick="rotateParkingZone(${z.id}, 15)" class="px-1.5 py-0.5 rounded border border-gray-200 text-gray-500 hover:text-violet-700">↻</button>
-                                </div>
-                              </div>`;
-                        }
-                        return `
-                            <div class="flex items-center gap-1 text-xs">
-                              <span class="text-gray-600 flex-1">Zone ${i + 1}</span>
+                          <div class="flex flex-col gap-1 text-xs">
+                            <div class="flex items-center gap-1">
+                              <span class="text-gray-600 flex-1">${label}</span>
                               <span class="text-gray-400 flex-shrink-0">${z.opp.toLocaleString('nl-NL')} m²</span>
                               <button onclick="removeZone('${tab.key}', ${z.id})"
                                 class="text-gray-300 hover:text-red-400 transition-colors leading-none flex-shrink-0"
                                 title="Verwijderen">×</button>
-                            </div>`;
+                            </div>
+                            <div class="flex gap-1">
+                              <button onclick="rotateParkingZone(${z.id}, -15)" class="px-1.5 py-0.5 rounded border border-gray-200 text-gray-500 hover:text-violet-700">↺</button>
+                              <button onclick="rotateParkingZone(${z.id}, 15)" class="px-1.5 py-0.5 rounded border border-gray-200 text-gray-500 hover:text-violet-700">↻</button>
+                            </div>
+                          </div>`;
+                        }
+                        return `
+                        <div class="flex items-center gap-1 text-xs">
+                          <span class="text-gray-600 flex-1">Zone ${i + 1}</span>
+                          <span class="text-gray-400 flex-shrink-0">${z.opp.toLocaleString('nl-NL')} m²</span>
+                          <button onclick="removeZone('${tab.key}', ${z.id})"
+                            class="text-gray-300 hover:text-red-400 transition-colors leading-none flex-shrink-0"
+                            title="Verwijderen">×</button>
+                        </div>`;
                     }).join('');
                     card.innerHTML = `
-                            <h3 class="font-semibold text-sm text-gray-700">${tab.label}</h3>
-                            <button onclick="toggleDrawing(TABS[${idx}])"
-                              class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border transition-all ${isDrawing
+                        <h3 class="font-semibold text-sm text-gray-700">${tab.label}</h3>
+                        <button onclick="toggleDrawing(TABS[${idx}])"
+                          class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border transition-all ${isDrawing
                             ? 'border-red-300 text-red-500 hover:bg-red-50'
                             : 'border-violet-300 text-violet-600 hover:bg-violet-50'}">
-                              ${isDrawing ? '✕ Stoppen met tekenen' : '✏ Teken zone'}
-                            </button>
-                            ${isDrawing ? `
-                            <div class="flex items-center justify-between text-xs text-gray-400">
-                              <span>Huidig vlak</span>
-                              <span id="live-draw-opp">— m²</span>
-                            </div>
-                            <button id="btn-voltooien" onclick="finishDrawing()" disabled
-                              class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border border-emerald-300 text-emerald-600 hover:bg-emerald-50 transition-all disabled:opacity-40 disabled:cursor-default">
-                              ✓ Voltooien
-                            </button>` : ''}
-                            ${tab.key === 'parkeren' ? `<div class="grid grid-cols-1 gap-1">
-                              <button onclick="toggleParkingPlacement(1)"
-                                class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border transition-all ${placingParkingCount === 1
+                          ${isDrawing ? '✕ Stoppen met tekenen' : '✏ Teken zone'}
+                        </button>
+                        ${isDrawing ? `
+                        <div class="flex items-center justify-between text-xs text-gray-400">
+                          <span>Huidig vlak</span>
+                          <span id="live-draw-opp">— m²</span>
+                        </div>
+                        <button id="btn-voltooien" onclick="finishDrawing()" disabled
+                          class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border border-emerald-300 text-emerald-600 hover:bg-emerald-50 transition-all disabled:opacity-40 disabled:cursor-default">
+                          ✓ Voltooien
+                        </button>` : ''}
+                        ${tab.key === 'parkeren' ? `<div class="grid grid-cols-1 gap-1">
+                          <button onclick="toggleParkingPlacement(1)"
+                            class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border transition-all ${placingParkingCount === 1
                                 ? 'border-red-300 text-red-500 hover:bg-red-50'
                                 : 'border-sky-300 text-sky-600 hover:bg-sky-50'}">
-                                ${placingParkingCount === 1 ? '✕ Stop 1 plek plaatsen' : '🅿 Plaats 1 parkeerplek'}
-                              </button>
-                              <button onclick="toggleParkingPlacement(3)"
-                                class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border transition-all ${placingParkingCount === 3
+                            ${placingParkingCount === 1 ? '✕ Stop 1 plek plaatsen' : '🅿 Plaats 1 parkeerplek'}
+                          </button>
+                          <button onclick="toggleParkingPlacement(3)"
+                            class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border transition-all ${placingParkingCount === 3
                                 ? 'border-red-300 text-red-500 hover:bg-red-50'
                                 : 'border-sky-300 text-sky-600 hover:bg-sky-50'}">
-                                ${placingParkingCount === 3 ? '✕ Stop 3 plekken plaatsen' : '🅿 Plaats 3 parkeerplekken'}
-                              </button>
-                              <button onclick="toggleParkingPlacement(4)"
-                                class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border transition-all ${placingParkingCount === 4
+                            ${placingParkingCount === 3 ? '✕ Stop 3 plekken plaatsen' : '🅿 Plaats 3 parkeerplekken'}
+                          </button>
+                          <button onclick="toggleParkingPlacement(4)"
+                            class="w-full text-xs font-medium py-1.5 px-3 rounded-lg border transition-all ${placingParkingCount === 4
                                 ? 'border-red-300 text-red-500 hover:bg-red-50'
                                 : 'border-sky-300 text-sky-600 hover:bg-sky-50'}">
-                                ${placingParkingCount === 4 ? '✕ Stop 4 plekken plaatsen' : '🅿 Plaats 4 parkeerplekken'}
-                              </button>
-                              <p class="text-[11px] text-gray-400">Sleep blauwe punt = verplaatsen, paarse punt = roteren op kaart.</p>
-                            </div>` : ''}
-                            ${zonesHtml
+                            ${placingParkingCount === 4 ? '✕ Stop 4 plekken plaatsen' : '🅿 Plaats 4 parkeerplekken'}
+                          </button>
+                          <p class="text-[11px] text-gray-400">Sleep blauwe punt = verplaatsen, paarse punt = roteren op kaart.</p>
+                        </div>` : ''}
+                        ${zonesHtml
                             ? `<div class="flex flex-col gap-1">${zonesHtml}</div>`
                             : '<p class="text-xs text-gray-300">Nog geen zones getekend</p>'}
-                            <div class="flex items-center justify-between text-xs text-gray-500 pt-1 border-t border-gray-100">
-                              <span>Totaal</span>
-                              <span class="font-semibold text-violet-700">${totalOpp ? totalOpp.toLocaleString('nl-NL') + ' m²' : '— m²'}</span>
-                            </div>
-                            <div class="flex items-center justify-between text-xs pt-1 border-t border-gray-100">
-                              <span class="text-gray-500">Voor aftrek</span>
-                              <span class="font-semibold text-emerald-600">${bebouwbaarBefore.toLocaleString('nl-NL')} m²</span>
-                            </div>
-                            <div class="flex items-center justify-between text-xs">
-                              <span class="text-gray-500">Na aftrek</span>
-                              <span class="font-semibold text-emerald-600">${bebouwbaarAfter.toLocaleString('nl-NL')} m²</span>
-                            </div>
-                            ${renderPveGrondvlakList(bebouwbaarAfter)}
-                            <button onclick="volgendeTab(${idx})" class="btn-secondary w-full text-sm py-2">overslaan</button>
-                            <button onclick="volgendeTab(${idx})" class="btn-primary w-full text-sm py-2">volgende</button>`;
+                        <div class="flex items-center justify-between text-xs text-gray-500 pt-1 border-t border-gray-100">
+                          <span>Totaal</span>
+                          <span class="font-semibold text-violet-700">${totalOpp ? totalOpp.toLocaleString('nl-NL') + ' m²' : '— m²'}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs pt-1 border-t border-gray-100">
+                          <span class="text-gray-500">Voor aftrek</span>
+                          <span class="font-semibold text-emerald-600">${bebouwbaarBefore.toLocaleString('nl-NL')} m²</span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs">
+                          <span class="text-gray-500">Na aftrek</span>
+                          <span class="font-semibold text-emerald-600">${bebouwbaarAfter.toLocaleString('nl-NL')} m²</span>
+                        </div>
+                        ${renderPveGrondvlakList(bebouwbaarAfter)}
+                        <button onclick="volgendeTab(${idx})" class="btn-secondary w-full text-sm py-2">overslaan</button>
+                        <button onclick="volgendeTab(${idx})" class="btn-primary w-full text-sm py-2">volgende</button>`;
                     container.appendChild(card);
                 } else {
                     const pill = document.createElement('button');

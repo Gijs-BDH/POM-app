@@ -165,6 +165,7 @@
         </div>
     </div>
     <div class="ml-6" data-role="bot"></div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>window.CESIUM_BASE_URL = 'https://cdn.jsdelivr.net/npm/cesium@1.107/Build/Cesium/';</script>
     <script src="https://cdn.jsdelivr.net/npm/cesium@1.107/Build/Cesium/Cesium.js"></script>
@@ -188,7 +189,7 @@
             { key: 'kavelpaspoort', label: 'Kavelpaspoort' },
             { key: 'omgevingMassa', label: 'Omgeving massa' },
             { key: 'kavels', label: 'Kavels' },
-            { key: 'tekenen', label: 'Teken plot' },
+            { key: 'tekenen', label: 'Teken plot', disabled: true },
         ];
         let activeCard = 'kavelpaspoort';
         const completedCards = new Set();
@@ -409,8 +410,6 @@
                 pendingKavelpaspoort.blobUrl = URL.createObjectURL(file);
                 pendingKavelpaspoort.fileName = file.name;
                 loadKavelpaspoortPdf();
-                reader.onload = e => { pendingKavelpaspoort.dataUrl = e.target.result; };
-                reader.readAsDataURL(file);
             } else {
                 if (pendingOmgevingMassa.blobUrl) URL.revokeObjectURL(pendingOmgevingMassa.blobUrl);
                 pendingOmgevingMassa.blobUrl = URL.createObjectURL(file);
@@ -556,10 +555,6 @@
             return Math.round(Math.abs(area / 2) * DEG_TO_M * DEG_TO_M * Math.cos(52 * Math.PI / 180));
         }
 
-        function calcMinGrondvlak(pveVariant) {
-            return calcMinGrondvlakDetails(pveVariant)?.totaal ?? null;
-        }
-
         function calcMinGrondvlakDetails(pveVariant) {
             const rs = pveVariant && pveVariant.ruimtestaat;
             if (!rs) return null;
@@ -567,10 +562,14 @@
             if (!clusters.length) return null;
             const rows = clusters.map(c => {
                 const opp = c.rooms.reduce((s, r) => s + parseFloat(r.aantal) * parseFloat(r.oppervlakte), 0);
-                return { naam: c.name || c.label || 'Cluster', opp: Math.round(opp) };
+                return { naam: c.naam || c.name || c.label || 'Cluster', opp: Math.round(opp) };
             });
             const totaal = Math.round(rows.reduce((s, r) => s + r.opp, 0));
             return { rows, totaal };
+        }
+
+        function calcMinGrondvlak(pveVariant) {
+            return calcMinGrondvlakDetails(pveVariant)?.totaal ?? null;
         }
 
         function renderPveCompatRows(containerId, listId, totalOpp) {
@@ -594,13 +593,13 @@
                     const rowsHtml = details.rows.map(r =>
                         `<div class="pve-tip-row"><span>${r.naam}</span><span>${r.opp.toLocaleString('nl-NL')} m\u00B2</span></div>`
                     ).join('');
-                    return `<span class="pve-tip-host">ⓘ<span class="pve-tip-box"><div class="pve-tip-header">Min. grondvlak (begane grond)</div>${rowsHtml}<div class="pve-tip-sep"></div><div class="pve-tip-total"><span>Totaal</span><span>${details.totaal.toLocaleString('nl-NL')} m\u00B2</span></div></span></span>`;
+                    return `<span class="pve-tip-host">\u24D8<span class="pve-tip-box"><div class="pve-tip-header">Min. grondvlak (begane grond)</div>${rowsHtml}<div class="pve-tip-sep"></div><div class="pve-tip-total"><span>Totaal</span><span>${details.totaal.toLocaleString('nl-NL')} m\u00B2</span></div></span></span>`;
                 })() : '';
                 return `<div class="flex items-center justify-between gap-1 text-xs">
                           <span class="truncate flex-1" style="${ok ? 'color:#059669' : 'color:#F97316'}" title="${pv.naam}">${pv.naam}</span>
-                          <span class="flex-shrink-0" style="${ok ? 'color:#059669' : 'color:#F97316'}">${minOpp.toLocaleString('nl-NL')} m²</span>
+                          <span class="flex-shrink-0" style="${ok ? 'color:#059669' : 'color:#F97316'}">${minOpp.toLocaleString('nl-NL')} m\u00B2</span>
                           ${tipHtml}
-                          <span class="flex-shrink-0 font-semibold" style="${ok ? 'color:#059669' : 'color:#F97316'}">${ok ? '✓' : '✗'}</span>
+                          <span class="flex-shrink-0 font-semibold" style="${ok ? 'color:#059669' : 'color:#F97316'}">${ok ? '\u2713' : '\u2717'}</span>
                         </div>`;
             }).join('');
         }
@@ -966,7 +965,6 @@
             if (pendingKavelpaspoort.blobUrl) {
                 updates.kavelpaspoort = true;
                 updates.kavelpaspoortFileName = pendingKavelpaspoort.fileName;
-                if (pendingKavelpaspoort.dataUrl) updates.kavelpaspoortDataUrl = pendingKavelpaspoort.dataUrl;
             }
             if (pendingOmgevingMassa.blobUrl) {
                 updates.omgevingMassa = true;
@@ -987,7 +985,6 @@
             if (pendingKavelpaspoort.blobUrl) {
                 updates.kavelpaspoort = true;
                 updates.kavelpaspoortFileName = pendingKavelpaspoort.fileName;
-                if (pendingKavelpaspoort.dataUrl) updates.kavelpaspoortDataUrl = pendingKavelpaspoort.dataUrl;
             }
             if (pendingOmgevingMassa.blobUrl) {
                 updates.omgevingMassa = true;
@@ -998,11 +995,56 @@
             updateGebiedVariantById(variant.id, updates);
             window.location.href = 'gebied-stap-2-stedenbouw.html?id=' + variant.id;
         }
+        function naarStap2MetKavel() {
+            if (selectedKavels.length === 0) return;
+            let geo, opp;
+            if (selectedKavels.length === 1) {
+                geo = selectedKavels[0].geo;
+                opp = selectedKavels[0].opp;
+            } else {
+                // Union all selected kavels into a single polygon
+                try {
+                    const turfFeatures = selectedKavels.map(k => {
+                        const ring = k.geo.map(c => [c[1], c[0]]);
+                        ring.push(ring[0]);
+                        return turf.polygon([ring]);
+                    });
+                    const unionResult = turf.union(turf.featureCollection(turfFeatures));
+                    const geom = unionResult.geometry;
+                    geo = geom.type === 'Polygon'
+                        ? geom.coordinates[0].map(c => [c[1], c[0]])
+                        : geom.coordinates[0][0].map(c => [c[1], c[0]]);
+                } catch {
+                    geo = selectedKavels[0].geo;
+                }
+                opp = selectedKavels.reduce((s, k) => s + k.opp, 0);
+            }
+            const variant = createNewGebiedVariant(variantLabel);
+            const updates = {
+                stedenbouwbeleid: { mode: 'simpel', goedgekeurd: false },
+                geo, opp,
+                bouwbaarGebied: { geo, opp },
+            };
+            if (pendingKavelpaspoort.blobUrl) {
+                updates.kavelpaspoort = true;
+                updates.kavelpaspoortFileName = pendingKavelpaspoort.fileName;
+            }
+            if (pendingOmgevingMassa.blobUrl) {
+                updates.omgevingMassa = true;
+                updates.omgevingMassaFileName = pendingOmgevingMassa.fileName;
+                if (pendingOmgevingMassa.dataUrl) updates.omgevingMassaDataUrl = pendingOmgevingMassa.dataUrl;
+                if (pendingOmgevingMassa.transform) updates.omgevingMassaTransform = pendingOmgevingMassa.transform;
+            }
+            updateGebiedVariantById(variant.id, updates);
+            window.location.href = 'gebied-stap-2-stedenbouw.html?id=' + variant.id;
+        }
+
         window.naarOmgevingMassa = naarOmgevingMassa;
         window.naarKavels = naarKavels;
         window.naarTekenen = naarTekenen;
         window.naarStap2 = naarStap2;
         window.overslaanTekenen = overslaanTekenen;
+        window.naarStap2MetKavel = naarStap2MetKavel;
 
         // ── Card HTML builders ────────────────────────────────────────────────────
         function getCardInnerHTML(key) {
@@ -1061,8 +1103,7 @@
                               <div class="text-xs font-semibold text-gray-400 uppercase tracking-widest" style="letter-spacing:0.05em">PVE grondvlak</div>
                               <div id="kavels-pve-compat-list" class="flex flex-col gap-1"></div>
                             </div>
-                            <button onclick="overslaanKavels()" class="btn-secondary w-full">Overslaan</button>
-                            <button id="kavels-volgende-btn" onclick="naarTekenen()" class="btn-primary w-full" disabled>
+                            <button id="kavels-volgende-btn" onclick="naarStap2MetKavel()" class="btn-primary w-full" disabled>
                               Volgende →
                             </button>`;
 
@@ -1108,7 +1149,7 @@
             container.innerHTML = '';
             CARDS.forEach(card => {
                 const isDone = completedCards.has(card.key);
-                const isActive = card.key === activeCard;
+                const isActive = card.key === activeCard && !card.disabled;
                 if (isActive) {
                     const div = document.createElement('div');
                     div.className = 'card p-4 flex flex-col gap-3';
