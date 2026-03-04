@@ -21,7 +21,7 @@
     .tab-pill.pending { color: #D1D5DB; border-color: #F3F4F6; cursor: default; }
   </style>
 </head>
-<body class="min-h-screen bg-gray-50 p-8 gebied">
+<body class="min-h-screen bg-gray-50 p-8">
 
   <div class="mx-auto">
     <a href="project-overzicht.html" class="breadcrumb">← Project overzicht</a>
@@ -277,14 +277,12 @@
     }
 
     // ── Drawing state ─────────────────────────────────────────────────────────
-    let activeTab           = null;
-    let drawingMode         = false;
+    let activeTab     = null;
+    let drawingMode   = false;
     let placingParkingCount = 0;
-    let drawPoints          = [];
-    let currentPoly         = null;
-    let clickTimer          = null;
-    let rubberbandLine      = null;
-    let firstPointCircle    = null;
+    let drawPoints    = [];
+    let currentPoly   = null;
+    let clickTimer    = null;
     const PARKING_STANDARD = { widthM: 2.5, lengthM: 5 };
     let lastParkingAngle = 0;
 
@@ -444,31 +442,11 @@
       }
 
       if (!drawingMode) return;
-      // Snap-to-close: clicking near the first point (≥3 placed) finalizes the polygon
-      if (drawPoints.length >= 3) {
-        const firstPx = map.latLngToContainerPoint([drawPoints[0][0], drawPoints[0][1]]);
-        const clickPx = map.latLngToContainerPoint(e.latlng);
-        if (Math.hypot(firstPx.x - clickPx.x, firstPx.y - clickPx.y) < 15) {
-          clearTimeout(clickTimer);
-          finishDrawing();
-          return;
-        }
-      }
       clearTimeout(clickTimer);
       const latlng = e.latlng;
       clickTimer = setTimeout(() => {
         drawPoints.push([latlng.lat, latlng.lng]);
-        if (drawPoints.length === 1) {
-          firstPointCircle = L.circleMarker([drawPoints[0][0], drawPoints[0][1]], {
-            radius: 5, color: activeTab.color, fillColor: activeTab.color,
-            fillOpacity: 1, weight: 2, interactive: false
-          }).addTo(map);
-        } else if (drawPoints.length === 2) {
-          if (currentPoly) map.removeLayer(currentPoly);
-          currentPoly = L.polyline(drawPoints, {
-            color: activeTab.color, weight: 2, dashArray: '5 4', interactive: false
-          }).addTo(map);
-        } else {
+        if (drawPoints.length >= 3) {
           if (currentPoly) map.removeLayer(currentPoly);
           currentPoly = L.polygon(drawPoints, {
             color: activeTab.color, fillColor: activeTab.color,
@@ -483,43 +461,14 @@
       }, 250);
     });
 
-    // ── Rubber-band line: follows cursor from last placed point ───────────────
-    map.on('mousemove', e => {
-      if (!drawingMode || drawPoints.length === 0) return;
-      let target   = e.latlng;
-      let snapping = false;
-      if (drawPoints.length >= 3) {
-        const firstPx = map.latLngToContainerPoint([drawPoints[0][0], drawPoints[0][1]]);
-        const curPx   = map.latLngToContainerPoint(e.latlng);
-        if (Math.hypot(firstPx.x - curPx.x, firstPx.y - curPx.y) < 15) {
-          target = L.latLng(drawPoints[0][0], drawPoints[0][1]);
-          snapping = true;
-        }
-      }
-      const from = [drawPoints[drawPoints.length - 1][0], drawPoints[drawPoints.length - 1][1]];
-      if (!rubberbandLine) {
-        rubberbandLine = L.polyline([from, [target.lat, target.lng]], {
-          color: activeTab ? activeTab.color : '#7C3AED',
-          weight: 1.5, dashArray: '6 4', opacity: 0.7, interactive: false
-        }).addTo(map);
-      } else {
-        rubberbandLine.setLatLngs([from, [target.lat, target.lng]]);
-      }
-      if (firstPointCircle) {
-        const col = snapping ? '#10B981' : (activeTab ? activeTab.color : '#7C3AED');
-        firstPointCircle.setStyle({ color: col, fillColor: col });
-      }
-    });
-
     function finishDrawing() {
-      if (!drawingMode || drawPoints.length < 3) return;
+      if (!drawingMode || !currentPoly || drawPoints.length < 3) return;
       clearTimeout(clickTimer);
-      if (rubberbandLine)   { map.removeLayer(rubberbandLine);   rubberbandLine   = null; }
-      if (firstPointCircle) { map.removeLayer(firstPointCircle); firstPointCircle = null; }
-      const tab = activeTab;
-      const geo = drawPoints.slice();
-      const opp = calcAreaM2(drawPoints.map(p => L.latLng(p[0], p[1])));
-      if (currentPoly) map.removeLayer(currentPoly);
+      const tab     = activeTab;
+      const latlngs = currentPoly.getLatLngs()[0];
+      const geo     = latlngs.map(p => [p.lat, p.lng]);
+      const opp     = calcAreaM2(latlngs);
+      map.removeLayer(currentPoly);
       const finalPoly = L.polygon(geo, {
         color: tab.color, fillColor: tab.color, fillOpacity: 0.3, weight: 2
       }).addTo(layers[tab.key]);
@@ -528,7 +477,6 @@
       currentPoly = null;
       drawPoints  = [];
       map.getContainer().style.cursor = '';
-      map.getContainer().classList.remove('drawing-crosshair');
       document.getElementById('map-hint').classList.add('hidden');
       saveTabZones(tab.key);
       renderTabs();
@@ -584,14 +532,11 @@
 
     function stopDrawing() {
       clearTimeout(clickTimer);
-      if (rubberbandLine)   { map.removeLayer(rubberbandLine);   rubberbandLine   = null; }
-      if (firstPointCircle) { map.removeLayer(firstPointCircle); firstPointCircle = null; }
       if (currentPoly) { map.removeLayer(currentPoly); currentPoly = null; }
       drawingMode = false;
       drawPoints  = [];
       placingParkingCount = 0;
       map.getContainer().style.cursor = '';
-      map.getContainer().classList.remove('drawing-crosshair');
       document.getElementById('map-hint').classList.add('hidden');
     }
 
@@ -606,7 +551,6 @@
         drawPoints  = [];
         currentPoly = null;
         map.getContainer().style.cursor = 'crosshair';
-        map.getContainer().classList.add('drawing-crosshair');
         document.getElementById('map-hint').classList.remove('hidden');
         renderTabs();
       }
@@ -649,6 +593,21 @@
           (s, r) => s + parseFloat(r.aantal) * parseFloat(r.oppervlakte), 0), 0));
     }
 
+
+    // ── PVE breakdown tooltip helper ──────────────────────────────────────────
+    function pveBreakdownTooltip(totalOpp) {
+      const school = totalOpp * 0.77;
+      const gym = totalOpp * 0.15;
+      const voorschools = totalOpp * 0.1;
+      return `
+        <div class="absolute z-50 hidden group-hover:block bottom-full left-0 mb-1 bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+          <div>School: ${school.toLocaleString('nl-NL', {maximumFractionDigits: 0})} m²</div>
+          <div>Gym: ${gym.toLocaleString('nl-NL', {maximumFractionDigits: 0})} m²</div>
+          <div>Voorschools: ${voorschools.toLocaleString('nl-NL', {maximumFractionDigits: 0})} m²</div>
+        </div>
+      `;
+    }
+
     function updatePveCompatList(bebouwbaarOpp) {
       const pveVarianten = project.pveVarianten || [];
       const container = document.getElementById('pve-compat-container');
@@ -660,15 +619,15 @@
         const minOpp = calcMinGrondvlak(pv);
         if (minOpp === null || minOpp === 0) {
           return `<div class="flex items-center justify-between gap-1 text-xs">
-            <span class="truncate flex-1" style="color:#D1D5DB" title="${pv.naam}">${pv.naam}</span>
+            <span class="truncate flex-1" style="color:#F97316" title="${pv.naam}">${pv.naam}</span>
             <span class="flex-shrink-0" style="color:#D1D5DB">geen ruimtestaat</span>
           </div>`;
         }
         const ok = bebouwbaarOpp > 0 && bebouwbaarOpp >= minOpp;
         return `<div class="flex items-center justify-between gap-1 text-xs">
-          <span class="truncate flex-1" style="${ok ? 'color:#4B5563' : 'color:#D1D5DB'}" title="${pv.naam}">${pv.naam}</span>
-          <span class="flex-shrink-0" style="${ok ? 'color:#6B7280' : 'color:#D1D5DB'}">${minOpp.toLocaleString('nl-NL')} m²</span>
-          <span class="flex-shrink-0 font-semibold" style="${ok ? 'color:#7C3AED' : 'color:#D1D5DB'}">${ok ? '✓' : '✗'}</span>
+          <span class="truncate flex-1" style="${ok ? 'color:#059669' : 'color:#F97316'}" title="${pv.naam}">${pv.naam}</span>
+          <span class="flex-shrink-0" style="${ok ? 'color:#059669' : 'color:#F97316'}">${minOpp.toLocaleString('nl-NL')} m²</span>
+          <span class="flex-shrink-0 font-semibold" style="${ok ? 'color:#059669' : 'color:#F97316'}">${ok ? '✓' : '✗'}</span>
         </div>`;
       }).join('');
     }
@@ -692,15 +651,15 @@
         const minOpp = calcMinGrondvlak(pv);
         if (minOpp === null || minOpp === 0) {
           return `<div class="flex items-center justify-between gap-1 text-xs">
-            <span class="truncate flex-1" style="color:#D1D5DB" title="${pv.naam}">${pv.naam}</span>
+            <span class="truncate flex-1" style="color:#F97316" title="${pv.naam}">${pv.naam}</span>
             <span class="flex-shrink-0" style="color:#D1D5DB">geen ruimtestaat</span>
           </div>`;
         }
         const ok = bebouwbaarOpp > 0 && bebouwbaarOpp >= minOpp;
         return `<div class="flex items-center justify-between gap-1 text-xs">
-          <span class="truncate flex-1" style="${ok ? 'color:#4B5563' : 'color:#D1D5DB'}" title="${pv.naam}">${pv.naam}</span>
-          <span class="flex-shrink-0" style="${ok ? 'color:#6B7280' : 'color:#D1D5DB'}">${minOpp.toLocaleString('nl-NL')} m²</span>
-          <span class="flex-shrink-0 font-semibold" style="${ok ? 'color:#7C3AED' : 'color:#D1D5DB'}">${ok ? '✓' : '✗'}</span>
+          <span class="truncate flex-1" style="${ok ? 'color:#059669' : 'color:#F97316'}" title="${pv.naam}">${pv.naam}</span>
+          <span class="flex-shrink-0" style="${ok ? 'color:#059669' : 'color:#F97316'}">${minOpp.toLocaleString('nl-NL')} m²</span>
+          <span class="flex-shrink-0 font-semibold" style="${ok ? 'color:#059669' : 'color:#F97316'}">${ok ? '✓' : '✗'}</span>
         </div>`;
       }).join('');
       return `<div class="flex flex-col gap-1 pt-2 border-t border-gray-100">
@@ -861,6 +820,7 @@
               <span class="font-semibold text-emerald-600">${bebouwbaarAfter.toLocaleString('nl-NL')} m²</span>
             </div>
             ${renderPveGrondvlakList(bebouwbaarAfter)}
+            <button onclick="volgendeTab(${idx})" class="btn-secondary w-full text-sm py-2">overslaan</button>
             <button onclick="volgendeTab(${idx})" class="btn-primary w-full text-sm py-2">volgende</button>`;
           container.appendChild(card);
         } else {

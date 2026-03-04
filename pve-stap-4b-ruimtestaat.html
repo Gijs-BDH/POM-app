@@ -219,17 +219,18 @@
               </select>
             </div>
             <div class="qrow">
-              <label class="qlabel">Capaciteit leerplein </br> (als % van clustergrootte)</label>
+              <label class="qlabel">Capaciteit leerplein </br> (% leerlingen in cluster)</label>
               <select id="q-leerplein" class="select-field" style="max-width:230px" onchange="recalculate()">
                 <!-- filled in JS -->
               </select>
             </div>
             <div class="qrow">
-              <label class="qlabel">Speellokaal</label>
+              <label class="qlabel">Heeft u recht op een speellokaal (90 m2)</label>
               <div class="flex gap-2">
                 <button class="sel-btn " id="btn-speellokaal-ja"  onclick="setJN('speellokaal','ja',this)">Ja</button>
                 <button class="sel-btn active"        id="btn-speellokaal-nee" onclick="setJN('speellokaal','nee',this)">Nee</button>
               </div>
+              
             </div>
             <div class="flex justify-between mt-2">
               <button class="btn-ghost px-4 py-2 text-sm" onclick="goToStep(2)">← Vorige</button>

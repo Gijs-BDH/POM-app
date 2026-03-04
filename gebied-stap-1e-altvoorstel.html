@@ -655,6 +655,21 @@
 
 
     
+
+    // ── PVE breakdown tooltip helper ──────────────────────────────────────────
+    function pveBreakdownTooltip(totalOpp) {
+      const school = totalOpp * 0.77;
+      const gym = totalOpp * 0.15;
+      const voorschools = totalOpp * 0.1;
+      return `
+        <div class="absolute z-50 hidden group-hover:block bottom-full left-0 mb-1 bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+          <div>School: ${school.toLocaleString('nl-NL', {maximumFractionDigits: 0})} m²</div>
+          <div>Gym: ${gym.toLocaleString('nl-NL', {maximumFractionDigits: 0})} m²</div>
+          <div>Voorschools: ${voorschools.toLocaleString('nl-NL', {maximumFractionDigits: 0})} m²</div>
+        </div>
+      `;
+    }
+
     function updatePveCompatList(bebouwbaarOpp) {
       const pveVarianten = project.pveVarianten || [];
       const container = document.getElementById('pve-compat-container');
@@ -666,15 +681,15 @@
         const minOpp = calcMinGrondvlak(pv);
         if (minOpp === null || minOpp === 0) {
           return `<div class="flex items-center justify-between gap-1 text-xs">
-            <span class="truncate flex-1" style="color:#D1D5DB" title="${pv.naam}">${pv.naam}</span>
+            <span class="truncate flex-1" style="color:#F97316" title="${pv.naam}">${pv.naam}</span>
             <span class="flex-shrink-0" style="color:#D1D5DB">geen ruimtestaat</span>
           </div>`;
         }
         const ok = bebouwbaarOpp > 0 && bebouwbaarOpp >= minOpp;
         return `<div class="flex items-center justify-between gap-1 text-xs">
-          <span class="truncate flex-1" style="${ok ? 'color:#4B5563' : 'color:#D1D5DB'}" title="${pv.naam}">${pv.naam}</span>
-          <span class="flex-shrink-0" style="${ok ? 'color:#6B7280' : 'color:#D1D5DB'}">${minOpp.toLocaleString('nl-NL')} m²</span>
-          <span class="flex-shrink-0 font-semibold" style="${ok ? 'color:#7C3AED' : 'color:#D1D5DB'}">${ok ? '✓' : '✗'}</span>
+          <span class="truncate flex-1" style="${ok ? 'color:#059669' : 'color:#F97316'}" title="${pv.naam}">${pv.naam}</span>
+          <span class="flex-shrink-0" style="${ok ? 'color:#059669' : 'color:#F97316'}">${minOpp.toLocaleString('nl-NL')} m²</span>
+          <span class="flex-shrink-0 font-semibold" style="${ok ? 'color:#059669' : 'color:#F97316'}">${ok ? '✓' : '✗'}</span>
         </div>`;
       }).join('');
     }
@@ -698,15 +713,15 @@
         const minOpp = calcMinGrondvlak(pv);
         if (minOpp === null || minOpp === 0) {
           return `<div class="flex items-center justify-between gap-1 text-xs">
-            <span class="truncate flex-1" style="color:#D1D5DB" title="${pv.naam}">${pv.naam}</span>
+            <span class="truncate flex-1" style="color:#F97316" title="${pv.naam}">${pv.naam}</span>
             <span class="flex-shrink-0" style="color:#D1D5DB">geen ruimtestaat</span>
           </div>`;
         }
         const ok = bebouwbaarOpp > 0 && bebouwbaarOpp >= minOpp;
         return `<div class="flex items-center justify-between gap-1 text-xs">
-          <span class="truncate flex-1" style="${ok ? 'color:#4B5563' : 'color:#D1D5DB'}" title="${pv.naam}">${pv.naam}</span>
-          <span class="flex-shrink-0" style="${ok ? 'color:#6B7280' : 'color:#D1D5DB'}">${minOpp.toLocaleString('nl-NL')} m²</span>
-          <span class="flex-shrink-0 font-semibold" style="${ok ? 'color:#7C3AED' : 'color:#D1D5DB'}">${ok ? '✓' : '✗'}</span>
+          <span class="truncate flex-1" style="${ok ? 'color:#059669' : 'color:#F97316'}" title="${pv.naam}">${pv.naam}</span>
+          <span class="flex-shrink-0" style="${ok ? 'color:#059669' : 'color:#F97316'}">${minOpp.toLocaleString('nl-NL')} m²</span>
+          <span class="flex-shrink-0 font-semibold" style="${ok ? 'color:#059669' : 'color:#F97316'}">${ok ? '✓' : '✗'}</span>
         </div>`;
       }).join('');
       return `<div class="flex flex-col gap-1 pt-2 border-t border-gray-100">

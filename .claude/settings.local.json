@@ -4,7 +4,10 @@
       "Bash(python -c \":*)",
       "Bash(node -e \":*)",
       "Bash(grep -n \"^<body\\\\|^  <div \" *.html)",
-      "Bash(python3 -c \":*)"
+      "Bash(python3 -c \":*)",
+      "Bash(/tmp/fix_pve_colors.py:*)",
+      "Bash(python /tmp/fix_pve_colors.py)",
+      "Bash(grep -l \"pveBreakdownTooltip\" c:Usersg.jonkheerProjectspom-appgebied-*.html)"
     ]
   }
 }
