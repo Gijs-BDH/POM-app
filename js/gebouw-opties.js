@@ -46,7 +46,7 @@ function _scores(gz, du, ad, vi, di) {
 // ─────────────────────────────────────────────────────────────────────────────
 window.GEBOUW_OPTIES_GROUPS = [
 
-  // ── Groep 1: Grondgebonden (4 opties) ─────────────────────────────────────
+  // ── Groep 1: Grondgebonden (2 opties) ─────────────────────────────────────
   {
     id:          'grondgebonden',
     naam:        'Grondgebonden',
@@ -56,10 +56,10 @@ window.GEBOUW_OPTIES_GROUPS = [
       {
         id:           'compact',
         naam:         'Compact type',
-        afbeelding:   _IMG.v1,
-        afbeelding_floorplan:   _IMG_floorplan.v1,
-        afbeelding_impression:   _IMG_impression.v1,
-        lagen:        2,
+        afbeelding:   _IMG.v3,
+        afbeelding_floorplan:   _IMG_floorplan.v3,
+        afbeelding_impression:   _IMG_impression.v3,
+        lagen:        3,
         bvo:          2916,
         footprint:    1350,
         bouwkosten:   6250000,
@@ -73,10 +73,10 @@ window.GEBOUW_OPTIES_GROUPS = [
       {
         id:           'lineair',
         naam:         'Lineair type',
-        afbeelding:   _IMG.v2,
-        afbeelding_floorplan:   _IMG_floorplan.v2,
-        afbeelding_impression:   _IMG_impression.v2,
-        lagen:        2,
+        afbeelding:   _IMG.av1,
+        afbeelding_floorplan:   _IMG_floorplan.av1,
+        afbeelding_impression:   _IMG_impression.av1,
+        lagen:        4,
         bvo:          2970,
         footprint:    1500,
         bouwkosten:   7000000,
@@ -86,40 +86,6 @@ window.GEBOUW_OPTIES_GROUPS = [
         beschrijving: 'Langgerekte plattegrond langs de straatrooilijn. Optimale daglichttoetreding aan beide zijden, heldere circulatie.',
         eigenschappen: ['Optimaal daglicht', 'Duidelijke routing', 'Goed aanpasbaar'],
         ambitieScores: _scores(80, 67, 70, 70, 67),
-      },
-      {
-        id:           'cluster',
-        naam:         'Cluster type',
-        afbeelding:   _IMG.v3,
-        afbeelding_floorplan:   _IMG_floorplan.v3,
-        afbeelding_impression:   _IMG_impression.v3,
-        lagen:        2,
-        bvo:          3087,
-        footprint:    1700,
-        bouwkosten:   7750000,
-        tco:          17050000,
-        duurzaamheid: 'Hoog',
-        maakbaarheid: 'Middel',
-        beschrijving: 'Groepering van functies rondom een centraal ontmoetingshart. Stimuleert informele contacten en gemeenschapsgevoel.',
-        eigenschappen: ['Centraal hart', 'Ontmoetingsgericht', 'Flexibele clusters'],
-        ambitieScores: _scores(70, 75, 80, 67, 70),
-      },
-      {
-        id:           'hof',
-        naam:         'Hof type',
-        afbeelding:   _IMG.av1,
-        afbeelding_floorplan:   _IMG_floorplan.av1,
-        afbeelding_impression:   _IMG_impression.av1,
-        lagen:        2,
-        bvo:          3078,
-        footprint:    2100,
-        bouwkosten:   8500000,
-        tco:          18700000,
-        duurzaamheid: 'Middel',
-        maakbaarheid: 'Laag',
-        beschrijving: 'Gesloten bouwvorm rondom een beschut binnenhof. Geborgen buitenruimte voor kinderen, duidelijke scheiding publiek/privé.',
-        eigenschappen: ['Binnenhof', 'Veilige buitenruimte', 'Representatief'],
-        ambitieScores: _scores(67, 60, 55, 85, 62),
       },
     ],
   },
@@ -134,10 +100,10 @@ window.GEBOUW_OPTIES_GROUPS = [
       {
         id:           'toren',
         naam:         'Toren type',
-        afbeelding:   _IMG.v2,
-        afbeelding_floorplan:   _IMG_floorplan.v2,
-        afbeelding_impression:   _IMG_impression.v2,
-        lagen:        4,
+        afbeelding:   _IMG.av5,
+        afbeelding_floorplan:   _IMG_floorplan.av5,
+        afbeelding_impression:   _IMG_impression.av5,
+        lagen:        3,
         bvo:          2907,
         footprint:    600,
         bouwkosten:   5500000,
@@ -151,9 +117,9 @@ window.GEBOUW_OPTIES_GROUPS = [
       {
         id:           'dubbeldeks',
         naam:         'Dubbeldeks type',
-        afbeelding:   _IMG.v3,
-        afbeelding_floorplan:   _IMG_floorplan.v3,
-        afbeelding_impression:   _IMG_impression.v3,
+        afbeelding:   _IMG.av2,
+        afbeelding_floorplan:   _IMG_floorplan.av2,
+        afbeelding_impression:   _IMG_impression.av2,
         lagen:        3,
         bvo:          3015,
         footprint:    1050,
@@ -171,11 +137,28 @@ window.GEBOUW_OPTIES_GROUPS = [
         afbeelding:   _IMG.v1,
         afbeelding_floorplan:   _IMG_floorplan.v1,
         afbeelding_impression:   _IMG_impression.v1,
-        lagen:        3,
+        lagen:        2,
         bvo:          3006,
         footprint:    1200,
         bouwkosten:   7500000,
         tco:          16500000,
+        duurzaamheid: 'Middel',
+        maakbaarheid: 'Middel',
+        beschrijving: 'L-vormige opzet van drie bouwlagen met een half-open binnentuin. Creëert een gedeeltelijk beschut buiten­klimaat voor de school.',
+        eigenschappen: ['L-vorm', 'Half-open hof', 'Gelede gevel'],
+        ambitieScores: _scores(68, 63, 62, 78, 68),
+      },
+      {
+        id:           'lprofiel2',
+        naam:         'L-profiel type2',
+        afbeelding:   _IMG.v2,
+        afbeelding_floorplan:   _IMG_floorplan.v2,
+        afbeelding_impression:   _IMG_impression.v2,
+        lagen:        2,
+        bvo:          3006,
+        footprint:    1200,
+        bouwkosten:   8500000,
+        tco:          17500000,
         duurzaamheid: 'Middel',
         maakbaarheid: 'Middel',
         beschrijving: 'L-vormige opzet van drie bouwlagen met een half-open binnentuin. Creëert een gedeeltelijk beschut buiten­klimaat voor de school.',
@@ -456,15 +439,15 @@ window.getGebouwOptie = id => window.GEBOUW_ALLE_OPTIES.find(o => o.id === id) |
 // Als een combinatie ontbreekt, wordt de eerste groep als standaard gebruikt.
 window.GROEP_MATRIX = [
   //  gebiedIndex 0            gebiedIndex 1
-  [ '',           'gestapeld','grondgebonden',           'gestapeld','grondgebonden',           'gestapeld','grondgebonden',           'gestapeld'    ],  // pveIndex 0
-  [ 'paviljoen',               'hybride','paviljoen',               'hybride','paviljoen',               'hybride','paviljoen',               'hybride',      ],  // pveIndex 1
-  [ 'innovatief',              'grondgebonden','innovatief',              'grondgebonden','innovatief',              'grondgebonden','innovatief',              'grondgebonden',],  // pveIndex 2
-  [ 'grondgebonden',           'gestapeld','grondgebonden',           'gestapeld','grondgebonden',           'gestapeld','grondgebonden',           'gestapeld'    ],  // pveIndex 0
-  [ 'paviljoen',               'hybride','paviljoen',               'hybride','paviljoen',               'hybride','paviljoen',               'hybride',      ],  // pveIndex 1
-  [ 'innovatief',              'grondgebonden','innovatief',              'grondgebonden','innovatief',              'grondgebonden','innovatief',              'grondgebonden',],  // pveIndex 2
-  [ 'grondgebonden',           'gestapeld','grondgebonden',           'gestapeld','grondgebonden',           'gestapeld','grondgebonden',           'gestapeld'    ],  // pveIndex 0
-  [ 'paviljoen',               'hybride','paviljoen',               'hybride','paviljoen',               'hybride','paviljoen',               'hybride',      ],  // pveIndex 1
-  [ 'innovatief',              'grondgebonden','innovatief',              'grondgebonden','innovatief',              'grondgebonden','innovatief',              'grondgebonden',],  // pveIndex 2
+  [ '',           'gestapeld','','','','','',''],  // pveIndex 0
+  [ 'grondgebonden',               'gestapeld','','','','','','',],  // pveIndex 1
+  [ 'grondgebonden',              'gestapeld','','','','','','',],  // pveIndex 2
+  [ 'grondgebonden',           'gestapeld','','','','','',''],  // pveIndex 0
+  [ 'grondgebonden',               'gestapeld','','','','','','',],  // pveIndex 1
+  [ 'grondgebonden',              'gestapeld','','','','','','',],  // pveIndex 2
+  [ 'grondgebonden',           'gestapeld','','','','','',''],  // pveIndex 0
+  [ 'grondgebonden',               'gestapeld','','','','','','',],  // pveIndex 1
+  [ 'grondgebonden',              'gestapeld','','','','','','',],  // pveIndex 2
 ];
 
 // Hulpfunctie: geeft het groep-id terug voor een pve + gebied variant combinatie.

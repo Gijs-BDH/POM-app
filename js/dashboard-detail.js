@@ -25,7 +25,7 @@ function _showOverlay(title, content) {
   let ov = document.getElementById('dd-overlay');
   if (!ov) {
     ov = document.createElement('div');
-    ov.id = 'dd-overlay';
+    ov.id = 'dd-overlay'; 
     ov.style.cssText =
       'position:fixed;inset:0;background:rgba(0,0,0,0.4);backdrop-filter:blur(4px);' +
       'display:flex;align-items:center;justify-content:center;z-index:999';

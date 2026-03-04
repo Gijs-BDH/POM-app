@@ -362,7 +362,7 @@ function renderDashboard(project) {
   };
   const page = window.location.pathname.split('/').pop();
   const betrouwbaarheid = BETROUWBAARHEID[page] ?? null;
-  const bPct = betrouwbaarheid !== null ? betrouwbaarheid + '%' : null;
+  const bPct = betrouwbaarheid !== null ? betrouwbaarheid + '% zekerheid' : null;
 
   const badge = (color, val) => val !== null
     ? `<span style="background:${color};color:white;border-radius:99px;padding:0.1rem 0.45rem;font-size:0.7rem">${val}</span>`

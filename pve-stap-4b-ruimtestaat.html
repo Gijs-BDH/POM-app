@@ -405,6 +405,93 @@
     const doneSteps = new Set();
     let currentStep = 1;
 
+    function applyDefaultsForStep(n) {
+      // Apply default values to inputs in step n if they haven't been set yet
+      const po         = (pveV && pveV.voorzieningen && pveV.voorzieningen.primairOnderwijs) || {};
+      const leerlingen = po.leerlingen || 0;
+      const base       = Math.ceil(leerlingen / 30) || 8;
+
+      if (n === 1) {
+        // Schoolbouw defaults
+        if (!document.getElementById('q-fte').value) {
+          document.getElementById('q-fte').value = '12';
+        }
+      } else if (n === 2) {
+        // Lokalen defaults
+        const clusterVal = document.getElementById('q-clusters').value;
+        if (clusterVal === '1 cluster') {
+          // Not applicable
+        } else if (clusterVal === '2 clusters OB+BB') {
+          if (!document.getElementById('q-ob-lokalen').value) {
+            document.getElementById('q-ob-lokalen').value = Math.ceil(base / 2);
+          }
+          if (!document.getElementById('q-bb-lokalen').value) {
+            document.getElementById('q-bb-lokalen').value = Math.floor(base / 2);
+          }
+        } else if (clusterVal === '3 clusters OB+MB+BB') {
+          if (!document.getElementById('q-ob-lokalen').value) {
+            document.getElementById('q-ob-lokalen').value = Math.ceil(base / 3);
+          }
+          if (!document.getElementById('q-mb-lokalen').value) {
+            document.getElementById('q-mb-lokalen').value = Math.round(base / 3);
+          }
+          if (!document.getElementById('q-bb-lokalen').value) {
+            document.getElementById('q-bb-lokalen').value = Math.floor(base / 3);
+          }
+        }
+      } else if (n === 3) {
+        // Hoofdruimtes defaults
+        if (!document.getElementById('q-cor').value) {
+          document.getElementById('q-cor').value = 'Hele klas';
+        }
+        if (!document.getElementById('q-leerplein').value) {
+          document.getElementById('q-leerplein').value = '0.05';
+        }
+        // JN defaults for step 3
+        const defaultJN3 = { speellokaal: 'nee' };
+        Object.entries(defaultJN3).forEach(([key, defaultVal]) => {
+          if (!JN[key] || JN[key] === null) {
+            JN[key] = defaultVal;
+            document.getElementById(`btn-${key}-ja`)?.classList.toggle('active', defaultVal === 'ja');
+            document.getElementById(`btn-${key}-nee`)?.classList.toggle('active', defaultVal === 'nee');
+          }
+        });
+      } else if (n === 4) {
+        // Overige ruimtes defaults
+        if (!document.getElementById('q-kantoor').value) {
+          document.getElementById('q-kantoor').value = 'Basis (8m²)';
+        }
+        if (!document.getElementById('q-spreekruimte').value) {
+          document.getElementById('q-spreekruimte').value = 'Basis (12m²)';
+        }
+        if (!document.getElementById('q-bergruimte').value) {
+          document.getElementById('q-bergruimte').value = 'Basis (3m²)';
+        }
+        if (!document.getElementById('q-prikkelarm-aantal').value) {
+          document.getElementById('q-prikkelarm-aantal').value = '1';
+        }
+        if (!document.getElementById('q-prikkelarm-grootte').value) {
+          document.getElementById('q-prikkelarm-grootte').value = '8 m² (1-2 kinderen)';
+        }
+        // JN defaults for step 4
+        const defaultJN4 = {
+          bibliotheek: 'nee',
+          creatieftechniek: 'nee',
+          zorgbehandel: 'nee',
+          wasdroog: 'nee',
+          printKopie: 'ja',
+          ehboKolfRust: 'ja',
+        };
+        Object.entries(defaultJN4).forEach(([key, defaultVal]) => {
+          if (!JN[key] || JN[key] === null) {
+            JN[key] = defaultVal;
+            document.getElementById(`btn-${key}-ja`)?.classList.toggle('active', defaultVal === 'ja');
+            document.getElementById(`btn-${key}-nee`)?.classList.toggle('active', defaultVal === 'nee');
+          }
+        });
+      }
+    }
+
     function goToStep(n) {
       STEPS.forEach(s => {
         const pill = document.getElementById('pill-' + s.n);
@@ -412,6 +499,7 @@
         if (s.n === n) {
           pill.style.display = 'none';
           card.style.display = '';
+          applyDefaultsForStep(n); // Apply defaults when step is activated
         } else {
           card.style.display = 'none';
           pill.style.display = '';
@@ -434,7 +522,7 @@
     function updateLokalenInfo() {
       const po         = (pveV && pveV.voorzieningen && pveV.voorzieningen.primairOnderwijs) || {};
       const leerlingen = po.leerlingen || 0;
-      const base       = Math.ceil(leerlingen / 30*(18/14));
+      const base       = Math.ceil(leerlingen / 30);
       const clusters   = document.getElementById('q-clusters').value;
 
       let entered = 0;
@@ -480,15 +568,15 @@
       }
     }
 
-    // ── Ja/Nee state ──────────────────────────────────────────────────────────
+    // ── Ja/Nee state ── (initialized to null; defaults applied when step opens)
     const JN = {
-      speellokaal:      'nee',
-      bibliotheek:      'nee',
-      creatieftechniek: 'nee',
-      zorgbehandel:     'nee',
-      wasdroog:         'nee',
-      printKopie:       'nee',
-      ehboKolfRust:     'nee',
+      speellokaal:      null,
+      bibliotheek:      null,
+      creatieftechniek: null,
+      zorgbehandel:     null,
+      wasdroog:         null,
+      printKopie:       null,
+      ehboKolfRust:     null,
     };
 
     function setJN(key, val, btn) {
@@ -630,6 +718,7 @@
         ? pveV.ruimtestaat.vragen : null;
 
       if (saved) {
+        // Restore all saved values
         const n = (id, val) => { if (val !== undefined && val !== null) document.getElementById(id).value = val; };
         n('q-fte',                saved.fte);
         n('q-clusters',           saved.clusters);
@@ -665,22 +754,8 @@
           document.getElementById('q-biblio-grootte').style.display = '';
         }
       }
-
-      if (!saved) {
-        // Initialise OB/MB/BB defaults from the calculated base count
-        const po         = (pveV && pveV.voorzieningen && pveV.voorzieningen.primairOnderwijs) || {};
-        const leerlingen = po.leerlingen || 0;
-        const base       = Math.ceil(leerlingen / 30*(18/14)) || 8; // fallback to 8 if leerlingen unknown
-        const clusterVal = document.getElementById('q-clusters').value;
-        if (clusterVal === '2 clusters OB+BB') {
-          document.getElementById('q-ob-lokalen').value = Math.ceil(base / 2);
-          document.getElementById('q-bb-lokalen').value = Math.floor(base / 2);
-        } else if (clusterVal === '3 clusters OB+MB+BB') {
-          document.getElementById('q-ob-lokalen').value = Math.ceil(base/3);
-          document.getElementById('q-mb-lokalen').value = Math.round(base/3);
-          document.getElementById('q-bb-lokalen').value = Math.floor(base/3);
-        }
-      }
+      // If no saved state, leave all inputs empty (null/empty)
+      // Defaults will be applied when goToStep() is called
 
       onClustersChange(); // sets row visibility + triggers recalculate
     }
