@@ -606,6 +606,13 @@
       finishDrawing();
     });
 
+    map.on('contextmenu', e => {
+      if (!drawingMode || !currentPoly || drawPoints.length < 3) return;
+      L.DomEvent.preventDefault(e);
+      clearTimeout(clickTimer);
+      finishDrawing();
+    });
+
     function saveTabZones(key) {
       const zones = tabZones[key].map(z => {
         const base = { geo: z.geo, opp: z.opp, kind: z.kind || 'polygon' };
