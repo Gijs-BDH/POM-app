@@ -138,6 +138,7 @@
         const c = map.getCenter();
         map3d.setCenter([c.lng, c.lat]);
         map3d.setZoom(map.getZoom());
+        map3dEl.style.width = map2dEl.offsetWidth + 'px';
         map2dEl.classList.add('hidden');
         map3dEl.classList.remove('hidden');
         btn2d.className = 'px-3 py-1 text-xs rounded-md text-gray-500';
