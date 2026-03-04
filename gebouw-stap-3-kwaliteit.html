@@ -105,7 +105,7 @@
         const detailOptie = window.getGebouwOptie ? window.getGebouwOptie(variant.geselecteerdeOptie) : null;
 
         document.getElementById('project-titel').textContent = project.naam;
-        document.getElementById('step-indicator').innerHTML = renderStepIndicator(3, 5, ['gebouw-stap-1-uitgangspunten.html', 'gebouw-stap-2-opties.html?id=' + gebouwId]);
+        document.getElementById('step-indicator').innerHTML = renderStepIndicator(3, 3, ['gebouw-stap-1-uitgangspunten.html', 'gebouw-stap-2-opties.html?id=' + gebouwId]);
         document.getElementById('nav-panel').innerHTML = renderNavPanel('gebouw', project);
         document.getElementById('detail-img-massa').src = detailOptie.afbeelding;
         document.getElementById('detail-img-floorplan').src = detailOptie.afbeelding_floorplan;
