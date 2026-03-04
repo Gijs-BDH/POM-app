@@ -143,12 +143,110 @@
             }, 220);
         }
 
-        function pdfZoom(dir) {
-            pdfZoomIdx = Math.max(0, Math.min(PDF_ZOOMS.length - 1, pdfZoomIdx + dir));
-            const frame = document.getElementById('pdf-frame');
-            if (frame.style.display !== 'none') {
-                frame.src = `public/kavelpaspoort.pdf?z=${PDF_ZOOMS[pdfZoomIdx]}#toolbar=0&navpanes=0&zoom=${PDF_ZOOMS[pdfZoomIdx]}`;
-            }
+    function pdfZoom(dir) {
+      pdfZoomIdx = Math.max(0, Math.min(PDF_ZOOMS.length - 1, pdfZoomIdx + dir));
+      const frame = document.getElementById('pdf-frame');
+      if (frame.style.display !== 'none') {
+        frame.src = `public/kavelpaspoort.pdf?z=${PDF_ZOOMS[pdfZoomIdx]}#toolbar=0&navpanes=0&zoom=${PDF_ZOOMS[pdfZoomIdx]}`;
+      }
+    }
+
+    function loadKavelpaspoortPdf() {
+      const panel = document.getElementById('kavelpaspoort-panel');
+      const frame = document.getElementById('pdf-frame');
+      if (variant.kavelpaspoort) {
+        panel.style.display = '';
+        frame.src = `public/kavelpaspoort.pdf?z=${PDF_ZOOMS[pdfZoomIdx]}#toolbar=0&navpanes=0&zoom=${PDF_ZOOMS[pdfZoomIdx]}`;
+        frame.style.display = 'block';
+      } else {
+        panel.style.display = 'none';
+        frame.src = '';
+        frame.style.display = 'none';
+      }
+    }
+
+    loadKavelpaspoortPdf();
+
+    document.getElementById('project-titel').textContent = project.naam;
+    document.getElementById('step-indicator').innerHTML  = renderStepIndicator(5, 6, ['gebied-stap-1-locatie.html','gebied-stap-1-kavels.html', 'gebied-stap-2-stedenbouw.html?id=' + gebiedId, 'gebied-stap-3-programma.html?id=' + gebiedId]);
+    document.getElementById('nav-panel').innerHTML       = renderNavPanel('gebied', project);
+
+    // ── Map ───────────────────────────────────────────────────────────────────
+    const MAP_VIEW_KEY = 'pom_map_view_gebied_' + project.id;
+    const savedView = JSON.parse(localStorage.getItem(MAP_VIEW_KEY) || 'null');
+    const map = L.map('map').setView(
+      savedView ? [savedView.lat, savedView.lng] : [52.2, 5.3],
+      savedView ? savedView.zoom : 8
+    );
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19
+    }).addTo(map);
+    map.on('moveend', () => {
+      const c = map.getCenter();
+      localStorage.setItem(MAP_VIEW_KEY, JSON.stringify({ lat: c.lat, lng: c.lng, zoom: map.getZoom() }));
+    });
+
+    const map3d = new maplibregl.Map({
+      container: 'map3d',
+      style: {
+        version: 8,
+        sources: { osm: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256 } },
+        layers: [{ id: 'osm', type: 'raster', source: 'osm' }]
+      },
+      center: [map.getCenter().lng, map.getCenter().lat],
+      zoom: map.getZoom(),
+      pitch: 55,
+      bearing: -15
+    });
+
+    function setMapMode(mode) {
+      const map2dEl = document.getElementById('map');
+      const map3dEl = document.getElementById('map3d');
+      const btn2d = document.getElementById('btn-2d');
+      const btn3d = document.getElementById('btn-3d');
+      if (mode === '3d') {
+        const c = map.getCenter();
+        map3d.setCenter([c.lng, c.lat]);
+        map3d.setZoom(map.getZoom());
+        map3dEl.style.width = map2dEl.offsetWidth + 'px';
+        map2dEl.classList.add('hidden');
+        map3dEl.classList.remove('hidden');
+        btn2d.className = 'px-3 py-1 text-xs rounded-md text-gray-500';
+        btn3d.className = 'px-3 py-1 text-xs rounded-md bg-violet-600 text-white';
+        map3d.resize();
+        syncLeafletTo3D();
+      } else {
+        const c = map3d.getCenter();
+        map.setView([c.lat, c.lng], map3d.getZoom());
+        map3dEl.classList.add('hidden');
+        map2dEl.classList.remove('hidden');
+        btn2d.className = 'px-3 py-1 text-xs rounded-md bg-violet-600 text-white';
+        btn3d.className = 'px-3 py-1 text-xs rounded-md text-gray-500';
+        map.invalidateSize();
+      }
+    }
+    window.setMapMode = setMapMode;
+
+    let map3dReady = false;
+    const sync3dSourceId = 'leaflet-polygons-src';
+    const obstacle3dPointSourceId = 'obstacles-points-src';
+    const obstacle3dVolumeSourceId = 'obstacles-volume-src';
+    function syncLeafletTo3D() {
+      if (!map3dReady) return;
+      const features = [];
+      map.eachLayer(layer => {
+        if (layer instanceof L.Polygon) {
+          const gj = layer.toGeoJSON();
+          if (gj && gj.geometry) {
+            gj.properties = {
+              fillColor: layer.options?.fillColor || layer.options?.color || '#7C3AED',
+              lineColor: layer.options?.color || '#4C1D95',
+              fillOpacity: layer.options?.fillOpacity ?? 0.22,
+              lineWidth: layer.options?.weight ?? 1.5,
+            };
+            features.push(gj);
+          }
         }
 
         function loadKavelpaspoortPdf() {
