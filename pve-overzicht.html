@@ -144,7 +144,7 @@
         copyBtn.className = 'text-white/60 hover:text-white text-base leading-none';
         copyBtn.addEventListener('click', e => {
           e.stopPropagation();
-          const copy = { ...JSON.parse(JSON.stringify(variant)), id: crypto.randomUUID(), naam: variant.naam + ' (kopie)' };
+          const copy = { ...JSON.parse(JSON.stringify(variant)), id: uuid(), naam: variant.naam + ' (kopie)' };
           const cur = getCurrentProject();
           saveProject({ ...cur, pveVarianten: [...cur.pveVarianten, copy], activePveId: copy.id });
           window.location.href = 'pve-instellingen.html?id=' + copy.id;

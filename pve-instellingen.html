@@ -1133,7 +1133,7 @@
         uitvoeringMaanden:   planState.uitv,
       };
       const cur  = getCurrentProject();
-      const copy = { ...JSON.parse(JSON.stringify(variant)), id: crypto.randomUUID(), naam, voorzieningen: V, ambities, planning: planningData };
+      const copy = { ...JSON.parse(JSON.stringify(variant)), id: uuid(), naam, voorzieningen: V, ambities, planning: planningData };
       nieuweVariantId = copy.id;
       updateCurrentProject({ gebruiksduur });
       saveProject({ ...getCurrentProject(), pveVarianten: [...getCurrentProject().pveVarianten, copy] });

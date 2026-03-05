@@ -195,7 +195,7 @@
       const email   = document.getElementById('p-email').value.trim();
       const toegang = document.getElementById('p-toegang').value;
       if (!naam) { alert('Vul een naam in.'); return; }
-      personen.push({ id: crypto.randomUUID(), naam, email, toegang });
+      personen.push({ id: uuid(), naam, email, toegang });
       document.getElementById('p-naam').value  = '';
       document.getElementById('p-email').value = '';
       renderPersonen();

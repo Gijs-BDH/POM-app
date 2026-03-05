@@ -170,7 +170,7 @@
 
         // Add "Ik" as default person and assign to selected roles (runs once)
         if (!personen.some(p => p.naam === 'Ik')) {
-            personen.unshift({ id: crypto.randomUUID(), naam: 'Ik', email: '', toegang: 'Beheerder' });
+            personen.unshift({ id: uuid(), naam: 'Ik', email: '', toegang: 'Beheerder' });
             setDraft({ stakeholders: personen });
 
             (_draft.rol || '').split(', ').filter(Boolean).forEach(rol => {
@@ -342,7 +342,7 @@
                 return;
             }
             ['p-naam', 'p-email', 'p-toegang'].forEach(id => document.getElementById(id).classList.remove('border-red-400'));
-            personen.push({ id: crypto.randomUUID(), naam, email, toegang });
+            personen.push({ id: uuid(), naam, email, toegang });
             setDraft({ stakeholders: personen });
             document.getElementById('p-naam').value = '';
             document.getElementById('p-email').value = '';

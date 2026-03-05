@@ -879,7 +879,7 @@
     function opslaanAlsNieuweVariant() {
       const naam = document.getElementById('g-naam').value.trim() || variant.naam;
       const cur  = getCurrentProject();
-      const copy = { ...JSON.parse(JSON.stringify(variant)), id: crypto.randomUUID(), naam };
+      const copy = { ...JSON.parse(JSON.stringify(variant)), id: uuid(), naam };
       nieuweVariantId = copy.id;
       updateCurrentProject({ gebiedVarianten: [...(cur.gebiedVarianten || []), copy] });
       document.getElementById('modal-nieuwe-variant').classList.remove('hidden');

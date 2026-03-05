@@ -152,7 +152,7 @@
         copyBtn.className = 'text-white/60 hover:text-white text-base leading-none';
         copyBtn.addEventListener('click', e => {
           e.stopPropagation();
-          const copy = { ...JSON.parse(JSON.stringify(variant)), id: crypto.randomUUID(), naam: variant.naam + ' (kopie)' };
+          const copy = { ...JSON.parse(JSON.stringify(variant)), id: uuid(), naam: variant.naam + ' (kopie)' };
           const cur  = getCurrentProject();
           updateCurrentProject({ gebiedVarianten: [...cur.gebiedVarianten, copy] });
           window.location.href = 'gebied-instellingen.html?id=' + copy.id;

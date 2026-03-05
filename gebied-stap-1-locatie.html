@@ -197,7 +197,7 @@
         // ── Method actions ────────────────────────────────────────────────────────
         function kiesLoket() {
             const p = getCurrentProject();
-            const variant = { id: crypto.randomUUID(), naam: 'Loket aanvraag', opp: 0, geo: [], wachtOpLoket: true, createdAt: Date.now() };
+            const variant = { id: uuid(), naam: 'Loket aanvraag', opp: 0, geo: [], wachtOpLoket: true, createdAt: Date.now() };
             updateCurrentProject({ gebiedVarianten: [...(p.gebiedVarianten || []), variant] });
             window.location.href = 'project-overzicht.html';
         }

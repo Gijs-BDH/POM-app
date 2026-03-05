@@ -269,7 +269,7 @@
           </div>`;
         card.addEventListener('click', () => window.location.href = 'gebied-instellingen.html?id=' + g.id);
         card.appendChild(makeCopyBtn(() => {
-          const copy = { ...JSON.parse(JSON.stringify(g)), id: crypto.randomUUID(), naam: g.naam + ' (kopie)' };
+          const copy = { ...JSON.parse(JSON.stringify(g)), id: uuid(), naam: g.naam + ' (kopie)' };
           const gebiedVarianten = [...project.gebiedVarianten, copy];
           updateCurrentProject({ gebiedVarianten });
           window.location.href = 'gebied-instellingen.html?id=' + copy.id;
@@ -343,7 +343,7 @@
           card.addEventListener('click', () => window.location.href = 'gebouw-stap-2-opties.html?id=' + v.id + '&detail=1');
         }
         card.appendChild(makeCopyBtn(() => {
-          const copy = { ...JSON.parse(JSON.stringify(v)), id: crypto.randomUUID(), naam: v.naam + ' (kopie)' };
+          const copy = { ...JSON.parse(JSON.stringify(v)), id: uuid(), naam: v.naam + ' (kopie)' };
           const p = getCurrentProject();
           saveProject({ ...p, gebouwVarianten: [...p.gebouwVarianten, copy] });
           window.location.href = 'gebouw-stap-2-opties.html?id=' + copy.id;
@@ -381,7 +381,7 @@
           </div>`;
         card.addEventListener('click', () => window.location.href = 'pve-instellingen.html?id=' + variant.id);
         card.appendChild(makeCopyBtn(() => {
-          const copy = { ...JSON.parse(JSON.stringify(variant)), id: crypto.randomUUID(), naam: variant.naam + ' (kopie)' };
+          const copy = { ...JSON.parse(JSON.stringify(variant)), id: uuid(), naam: variant.naam + ' (kopie)' };
           const p = getCurrentProject();
           saveProject({ ...p, pveVarianten: [...p.pveVarianten, copy], activePveId: copy.id });
           window.location.href = 'pve-instellingen.html?id=' + copy.id;

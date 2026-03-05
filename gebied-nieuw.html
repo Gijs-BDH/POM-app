@@ -230,7 +230,7 @@
     });
 
     function kiesLoket() {
-      const id = crypto.randomUUID();
+      const id = uuid();
       const p  = getCurrentProject();
       const variant = { id, naam: 'Loket aanvraag', opp: 0, geo: [], wachtOpLoket: true, createdAt: Date.now() };
       updateCurrentProject({ gebiedVarianten: [...(p.gebiedVarianten || []), variant] });
@@ -243,7 +243,7 @@
 
     document.getElementById('gebied-upload-input').addEventListener('change', function() {
       if (!this.files.length) return;
-      const id   = crypto.randomUUID();
+      const id   = uuid();
       const naam = this.files[0].name.replace(/\.[^.]+$/, '');
       const p    = getCurrentProject();
       const variant = { id, naam, opp: 0, geo: [], createdAt: Date.now() };
