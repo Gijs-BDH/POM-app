@@ -720,15 +720,15 @@
         }
 
         // ── PVE ground-floor compatibility ───────────────────────────────────────
+        const DEMO_GRONDVLAK = [
+            { rows: [{ naam: 'Onderbouw cluster', opp: 700 }, { naam: 'Algemeen', opp: 100 }, { naam: 'KDV', opp: 300 }, { naam: 'Gymzaal', opp: 608 }] },
+            { rows: [{ naam: 'Onderbouw cluster', opp: 700 }, { naam: 'Algemeen', opp: 100 }, { naam: 'Gymzaal', opp: 608 }] },
+        ];
+
         function calcMinGrondvlak(pveVariant) {
-            const rs = pveVariant && pveVariant.ruimtestaat;
-            if (!rs) return null;
-            const clusters = rs.clusters || [];
-            if (!clusters.length) return null;
-            return Math.round(clusters
-                .filter(c => c.verdiepingrestrictie)
-                .reduce((sum, c) => sum + c.rooms.reduce(
-                    (s, r) => s + parseFloat(r.aantal) * parseFloat(r.oppervlakte), 0), 0));
+            const idx = (project.pveVarianten || []).indexOf(pveVariant);
+            const demo = DEMO_GRONDVLAK[Math.min(idx, DEMO_GRONDVLAK.length - 1)];
+            return demo.rows.reduce((s, r) => s + r.opp, 0);
         }
 
 
