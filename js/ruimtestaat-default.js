@@ -95,7 +95,7 @@ const RUIMTESTAAT_DEFAULT = {
     },
     {
       name: "Gymzaal",
-      verdiepingrestrictie: false,
+      verdiepingrestrictie: true,
       relations: [],
       rooms: [
         { name: "Meterkast",                                   aantal: "1", oppervlakte: "2"      },
