@@ -69,7 +69,7 @@ window.GEBOUW_OPTIES_GROUPS = [
         beschrijving: 'Compacte schoolvorm met efficiënte ruimtebenutting op twee bouwlagen. Geschikt voor kleinere kavels met beperkt bouwvlak.',
         eigenschappen: ['Kleine footprint', 'Efficiënt', 'Snel te realiseren'],
         ambitieScores: _scores(67, 55, 67, 75, 65),
-        bouwduur: "2.2 jaar",
+        bouwduur: "1.2 jaar",
       },
       {
         id:           'lineair',
@@ -87,7 +87,7 @@ window.GEBOUW_OPTIES_GROUPS = [
         beschrijving: 'Langgerekte plattegrond langs de straatrooilijn. Optimale daglichttoetreding aan beide zijden, heldere circulatie.',
         eigenschappen: ['Optimaal daglicht', 'Duidelijke routing', 'Goed aanpasbaar'],
         ambitieScores: _scores(80, 67, 70, 70, 67),
-        bouwduur: "2.7 jaar",
+        bouwduur: "1.7 jaar",
       },
     ],
   },
