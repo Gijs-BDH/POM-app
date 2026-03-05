@@ -477,12 +477,14 @@
 
         // Context layers from previous steps (read-only)
         const CTX = [
+            { key: 'bebouwbaarGebied', color: '#059669' },
             { key: 'onbebouwdGebied', color: '#F97316' },
             { key: 'uitsluiting', color: '#EF4444' },
             { key: 'parkeren', color: '#3B82F6' },
             { key: 'onderbouwplein', color: '#22C55E' },
             { key: 'bovenbouwPlein', color: '#0EA5E9' },
             { key: 'fietsenstalling', color: '#A855F7' },
+            { key: 'geenLesfunctie', color: '#F59E0B' },
         ];
         let hasBounds = false;
         CTX.forEach(c => {
@@ -496,6 +498,16 @@
                 if (!hasBounds && !savedView) { map.fitBounds(poly.getBounds(), { padding: [40, 40] }); hasBounds = true; }
             });
         });
+        // Entree marker (point, stored as variant.entree = { lat, lng })
+        if (variant.entree && variant.entree.lat != null) {
+            L.marker([variant.entree.lat, variant.entree.lng], {
+                icon: L.divIcon({
+                    html: `<div style="font-size:22px;line-height:1;transform:translate(-50%,-100%);filter:drop-shadow(0 1px 3px rgba(0,0,0,0.35))">🚪</div>`,
+                    className: '', iconSize: [0, 0]
+                }),
+                interactive: false
+            }).addTo(map);
+        }
         if (!hasBounds && !savedView && variant.geo && variant.geo.length >= 3) {
             map.fitBounds(L.polygon(variant.geo).getBounds(), { padding: [40, 40] });
             hasBounds = true;
