@@ -20,7 +20,7 @@ function getCurrentProject() {
   let project = getAllProjects().find(p => p.id === id) || null;
   // Migrate old single-pve format → pveVarianten array
   if (project && project.pve && !project.pveVarianten) {
-    const migratedVariant = { id: crypto.randomUUID(), naam: 'PVE variant 1', ...project.pve };
+    const migratedVariant = { id: uuid(), naam: 'PVE variant 1', ...project.pve };
     project = { ...project, pveVarianten: [migratedVariant], activePveId: migratedVariant.id };
     delete project.pve;
     saveProject(project);
@@ -64,7 +64,7 @@ function clearDraft() {
 function createProjectFromDraft() {
   const draft = getDraft();
   const project = {
-    id: crypto.randomUUID(),
+    id: uuid(),
     naam: draft.naam || 'Naamloos project',
     huidigeStap: draft.huidigeStap || 'Definitie fase',
     rol: draft.rol || '',
@@ -137,7 +137,7 @@ function createNewPveVariant() {
   const p = getCurrentProject();
   if (!p) return null;
   const naam = 'PVE variant ' + ((p.pveVarianten || []).length + 1);
-  const variant = { id: crypto.randomUUID(), naam, ...defaultPve() };
+  const variant = { id: uuid(), naam, ...defaultPve() };
   const pveVarianten = [...(p.pveVarianten || []), variant];
   saveProject({ ...p, pveVarianten, activePveId: variant.id });
   return variant;
@@ -297,7 +297,7 @@ function createNewGebiedVariant(naam) {
   const p = getCurrentProject();
   if (!p) return null;
   naam = naam || ('Locatie ' + ((p.gebiedVarianten || []).length + 1));
-  const variant = { id: crypto.randomUUID(), naam, opp: 0, geo: [], ...defaultGebied() };
+  const variant = { id: uuid(), naam, opp: 0, geo: [], ...defaultGebied() };
   const gebiedVarianten = [...(p.gebiedVarianten || []), variant];
   saveProject({ ...p, gebiedVarianten });
   return variant;
@@ -332,7 +332,7 @@ function createNewGebouwVariant(naam, pveId, gebiedId) {
   const p = getCurrentProject();
   if (!p) return null;
   naam = naam || ('Gebouw variant ' + ((p.gebouwVarianten || []).length + 1));
-  const variant = { id: crypto.randomUUID(), naam, ...defaultGebouw(), pveId, gebiedId };
+  const variant = { id: uuid(), naam, ...defaultGebouw(), pveId, gebiedId };
   const gebouwVarianten = [...(p.gebouwVarianten || []), variant];
   saveProject({ ...p, gebouwVarianten });
   return variant;
