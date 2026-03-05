@@ -558,6 +558,7 @@
         function calcMinGrondvlakDetails(pveVariant) {
             const rs = pveVariant && pveVariant.ruimtestaat;
             if (!rs) return null;
+///// hier!!!!!!
             const clusters = (rs.clusters || []).filter(c => c.verdiepingrestrictie);
             if (!clusters.length) return null;
             const rows = clusters.map(c => {
